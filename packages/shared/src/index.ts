@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const HealthCheckResponseSchema = z.object({
   status: z.literal('ok'),
+  db: z.string().optional(),
   timestamp: z.string(),
   version: z.string().optional(),
 });
