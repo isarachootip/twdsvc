@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Service Center — Trade-in</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --red:#C8102E; --red-dark:#9C0C22; --red-tint:#FBE7E9;
+  --bg:#FAF7F2; --surface:#FFFFFF; --surface-2:#F3EEE6;
+  --border:#E4DED2; --border-strong:#D2C9B8;
+  --text:#2B2723; --text-2:#6B6459; --text-mute:#9A9384;
+  --green:#1D9E75; --green-tint:#E1F5EE;
+  --amber:#BA7517; --amber-tint:#FAEEDA;
+  --blue:#185FA5; --blue-tint:#E6F1FB;
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand-mark{width:32px;height:32px;background:var(--red);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;}
+.brand-name{font-weight:600;font-size:15px;}
+.role-badge{font-size:12px;background:var(--blue-tint);color:var(--blue);padding:4px 10px;border-radius:20px;font-weight:500;}
+main{max-width:1100px;margin:0 auto;padding:24px 20px;}
+.page-title{font-size:20px;font-weight:600;margin:0 0 4px;}
+.page-sub{font-size:13px;color:var(--text-2);margin:0 0 20px;}
+
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px;}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;}
+.kpi-card .num{font-size:26px;font-weight:600;line-height:1.1;}
+.kpi-card .lbl{font-size:12px;color:var(--text-2);margin-top:4px;}
+
+.type-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;}
+.type-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;cursor:pointer;}
+.type-card:hover{border-color:var(--red);}
+.type-card.active{border-color:var(--red);background:var(--red-tint);}
+.type-card h3{font-size:14px;margin:0 0 4px;}
+.type-card p{font-size:12.5px;color:var(--text-2);margin:0;}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:20px;}
+.card h3{font-size:15px;font-weight:600;margin:0 0 4px;}
+.card p.hint{font-size:12.5px;color:var(--text-mute);margin:0 0 16px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.field label{display:block;font-size:12.5px;color:var(--text-2);margin-bottom:4px;}
+input, select{font-family:inherit;font-size:13px;padding:7px 9px;border:1px solid var(--border-strong);border-radius:6px;background:var(--surface);color:var(--text);width:100%;}
+.photo-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:6px;}
+.photo-box{aspect-ratio:1;border:1.5px dashed var(--border-strong);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--text-mute);font-size:11px;cursor:pointer;}
+.photo-box:hover{background:var(--surface-2);}
+.btn{font-family:inherit;font-size:13px;padding:9px 16px;border-radius:6px;border:1px solid var(--border-strong);background:var(--surface);color:var(--text);cursor:pointer;}
+.btn:hover{background:var(--surface-2);}
+.btn-primary{background:var(--red);color:#fff;border-color:var(--red);}
+.btn-primary:hover{background:var(--red-dark);}
+.btn-primary:disabled{background:var(--border-strong);border-color:var(--border-strong);color:var(--text-mute);cursor:not-allowed;}
+.note{background:var(--surface-2);border-radius:8px;padding:10px 14px;font-size:12.5px;color:var(--text-2);margin-top:10px;}
+.note.promo{background:var(--blue-tint);color:var(--blue);}
+.job-pick{border:1px solid var(--border-strong);border-radius:8px;padding:10px 12px;margin-top:8px;cursor:pointer;}
+.job-pick:hover{background:var(--surface-2);}
+.job-pick.selected{border-color:var(--red);background:var(--red-tint);}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;color:var(--text-2);font-weight:500;font-size:12px;padding:10px 14px;background:var(--surface-2);border-bottom:1px solid var(--border-strong);}
+td{padding:10px 14px;border-bottom:1px solid var(--border);}
+tr:last-child td{border-bottom:none;}
+.badge{font-size:11px;padding:2px 9px;border-radius:20px;font-weight:500;white-space:nowrap;}
+.b-gray{background:var(--surface-2);color:var(--text-2);}
+.b-blue{background:var(--blue-tint);color:var(--blue);}
+.b-green{background:var(--green-tint);color:var(--green);}
+.empty{padding:30px;text-align:center;color:var(--text-mute);font-size:13px;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand"><div class="brand-mark">SC</div><div class="brand-name">Service Center — Trade-in / คูปอง</div></div>
+  <span class="role-badge">สิทธิ์: CS เท่านั้น</span>
+</div>
+
+<main>
+  <p class="page-title">Trade-in / คูปอง</p>
+  <p class="page-sub">สร้างคูปองส่วนลดซื้อสินค้าใหม่ให้ลูกค้า — แยก running เลขจากใบแจ้งซ่อม</p>
+
+  <div class="kpi-grid" id="kpi-grid"></div>
+
+  <p style="font-size:13.5px;font-weight:500;margin:0 0 10px">เลือกประเภท Trade-in</p>
+  <div class="type-grid">
+    <div class="type-card" id="type1-card" onclick="selectType(1)">
+      <h3>ประเภท 1 — หน้างาน</h3>
+      <p>ลูกค้าถือสินค้ามา ประเมินแล้วซ่อมไม่คุ้ม แนะนำซื้อใหม่ทันที ไม่ต้องเปิดใบแจ้งซ่อม</p>
+    </div>
+    <div class="type-card" id="type2-card" onclick="selectType(2)">
+      <h3>ประเภท 2 — หลังบ้าน</h3>
+      <p>ลูกค้ามารับสินค้าที่ส่งซ่อมแล้วไม่อนุมัติซ่อม ขอเปลี่ยนเป็นส่วนลดซื้อใหม่แทน</p>
+    </div>
+  </div>
+
+  <div id="form-area"></div>
+
+  <div class="card">
+    <h3>ประวัติ Trade-in ที่สร้างแล้ว</h3>
+    <p class="hint">ค้นหาได้จากเลขที่ Trade-in / ชื่อลูกค้า / เบอร์โทร</p>
+    <input id="history-search" placeholder="ค้นหา..." style="margin-bottom:14px" oninput="renderHistory()">
+    <table>
+      <tr><th>เลขที่ Trade-in</th><th>ประเภท</th><th>ลูกค้า</th><th>เบอร์โทร</th><th>สินค้า</th><th>ส่วนลด</th><th>สถานะ</th><th>วันที่ออก</th></tr>
+      <tbody id="history-rows"></tbody>
+    </table>
+    <div class="empty" id="history-empty" style="display:none">ไม่พบรายการ</div>
+  </div>
+</main>
+
+<script>
+// ---- mock promotions (mirrors admin setup page) ----
+const promos = [
+  {name:'โปรทั่วไป', type:1, size:'เล็ก', percent:10, start:'2026-09-01', end:'2026-12-31', active:true, createdAt:'2026-08-01'},
+  {name:'โปรปีใหม่', type:2, size:'ใหญ่', percent:15, start:'2026-08-15', end:'2027-01-15', active:true, createdAt:'2026-08-20'},
+  {name:'โปรลูกค้าเก่า', type:2, size:'ใหญ่', percent:15, start:'2026-09-01', end:'2026-10-31', active:true, createdAt:'2026-09-05'},
+  {name:'โปรทั่วไปใหญ่', type:1, size:'ใหญ่', percent:8, start:'2026-09-01', end:'2026-12-31', active:true, createdAt:'2026-08-01'},
+];
+const today = '2026-09-12';
+function bestPromo(type, size){
+  const matches = promos.filter(p=>p.active && p.type===type && p.size===size && p.start<=today && today<=p.end);
+  if(!matches.length) return null;
+  matches.sort((a,b)=> b.percent-a.percent || (b.createdAt>a.createdAt?1:-1));
+  return matches[0];
+}
+
+// ---- mock jobs eligible for Type 2 (ไม่อนุมัติซ่อม, ยังไม่ทำ trade-in) ----
+let notApprovedJobs = [
+  {id:'JB-2609-08085', customer:'อนุชา วงศ์ษา', phone:'082-567-1234', product:'สว่านไฟฟ้า', brand:'Bosch', size:'ใหญ่', used:false},
+  {id:'JB-2609-07990', customer:'พรทิพย์ แสงทอง', phone:'089-112-3344', product:'พัดลม', brand:'Philips', size:'เล็ก', used:false},
+];
+
+let tiCounter = 4200;
+let history = [
+  {ti:'TI-2609-04180', type:1, customer:'สมหญิง มีสุข', phone:'081-999-1122', product:'เตารีด (Philips)', percent:8, status:'ยังไม่ใช้', date:'2026-09-10'},
+  {ti:'TI-2609-04165', type:2, customer:'วีระ ชัยยศ', phone:'086-223-4455', product:'สว่านไฟฟ้า (Makita)', percent:15, status:'ใช้แล้ว', date:'2026-09-08'},
+];
+
+let selectedType = null;
+let selectedJob = null;
+
+function renderKpis(){
+  const total = history.length;
+  const used = history.filter(h=>h.status==='ใช้แล้ว').length;
+  const rate = total ? Math.round(used/total*100) : 0;
+  document.getElementById('kpi-grid').innerHTML = `
+    <div class="kpi-card"><div class="num">${total}</div><div class="lbl">คูปองที่ออกทั้งหมด</div></div>
+    <div class="kpi-card"><div class="num">${used}</div><div class="lbl">ใช้แล้ว</div></div>
+    <div class="kpi-card"><div class="num">${rate}%</div><div class="lbl">อัตราการใช้คูปอง (Conversion)</div></div>
+  `;
+}
+
+function selectType(t){
+  selectedType = t;
+  selectedJob = null;
+  document.getElementById('type1-card').classList.toggle('active', t===1);
+  document.getElementById('type2-card').classList.toggle('active', t===2);
+  renderForm();
+}
+
+function renderForm(){
+  const el = document.getElementById('form-area');
+  if(!selectedType){ el.innerHTML=''; return; }
+  if(selectedType===1){
+    el.innerHTML = `
+    <div class="card">
+      <h3>สร้าง Trade-in ประเภท 1 — หน้างาน</h3>
+      <p class="hint">ไม่ผูกกับใบแจ้งซ่อม กรอกข้อมูลลูกค้าและสินค้าที่นำมาโดยตรง</p>
+      <div class="grid2">
+        <div class="field"><label>ชื่อลูกค้า</label><input id="t1-name"></div>
+        <div class="field"><label>เบอร์โทร</label><input id="t1-phone" placeholder="08x-xxx-xxxx"></div>
+      </div>
+      <div class="grid3" style="margin-top:12px">
+        <div class="field"><label>SKU (ถ้ามี ไม่บังคับ)</label><input id="t1-sku"></div>
+        <div class="field"><label>ชื่อสินค้า</label><input id="t1-product"></div>
+        <div class="field"><label>แบรนด์</label><input id="t1-brand"></div>
+      </div>
+      <div class="grid2" style="margin-top:12px">
+        <div class="field"><label>อาการเสีย</label><input id="t1-defect"></div>
+        <div class="field"><label>ประเภทสินค้า (ขนาด)</label><select id="t1-size" onchange="updatePromoPreview(1)"><option value="เล็ก">เล็ก</option><option value="ใหญ่">ใหญ่</option></select></div>
+      </div>
+      <p class="hint" style="margin:14px 0 4px">ภาพถ่ายสินค้า</p>
+      <div class="photo-grid">
+        <div class="photo-box">📷 ภาพที่ 1</div><div class="photo-box">📷 ภาพที่ 2</div>
+        <div class="photo-box">📷 ภาพที่ 3</div><div class="photo-box">📷 ภาพที่ 4</div>
+      </div>
+      <div class="note promo" id="t1-promo-preview"></div>
+      <button class="btn btn-primary" style="width:100%;margin-top:16px" onclick="createTradein(1)">สร้างคูปอง ส่งเข้า Wallet ลูกค้า</button>
+    </div>`;
+    updatePromoPreview(1);
+  } else {
+    el.innerHTML = `
+    <div class="card">
+      <h3>สร้าง Trade-in ประเภท 2 — หลังบ้าน</h3>
+      <p class="hint">เลือก Job ที่ลูกค้าไม่อนุมัติซ่อม ระบบจะดึงข้อมูลลูกค้า/สินค้ามาให้อัตโนมัติ</p>
+      <div id="t2-job-list"></div>
+      <div id="t2-detail" style="display:none;margin-top:14px">
+        <div class="grid2">
+          <div class="field"><label>ลูกค้า</label><input id="t2-name" readonly></div>
+          <div class="field"><label>เบอร์โทร</label><input id="t2-phone" readonly></div>
+        </div>
+        <div class="grid3" style="margin-top:12px">
+          <div class="field"><label>สินค้า</label><input id="t2-product" readonly></div>
+          <div class="field"><label>แบรนด์</label><input id="t2-brand" readonly></div>
+          <div class="field"><label>ประเภทสินค้า (ขนาด)</label><input id="t2-size" readonly></div>
+        </div>
+        <div class="note promo" id="t2-promo-preview"></div>
+        <button class="btn btn-primary" style="width:100%;margin-top:16px" onclick="createTradein(2)">สร้างคูปอง ส่งเข้า Wallet ลูกค้า</button>
+      </div>
+    </div>`;
+    renderJobPicker();
+  }
+}
+
+function renderJobPicker(){
+  const el = document.getElementById('t2-job-list');
+  const avail = notApprovedJobs.filter(j=>!j.used);
+  if(!avail.length){ el.innerHTML = '<div class="empty">ไม่มีงานที่ไม่อนุมัติซ่อมรอทำ Trade-in</div>'; return; }
+  el.innerHTML = avail.map(j=>`
+    <div class="job-pick ${selectedJob && selectedJob.id===j.id?'selected':''}" onclick="pickJob('${j.id}')">
+      <b>${j.id}</b> — ${j.customer} (${j.phone})<br>
+      <span style="font-size:12.5px;color:var(--text-2)">${j.product} (${j.brand}) — ${j.size}</span>
+    </div>`).join('');
+}
+function pickJob(id){
+  selectedJob = notApprovedJobs.find(x=>x.id===id);
+  renderJobPicker();
+  document.getElementById('t2-detail').style.display = 'block';
+  document.getElementById('t2-name').value = selectedJob.customer;
+  document.getElementById('t2-phone').value = selectedJob.phone;
+  document.getElementById('t2-product').value = selectedJob.product;
+  document.getElementById('t2-brand').value = selectedJob.brand;
+  document.getElementById('t2-size').value = selectedJob.size;
+  updatePromoPreview(2);
+}
+function updatePromoPreview(type){
+  const size = type===1 ? document.getElementById('t1-size').value : (selectedJob ? selectedJob.size : 'เล็ก');
+  const promo = bestPromo(type, size);
+  const box = document.getElementById(type===1?'t1-promo-preview':'t2-promo-preview');
+  box.textContent = promo
+    ? `ระบบเลือกโปร "${promo.name}" ให้อัตโนมัติ — ส่วนลด ${promo.percent}% (ประเภท ${type}, สินค้า${size})`
+    : `ไม่มีโปรโมชั่นที่ Active ตรงกับเงื่อนไขนี้ในขณะนี้ (ประเภท ${type}, สินค้า${size})`;
+}
+function createTradein(type){
+  let customer, phone, product, size;
+  if(type===1){
+    customer = document.getElementById('t1-name').value;
+    phone = document.getElementById('t1-phone').value;
+    product = document.getElementById('t1-product').value + (document.getElementById('t1-brand').value?` (${document.getElementById('t1-brand').value})`:'');
+    size = document.getElementById('t1-size').value;
+    if(!customer || !phone){ alert('กรุณากรอกชื่อและเบอร์โทรลูกค้า'); return; }
+  } else {
+    if(!selectedJob){ alert('กรุณาเลือก Job ก่อน'); return; }
+    customer = selectedJob.customer; phone = selectedJob.phone;
+    product = selectedJob.product + ` (${selectedJob.brand})`;
+    size = selectedJob.size;
+  }
+  const promo = bestPromo(type, size);
+  const percent = promo ? promo.percent : 0;
+  tiCounter++;
+  const tiId = 'TI-2609-'+tiCounter;
+  history.unshift({ti:tiId, type, customer, phone, product, percent, status:'ยังไม่ใช้', date:today});
+  if(type===2){ selectedJob.used = true; selectedJob = null; }
+  alert(`สร้างคูปอง ${tiId} สำเร็จ — Gen ส่วนลด ${percent}% เข้า Wallet แอปไทวัสดุ ตามเบอร์ ${phone} เรียบร้อย`);
+  selectedType = null;
+  document.getElementById('type1-card').classList.remove('active');
+  document.getElementById('type2-card').classList.remove('active');
+  document.getElementById('form-area').innerHTML = '';
+  renderAll();
+}
+
+function renderHistory(){
+  const q = document.getElementById('history-search').value.trim().toLowerCase();
+  const filtered = history.filter(h => !q || h.ti.toLowerCase().includes(q) || h.customer.toLowerCase().includes(q) || h.phone.includes(q));
+  document.getElementById('history-empty').style.display = filtered.length ? 'none' : 'block';
+  document.getElementById('history-rows').innerHTML = filtered.map(h=>`
+    <tr>
+      <td><b>${h.ti}</b></td>
+      <td><span class="badge b-blue">ประเภท ${h.type}</span></td>
+      <td>${h.customer}</td><td>${h.phone}</td><td>${h.product}</td>
+      <td>${h.percent}%</td>
+      <td><span class="badge ${h.status==='ใช้แล้ว'?'b-green':'b-gray'}">${h.status}</span></td>
+      <td>${h.date}</td>
+    </tr>`).join('');
+}
+
+function renderAll(){ renderKpis(); renderHistory(); }
+renderAll();
+</script>
+</body>
+</html>

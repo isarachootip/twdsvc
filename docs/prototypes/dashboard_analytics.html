@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard Overview — Thaiwasadu Service Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<style>
+:root{
+  --red:#C8102E; --red-dark:#9C0C22; --red-tint:#FBE7E9;
+  --bg:#FAF7F2; --surface:#FFFFFF; --surface-2:#F3EEE6;
+  --border:#E4DED2; --border-strong:#D2C9B8;
+  --text:#2B2723; --text-2:#6B6459; --text-mute:#9A9384;
+  --green:#1D9E75; --green-tint:#E1F5EE;
+  --amber:#BA7517; --amber-tint:#FAEEDA;
+  --blue:#185FA5; --blue-tint:#E6F1FB;
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 28px;position:sticky;top:0;z-index:50;}
+.toprow{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;}
+.page-title{font-size:20px;font-weight:600;margin:0 0 2px;}
+.page-sub{font-size:12.5px;color:var(--text-2);margin:0;}
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+select,input{font-family:inherit;font-size:12.5px;padding:7px 10px;border:1px solid var(--border-strong);border-radius:6px;background:var(--surface);color:var(--text);}
+.period-toggle{display:flex;border:1px solid var(--border-strong);border-radius:8px;overflow:hidden;}
+.period-toggle button{font-family:inherit;font-size:12.5px;padding:7px 14px;border:none;background:var(--surface);color:var(--text-2);cursor:pointer;}
+.period-toggle button.active{background:var(--red);color:#fff;}
+main{max-width:1360px;margin:0 auto;padding:22px 24px;}
+
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px;}
+.kpi-card{border-radius:14px;padding:16px 18px;position:relative;overflow:hidden;}
+.kpi-card.c1{background:linear-gradient(180deg,#FDF0F1,#FBE7E9);}
+.kpi-card.c2{background:linear-gradient(180deg,#FDF3E3,#FAEEDA);}
+.kpi-card.c3{background:linear-gradient(180deg,#FDEDED,#FBDADA);}
+.kpi-card.c4{background:linear-gradient(180deg,#EAF6F0,#E1F5EE);}
+.kpi-top{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text-2);font-weight:500;margin-bottom:10px;}
+.kpi-icon{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff;}
+.kpi-num{font-size:26px;font-weight:700;}
+.kpi-trend{font-size:11px;margin-top:4px;}
+.kpi-card canvas{margin-top:8px;height:36px !important;}
+
+.grid2{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;margin-bottom:16px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:16px;}
+.card h3{font-size:13.5px;font-weight:600;margin:0 0 2px;display:flex;justify-content:space-between;align-items:center;}
+.card p.hint{font-size:11.5px;color:var(--text-mute);margin:0 0 14px;}
+.link-sm{font-size:11.5px;color:var(--blue);cursor:pointer;font-weight:500;}
+
+.pipeline{display:flex;align-items:flex-start;gap:6px;}
+.pstep{flex:1;text-align:center;position:relative;}
+.pstep .dot{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 8px;}
+.pstep .n{font-size:20px;font-weight:700;}
+.pstep .lbl{font-size:11px;color:var(--text-2);margin-top:2px;}
+.pstep .pct{font-size:10.5px;color:var(--text-mute);}
+.pline{position:absolute;top:26px;left:50%;width:100%;height:2px;background:var(--border-strong);z-index:0;}
+.pipeline-total{margin-top:14px;background:var(--surface-2);border-radius:8px;height:8px;overflow:hidden;display:flex;}
+
+table{width:100%;border-collapse:collapse;font-size:12.5px;}
+th{text-align:left;color:var(--text-2);font-weight:500;font-size:11px;padding:8px 10px;border-bottom:1px solid var(--border-strong);white-space:nowrap;cursor:pointer;user-select:none;}
+th.nosort{cursor:default;}
+th .arrow{font-size:9px;color:var(--text-mute);margin-left:3px;}
+td{padding:8px 10px;border-bottom:1px solid var(--border);}
+tr:last-child td{border-bottom:none;}
+.badge{font-size:10.5px;padding:2px 8px;border-radius:20px;font-weight:500;white-space:nowrap;}
+.b-red{background:var(--red-tint);color:var(--red-dark);}
+.b-amber{background:var(--amber-tint);color:var(--amber);}
+.b-green{background:var(--green-tint);color:var(--green);}
+.b-gray{background:var(--surface-2);color:var(--text-2);}
+.rank{width:20px;height:20px;border-radius:50%;background:var(--surface-2);display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;}
+.bar-cell{display:flex;align-items:center;gap:6px;}
+.bar-track{flex:1;height:6px;background:var(--surface-2);border-radius:4px;overflow:hidden;}
+.bar-fill{height:100%;background:var(--green);}
+
+.grid3{display:grid;grid-template-columns:1fr 1.3fr 1fr;gap:16px;margin-bottom:16px;}
+.donut-wrap{display:flex;align-items:center;gap:16px;}
+.donut-legend{font-size:12px;}
+.legend-row{display:flex;align-items:center;gap:6px;margin-bottom:8px;}
+.legend-dot{width:9px;height:9px;border-radius:50%;}
+.legend-row .amt{font-weight:600;margin-left:auto;padding-left:14px;}
+
+.quick-actions{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
+.qa-btn{background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;padding:14px 10px;text-align:center;font-size:12px;cursor:pointer;color:var(--text);}
+.qa-btn:hover{background:var(--surface-2);}
+.qa-btn .ic{font-size:18px;margin-bottom:4px;}
+
+.empty{padding:24px;text-align:center;color:var(--text-mute);font-size:12.5px;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="toprow">
+    <div>
+      <p class="page-title">Dashboard Overview</p>
+      <p class="page-sub">ภาพรวมการดำเนินงานศูนย์บริการ — อัปเดตล่าสุด <span id="updated-at"></span></p>
+    </div>
+    <div class="controls">
+      <select id="branch-filter"><option>ทุกสาขา (All Branches)</option><option>บางนา</option><option>รังสิต</option><option>แจ้งวัฒนะ</option><option>พระราม 2</option><option>เชียงใหม่</option></select>
+      <div class="period-toggle" id="period-toggle">
+        <button class="active" data-p="weekly" onclick="setPeriod('weekly')">รายสัปดาห์</button>
+        <button data-p="monthly" onclick="setPeriod('monthly')">รายเดือน</button>
+        <button data-p="yearly" onclick="setPeriod('yearly')">รายปี</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<main>
+  <div class="kpi-grid" id="kpi-grid"></div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>Operational Pipeline <span style="font-size:11.5px;font-weight:400;color:var(--text-mute)" id="pipeline-total-lbl"></span></h3>
+      <p class="hint">สถานะงานซ่อมทั้งหมดในระบบ</p>
+      <div class="pipeline" id="pipeline"></div>
+      <div class="pipeline-total" id="pipeline-bar"></div>
+    </div>
+    <div class="card">
+      <h3>รายได้ / ค่าใช้จ่าย / กำไรขาดทุน</h3>
+      <p class="hint" id="finance-hint"></p>
+      <canvas id="financeChart" height="160"></canvas>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>SLA Violation List <span class="link-sm">ดูทั้งหมด</span></h3>
+      <p class="hint">งานเกิน SLA</p>
+      <table><tr><th class="nosort">Job ID</th><th class="nosort">ลูกค้า</th><th class="nosort">สาขา / VD</th><th class="nosort">เกินกำหนด</th></tr>
+        <tbody id="sla-rows"></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h3>Stock Alert (อะไหล่ขาดสต็อก) <span class="link-sm">ดูทั้งหมด</span></h3>
+      <p class="hint">รายการอะไหล่ที่เหลือน้อยหรือหมด</p>
+      <table><tr><th class="nosort">รายการอะไหล่</th><th class="nosort">คงเหลือ</th><th class="nosort">สถานะ</th></tr>
+        <tbody id="stock-rows"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="grid3">
+    <div class="card">
+      <h3>Gross Profit Breakdown</h3>
+      <p class="hint">สัดส่วนกำไรขั้นต้น</p>
+      <div class="donut-wrap">
+        <canvas id="donutChart" width="120" height="120" style="width:120px;height:120px"></canvas>
+        <div class="donut-legend" id="donut-legend"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Job Trend <span style="font-size:11.5px;font-weight:400;color:var(--text-mute)" id="trend-hint"></span></h3>
+      <canvas id="trendChart" height="130"></canvas>
+    </div>
+    <div class="card">
+      <h3>VD Performance สรุป</h3>
+      <p class="hint">เฉลี่ยทั้งหมด</p>
+      <div id="vd-summary"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>VD Performance Ranking <span class="link-sm" onclick="toggleSort('rank','score')">จัดอันดับตามคะแนนประเมิน</span></h3>
+    <p class="hint">จำนวนงาน, ผลประเมิน, อัตราอยู่ใน SLA และค่าเฉลี่ยที่เกิน (ถ้ามี)</p>
+    <table>
+      <tr>${''}</tr>
+      <thead><tr id="vd-thead"></tr></thead>
+      <tbody id="vd-rows"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Quick Actions</h3>
+    <div class="quick-actions">
+      <div class="qa-btn" onclick="location.href='cs.html'"><div class="ic">📥</div>รับเครื่องใหม่</div>
+      <div class="qa-btn" onclick="location.href='dashboard.html'"><div class="ic">🔍</div>ค้นหางานซ่อม</div>
+      <div class="qa-btn" onclick="location.href='vd.html'"><div class="ic">🧾</div>พิมพ์ใบเสนอราคา</div>
+      <div class="qa-btn" onclick="location.href='report_vd_payment.html'"><div class="ic">💳</div>รายงานจ่าย VD</div>
+      <div class="qa-btn" onclick="alert('รายงานประจำวัน (demo)')"><div class="ic">📊</div>รายงานประจำวัน</div>
+    </div>
+  </div>
+</main>
+
+<script>
+document.getElementById('updated-at').textContent = new Date().toLocaleString('th-TH');
+
+/* ---- mock datasets per period ---- */
+const datasets = {
+  weekly: {
+    label:'7 วันล่าสุด', financeLabels:['จ.','อ.','พ.','พฤ.','ศ.','ส.','อา.'],
+    revenue:[42000,38500,51000,47000,55000,61000,58000],
+    cost:[27000,25000,32000,30000,34000,37000,35000],
+    trendIn:[18,22,25,28,32,35,24], trendDone:[15,18,20,23,25,28,21],
+    kpi:{active:24, pending:8, slaCritical:4, profit:32500, activeTrend:'+14% จากเมื่อวาน', profitTrend:'+18% จากเมื่อวาน'},
+  },
+  monthly: {
+    label:'12 เดือนล่าสุด', financeLabels:['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.'],
+    revenue:[820000,795000,910000,880000,960000,1020000,990000,1050000,1120000],
+    cost:[540000,520000,600000,580000,630000,660000,650000,680000,710000],
+    trendIn:[420,410,460,440,480,510,495,520,540], trendDone:[400,395,440,420,460,490,470,505,520],
+    kpi:{active:310, pending:64, slaCritical:22, profit:410000, activeTrend:'+6% จากเดือนก่อน', profitTrend:'+9% จากเดือนก่อน'},
+  },
+  yearly: {
+    label:'3 ปีล่าสุด', financeLabels:['2567','2568','2569'],
+    revenue:[9800000,11200000,12600000],
+    cost:[6400000,7300000,8100000],
+    trendIn:[4800,5400,5900], trendDone:[4650,5250,5760],
+    kpi:{active:5900, pending:410, slaCritical:180, profit:4500000, activeTrend:'+13% จากปีก่อน', profitTrend:'+21% จากปีก่อน'},
+  }
+};
+let period = 'weekly';
+let financeChart, trendChart, donutChart;
+
+function setPeriod(p){
+  period = p;
+  document.querySelectorAll('#period-toggle button').forEach(b=>b.classList.toggle('active', b.dataset.p===p));
+  renderAll();
+}
+
+function fmtBaht(n){ return '฿'+n.toLocaleString(); }
+
+function renderKpis(){
+  const d = datasets[period].kpi;
+  const cards = [
+    {cls:'c1', icon:'📋', iconBg:'#C8102E', label:'ACTIVE JOBS', sub:'งานที่เข้ามา', num:d.active+' งาน', trend:d.activeTrend, trendColor:'var(--green)'},
+    {cls:'c2', icon:'🧾', iconBg:'#BA7517', label:'PENDING APPROVAL', sub:'รอลูกค้าอนุมัติ (LON)', num:d.pending+' งาน', trend:'⚠ ต้องติดตาม', trendColor:'var(--amber)'},
+    {cls:'c3', icon:'⚠️', iconBg:'#C8102E', label:'SLA CRITICAL', sub:'งานเกินกำหนด SLA', num:d.slaCritical+' งาน', trend:'⚠ เร่งดำเนินการ', trendColor:'var(--red-dark)'},
+    {cls:'c4', icon:'📈', iconBg:'#1D9E75', label:'GROSS PROFIT', sub:'กำไรขั้นต้นช่วงนี้', num:fmtBaht(d.profit), trend:'▲ '+d.profitTrend, trendColor:'var(--green)'},
+  ];
+  document.getElementById('kpi-grid').innerHTML = cards.map((c,i)=>`
+    <div class="kpi-card ${c.cls}">
+      <div class="kpi-top"><span class="kpi-icon" style="background:${c.iconBg}">${c.icon}</span>${c.label}<br></div>
+      <div class="kpi-num">${c.num}</div>
+      <div class="kpi-trend" style="color:${c.trendColor}">${c.trend}</div>
+      <canvas id="spark-${i}"></canvas>
+    </div>`).join('');
+  // sparklines
+  const sparkData = [datasets[period].trendIn, datasets[period].trendIn.map(x=>x*0.3), datasets[period].trendIn.map(x=>x*0.15), datasets[period].revenue.map(x=>x/1000)];
+  cards.forEach((c,i)=>{
+    const ctx = document.getElementById('spark-'+i);
+    new Chart(ctx, {type:'line', data:{labels:sparkData[i].map((_,j)=>j), datasets:[{data:sparkData[i], borderColor:c.iconBg, borderWidth:1.5, pointRadius:0, tension:.4, fill:false}]},
+      options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false},tooltip:{enabled:false}}, scales:{x:{display:false},y:{display:false}}}});
+  });
+}
+
+function renderPipeline(){
+  const steps = [
+    {label:'INTAKE', sub:'รับเครื่อง', n:7, color:'#C8102E', bg:'#FBE7E9'},
+    {label:'WAITING APPROVAL', sub:'รออนุมัติราคา', n:8, color:'#BA7517', bg:'#FAEEDA'},
+    {label:'REPAIR IN-PROGRESS', sub:'กำลังซ่อม', n:10, color:'#7F77DD', bg:'#EEEDFE'},
+    {label:'QA & LOGISTICS', sub:'รอส่งกลับ', n:4, color:'#185FA5', bg:'#E6F1FB'},
+    {label:'READY FOR PICKUP', sub:'พร้อมรับเครื่อง', n:3, color:'#1D9E75', bg:'#E1F5EE'},
+  ];
+  const total = steps.reduce((a,s)=>a+s.n,0);
+  document.getElementById('pipeline-total-lbl').textContent = 'รวมทั้งหมด '+total+' งาน';
+  document.getElementById('pipeline').innerHTML = steps.map(s=>`
+    <div class="pstep">
+      <div class="dot" style="background:${s.bg};color:${s.color}">${s.n}</div>
+      <div class="lbl">${s.label}</div>
+      <div class="pct" style="color:${s.color}">${s.sub} · ${Math.round(s.n/total*100)}%</div>
+    </div>`).join('');
+  document.getElementById('pipeline-bar').innerHTML = steps.map(s=>`<div style="width:${s.n/total*100}%;background:${s.color}"></div>`).join('');
+}
+
+function renderFinanceChart(){
+  const d = datasets[period];
+  document.getElementById('finance-hint').textContent = d.label;
+  const profit = d.revenue.map((r,i)=>r-d.cost[i]);
+  if(financeChart) financeChart.destroy();
+  financeChart = new Chart(document.getElementById('financeChart'), {
+    type:'bar',
+    data:{ labels:d.financeLabels, datasets:[
+      {label:'รายได้', data:d.revenue, backgroundColor:'#378ADD'},
+      {label:'ค่าใช้จ่าย', data:d.cost, backgroundColor:'#E24B4A'},
+      {label:'กำไรขาดทุน', data:profit, type:'line', borderColor:'#1D9E75', backgroundColor:'#1D9E75', tension:.35, yAxisID:'y'}
+    ]},
+    options:{responsive:true, plugins:{legend:{position:'bottom', labels:{boxWidth:10, font:{size:11}}}},
+      scales:{y:{ticks:{callback:v=>(v/1000)+'K'}}}}
+  });
+}
+
+function renderTrendChart(){
+  const d = datasets[period];
+  document.getElementById('trend-hint').textContent = 'งานที่เข้ามา vs เสร็จสิ้น';
+  if(trendChart) trendChart.destroy();
+  trendChart = new Chart(document.getElementById('trendChart'), {
+    type:'line',
+    data:{ labels:d.financeLabels, datasets:[
+      {label:'งานที่เข้ามา', data:d.trendIn, borderColor:'#C8102E', backgroundColor:'#C8102E', tension:.35, pointRadius:3},
+      {label:'งานที่เสร็จสิ้น', data:d.trendDone, borderColor:'#1D9E75', backgroundColor:'#1D9E75', tension:.35, pointRadius:3}
+    ]},
+    options:{responsive:true, plugins:{legend:{position:'bottom', labels:{boxWidth:10, font:{size:11}}}}}
+  });
+}
+
+function renderDonut(){
+  const d = datasets[period].kpi;
+  const labor = Math.round(d.profit*0.65), parts = d.profit-labor;
+  if(donutChart) donutChart.destroy();
+  donutChart = new Chart(document.getElementById('donutChart'), {
+    type:'doughnut',
+    data:{ labels:['ค่าแรง (Labor)','ค่าอะไหล่ (Parts)'], datasets:[{data:[labor,parts], backgroundColor:['#378ADD','#1D9E75'], borderWidth:0}] },
+    options:{responsive:false, cutout:'68%', plugins:{legend:{display:false}}}
+  });
+  document.getElementById('donut-legend').innerHTML = `
+    <div class="legend-row"><span class="legend-dot" style="background:#378ADD"></span>ค่าแรง (Labor) 65%<span class="amt">${fmtBaht(labor)}</span></div>
+    <div class="legend-row"><span class="legend-dot" style="background:#1D9E75"></span>ค่าอะไหล่ (Parts) 35%<span class="amt">${fmtBaht(parts)}</span></div>
+    <div style="font-size:11px;color:var(--text-mute);margin-top:6px">กำไรขั้นต้นรวม ${fmtBaht(d.profit)}</div>`;
+}
+
+function renderSlaList(){
+  const rows = [
+    {id:'R2405-0156', customer:'คุณสมชาย ใจดี', place:'ไทวัสดุ บางนา', over:'2 วัน 6 ชม.'},
+    {id:'R2405-0132', customer:'คุณวรากรณ์ แซ่ลิ้ม', place:'ไทวัสดุ รังสิตคลอง 4', over:'1 วัน 8 ชม.'},
+    {id:'R2405-0128', customer:'คุณวิชัย มั่นคง', place:'ไทวัสดุ เชียงใหม่', over:'1 วัน 3 ชม.'},
+    {id:'R2405-0114', customer:'คุณกิตติพงษ์ ศรีวิบูลย์', place:'ไทวัสดุ อุดรธานี', over:'9 ชม.'},
+  ];
+  document.getElementById('sla-rows').innerHTML = rows.map(r=>`
+    <tr><td><b style="color:var(--red-dark)">${r.id}</b></td><td>${r.customer}</td><td>${r.place}</td>
+    <td><span class="badge b-red">${r.over}</span></td></tr>`).join('');
+}
+function renderStockAlert(){
+  const rows = [
+    {name:'Main Board (TV 55")', qty:0, status:'ขาดสต็อก'},
+    {name:'Power Supply (LG 65")', qty:2, status:'ใกล้หมด'},
+    {name:'LED Backlight Strip', qty:1, status:'ใกล้หมด'},
+    {name:'Compressor (ตู้เย็น)', qty:0, status:'ขาดสต็อก'},
+    {name:'แผงวงจรเครื่องซักผ้า', qty:3, status:'ใกล้หมด'},
+  ];
+  document.getElementById('stock-rows').innerHTML = rows.map(r=>`
+    <tr><td>${r.name}</td><td>${r.qty} ชิ้น</td>
+    <td><span class="badge ${r.status==='ขาดสต็อก'?'b-red':'b-amber'}">${r.status}</span></td></tr>`).join('');
+}
+
+const vdData = [
+  {vd:'VD-0088 บ.ช่างเจริญ', jobs:42, score:98.5, sla:97.6, overAvg:1.2},
+  {vd:'VD-0091 ศูนย์ซ่อมไฟฟ้ารุ่งเรือง', jobs:38, score:95.2, sla:95.1, overAvg:1.8},
+  {vd:'VD-0102 ช่างเทค เซอร์วิส', jobs:35, score:92.3, sla:93.2, overAvg:2.1},
+  {vd:'VD-0075 บ.อีเลคโทรฟิกซ์', jobs:31, score:89.1, sla:91.0, overAvg:2.7},
+  {vd:'VD-0060 ศูนย์ซ่อมกลาง', jobs:28, score:87.2, sla:89.6, overAvg:3.0},
+  {vd:'VD-0044 ไทยเทคนิคัล', jobs:24, score:84.0, sla:87.4, overAvg:3.4},
+];
+let vdSort = {key:'score', dir:-1};
+function toggleSort(table, key){
+  if(vdSort.key===key) vdSort.dir*=-1; else { vdSort.key=key; vdSort.dir=-1; }
+  renderVdTable();
+}
+function renderVdSummary(){
+  const avgScore = (vdData.reduce((a,v)=>a+v.score,0)/vdData.length).toFixed(1);
+  const avgSla = (vdData.reduce((a,v)=>a+v.sla,0)/vdData.length).toFixed(1);
+  const totalJobs = vdData.reduce((a,v)=>a+v.jobs,0);
+  document.getElementById('vd-summary').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:10px;font-size:12.5px">
+      <div style="display:flex;justify-content:space-between"><span style="color:var(--text-2)">คะแนนประเมินเฉลี่ย</span><b>${avgScore}</b></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:var(--text-2)">อยู่ใน SLA เฉลี่ย</span><b style="color:var(--green)">${avgSla}%</b></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:var(--text-2)">งานทั้งหมด (VD ที่ Active)</span><b>${totalJobs} งาน</b></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:var(--text-2)">จำนวน VD ที่ Active</span><b>${vdData.length} ศูนย์</b></div>
+    </div>`;
+}
+function renderVdTable(){
+  const cols = [
+    {key:'vd', label:'VD'}, {key:'jobs', label:'จำนวนงาน'}, {key:'score', label:'On-time %'},
+    {key:'sla', label:'อยู่ใน SLA %'}, {key:'overAvg', label:'เกิน SLA เฉลี่ย (วัน)'}
+  ];
+  document.getElementById('vd-thead').innerHTML = '<th class="nosort">#</th>' + cols.map(c=>{
+    const arrow = vdSort.key===c.key ? (vdSort.dir===1?'▲':'▼') : '';
+    return `<th onclick="toggleSort('vd','${c.key}')">${c.label}<span class="arrow">${arrow}</span></th>`;
+  }).join('');
+  const sorted = [...vdData].sort((a,b)=> (a[vdSort.key]-b[vdSort.key])*vdSort.dir );
+  document.getElementById('vd-rows').innerHTML = sorted.map((v,i)=>`
+    <tr><td><span class="rank">${i+1}</span></td><td>${v.vd}</td><td>${v.jobs}</td><td>${v.score}%</td>
+    <td><div class="bar-cell"><div class="bar-track"><div class="bar-fill" style="width:${v.sla}%;background:${v.sla<90?'#BA7517':'#1D9E75'}"></div></div><span>${v.sla}%</span></div></td>
+    <td>${v.overAvg>0?'<span class="badge b-amber">+'+v.overAvg+' วัน</span>':'<span class="badge b-green">ไม่เกิน</span>'}</td></tr>`).join('');
+}
+
+function renderAll(){
+  renderKpis(); renderPipeline(); renderFinanceChart(); renderTrendChart(); renderDonut();
+  renderSlaList(); renderStockAlert(); renderVdSummary(); renderVdTable();
+}
+renderAll();
+</script>
+</body>
+</html>
