@@ -7,6 +7,7 @@ export * from './rules/routing';
 export * from './rules/sla';
 export * from './rules/promo';
 export * from './rules/payout';
+export * from './rules/rbac';
 
 // Schemas
 export * from './schemas/money';
@@ -16,6 +17,7 @@ export * from './schemas/routing';
 export * from './schemas/sla';
 export * from './schemas/promo';
 export * from './schemas/payout';
+export * from './schemas/auth';
 
 import { z } from 'zod';
 

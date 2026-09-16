@@ -401,17 +401,20 @@ model ThaiAddress {
 
 // ───────────── Users ─────────────
 model User {
-  id             String        @id @default(cuid())
-  username       String        @unique
-  passwordHash   String
-  displayName    String
-  role           Role
-  siteId         String? // CS/GR/S2 = สาขา, DC = คลัง
-  site           Site?         @relation(fields: [siteId], references: [id])
-  vendorCenterId String? // VD
-  vendorCenter   VendorCenter? @relation(fields: [vendorCenterId], references: [id])
-  active         Boolean       @default(true)
-  createdAt      DateTime      @default(now())
+  id                  String        @id @default(cuid())
+  username            String        @unique
+  passwordHash        String
+  displayName         String
+  role                Role
+  siteId              String? // CS/GR/S2 = สาขา, DC = คลัง
+  site                Site?         @relation(fields: [siteId], references: [id])
+  vendorCenterId      String? // VD
+  vendorCenter        VendorCenter? @relation(fields: [vendorCenterId], references: [id])
+  active              Boolean       @default(true)
+  failedLoginAttempts Int           @default(0)
+  lockedUntil         DateTime?
+  refreshTokenHash    String?
+  createdAt           DateTime      @default(now())
 }
 
 // ───────────── Job core ─────────────
