@@ -12,7 +12,7 @@
     "db:generate": "pnpm --filter @svcm/db generate",
     "db:migrate": "pnpm --filter @svcm/db migrate",
     "db:studio": "pnpm --filter @svcm/db studio",
-    "db:seed": "echo \"db:seed placeholder (Step 03)\"",
+    "db:seed": "pnpm --filter @svcm/db seed",
     "e2e": "echo \"e2e placeholder (Step 27)\""
   },
   "devDependencies": {
