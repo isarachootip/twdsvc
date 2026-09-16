@@ -542,7 +542,10 @@ async function main() {
     { username: 'cs.bangna', displayName: 'CS สาขาบางนา', role: Role.CS, siteId: siteBangna.id, vendorCenterId: null },
     { username: 'gr.bangna', displayName: 'GR สาขาบางนา', role: Role.GR, siteId: siteBangna.id, vendorCenterId: null },
     { username: 'dc.bkk', displayName: 'DC คลังกรุงเทพ', role: Role.DC, siteId: siteDcBkk.id, vendorCenterId: null },
+    { username: 'dc.wangnoi', displayName: 'DC วังน้อย (อยุธยา)', role: Role.DC, siteId: siteDcBkk.id, vendorCenterId: null },
     { username: 'vd.0088', displayName: 'บ.ช่างเจริญ (ศูนย์บางนา)', role: Role.VD, siteId: null, vendorCenterId: vd0088Center1.id },
+    { username: 'vd.bosch', displayName: 'ศูนย์ซ่อม Bosch (บ.ช่างเจริญ)', role: Role.VD, siteId: null, vendorCenterId: vd0088Center1.id },
+    { username: 'vd.makita', displayName: 'ศูนย์ซ่อม Makita (บ.ช่างเจริญ)', role: Role.VD, siteId: null, vendorCenterId: vd0088Center1.id },
     { username: 's2.bangna', displayName: 'S2 สินค้าสต็อกบางนา', role: Role.S2, siteId: siteBangna.id, vendorCenterId: null },
   ];
 

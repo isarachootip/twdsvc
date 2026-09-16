@@ -10,7 +10,10 @@ async function bootstrap() {
 
   const webUrl = process.env.WEB_URL || 'http://localhost:3000';
   app.enableCors({
-    origin: [webUrl, 'http://localhost:3000', 'http://127.0.0.1:3000'],
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, server-to-server) or any origin
+      callback(null, true);
+    },
     credentials: true,
   });
 

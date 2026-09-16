@@ -1,5 +1,12 @@
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+const getApiBaseUrl = () => {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  if (typeof window !== 'undefined') {
+    return '/api/v1';
+  }
+  return process.env.INTERNAL_API_URL || 'http://127.0.0.1:4000/api/v1';
+};
 
 export async function fetchApi<T = any>(
   path: string,
@@ -19,7 +26,10 @@ export async function fetchApi<T = any>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const url = path.startsWith('http') ? path : `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
+  const baseUrl = getApiBaseUrl();
+  const url = path.startsWith('http')
+    ? path
+    : `${baseUrl}${path.startsWith('/') ? path : `/${path}`}`;
 
   const res = await fetch(url, {
     ...options,

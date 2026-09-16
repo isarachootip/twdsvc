@@ -1,10 +1,12 @@
 #!/bin/sh
 set -e
 
-# Run Prisma migrations if DATABASE_URL is available
+# Run Prisma migrations & seed if DATABASE_URL is available
 if [ -n "$DATABASE_URL" ]; then
   echo "📦 Applying database migrations..."
   npx prisma migrate deploy --schema=./packages/db/prisma/schema.prisma || true
+  echo "🌱 Seeding master data and demo accounts..."
+  pnpm --filter @svcm/db seed || true
 fi
 
 # Run target according to APP_TARGET environment variable
