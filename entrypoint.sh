@@ -26,10 +26,10 @@ elif [ "$APP_TARGET" = "web" ]; then
 else
   # Default: Start both API and Web
   echo "🚀 Starting both SVCM API (port 4000) and SVCM Web (port 3000)..."
-  node apps/api/dist/main.js &
+  PORT=4000 API_PORT=4000 node apps/api/dist/main.js &
   API_PID=$!
 
-  pnpm --filter @svcm/web start &
+  PORT=3000 pnpm --filter @svcm/web start &
   WEB_PID=$!
 
   trap "kill $API_PID $WEB_PID" INT TERM

@@ -17,9 +17,9 @@ async function bootstrap() {
     credentials: true,
   });
 
-  const port = process.env.PORT || 4000;
-  await app.listen(port);
-  console.log(`🚀 SVCM API is running on http://localhost:${port}/api/v1`);
+  const port = process.env.API_PORT || (process.env.APP_TARGET === 'api' ? process.env.PORT : null) || 4000;
+  await app.listen(port, '0.0.0.0');
+  console.log(`🚀 SVCM API is running on http://0.0.0.0:${port}/api/v1`);
 }
 
 bootstrap();

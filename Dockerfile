@@ -25,6 +25,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV API_PORT=4000
 
 # Copy all build artifacts and node_modules
 COPY --from=builder /app /app

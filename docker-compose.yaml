@@ -10,6 +10,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
+      - API_PORT=4000
       - DATABASE_URL=postgresql://svcm:svcm_password@postgres:5432/svcm_db?schema=public
       - JWT_SECRET=svcm_super_secret_jwt_key_thaiwatsadu_prod_2026
       - JWT_REFRESH_SECRET=svcm_super_secret_refresh_jwt_key_prod_2026
