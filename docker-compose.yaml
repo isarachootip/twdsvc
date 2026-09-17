@@ -1,0 +1,41 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: svcm-app
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=postgresql://svcm:svcm_password@postgres:5432/svcm_db?schema=public
+      - JWT_SECRET=svcm_super_secret_jwt_key_thaiwatsadu_prod_2026
+      - JWT_REFRESH_SECRET=svcm_super_secret_refresh_jwt_key_prod_2026
+      - INTERNAL_API_URL=http://127.0.0.1:4000
+      - WEB_URL=http://localhost:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: svcm-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: svcm
+      POSTGRES_PASSWORD: svcm_password
+      POSTGRES_DB: svcm_db
+    ports:
+      - '5432:5432'
+    volumes:
+      - svcm_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U svcm -d svcm_db']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  svcm_pgdata:
