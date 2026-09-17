@@ -1,6 +1,8 @@
 {
   "extends": "@svcm/config/tsconfig.nestjs.json",
   "compilerOptions": {
+    "baseUrl": "./",
+    "esModuleInterop": true,
     "rootDir": "./src",
     "outDir": "./dist",
     "paths": {

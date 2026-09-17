@@ -24,6 +24,7 @@ FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
+ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
 ENV API_PORT=4000
 
@@ -34,6 +35,5 @@ COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
 EXPOSE 3000
-EXPOSE 4000
 
 ENTRYPOINT ["/app/entrypoint.sh"]
