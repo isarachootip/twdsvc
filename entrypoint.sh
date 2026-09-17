@@ -3,8 +3,15 @@ set -e
 
 # Run Prisma migrations & seed if DATABASE_URL is available
 if [ -n "$DATABASE_URL" ]; then
-  echo "📦 Applying database migrations..."
-  npx prisma migrate deploy --schema=./packages/db/prisma/schema.prisma || true
+  echo "⏳ Waiting for PostgreSQL database to be ready..."
+  max_retries=30
+  count=0
+  until npx prisma migrate deploy --schema=./packages/db/prisma/schema.prisma || [ $count -ge $max_retries ]; do
+    echo "PostgreSQL not ready yet, retrying in 2s... ($((count+1))/$max_retries)"
+    sleep 2
+    count=$((count+1))
+  done
+
   echo "🌱 Seeding master data and demo accounts..."
   pnpm --filter @svcm/db seed || true
 fi
