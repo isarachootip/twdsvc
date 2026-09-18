@@ -1,0 +1,528 @@
+SOFTWARE REQUIREMENTS SPECIFICATION
+
+ระบบใบแจ้งซ่อม (Request Repair System)
+
+Full Specification for Rebuild & Clone — รหัสสถานะมาตรฐานใหม่ พร้อมส่วนขยาย Service Tier, Quotation Costing และ Payment
+
+Version 2.2  |  17 กรกฎาคม 2026 (2569)
+
+อ้างอิง: ระบบ UAT http://10.77.3.87:2001, BUSINESS_RULES.md, SRS v1.0/v2.0
+
+สารบัญ (Table of Contents)
+
+1. บทนำ (Introduction)
+
+1.1 วัตถุประสงค์ (Purpose)
+
+เอกสารฉบับนี้เป็นข้อกำหนดความต้องการของซอฟต์แวร์ (SRS) สำหรับการสร้างระบบใบแจ้งซ่อม (Request Repair System) ขึ้นใหม่ (rebuild/clone) จากระบบเดิมที่ใช้งานบน UAT พร้อมทั้ง (1) ปรับรหัสสถานะเป็นมาตรฐานใหม่ 3 หลักที่อ่านง่ายและไม่กระโดดข้ามไปมา และ (2) ขยายขีดความสามารถตามหลักการบริหารศูนย์ซ่อม ได้แก่ ประเภทการให้บริการ (Service Tier: Normal / Express / VIP), ค่าเปิดเครื่องตรวจเช็คตามประเภทสินค้า (Diagnostic Fee), การคิดใบเสนอราคาจากต้นทุนบวกกำไร (Cost-Plus Quotation) และการบันทึกการชำระเงิน (Payment Recording)
+
+1.2 ขอบเขต (Scope)
+
+ระบบครอบคลุม lifecycle ของใบแจ้งซ่อมตั้งแต่ CS เปิดงานรับสินค้าจากลูกค้า, GR รับสินค้าและเลือกเส้นทางซ่อม (DC Path / Vendor Path), การตีราคาและขออนุมัติจากลูกค้า, การซ่อมและส่งคืนสินค้า, จนถึงลูกค้ารับสินค้าคืนพร้อมลายเซ็นดิจิทัล รวมถึงงานบริหารระบบ (Admin): จัดการผู้ใช้, ข้อมูลอ้างอิง, SLA และรายงาน
+
+1.3 ระบบเดิม (Existing System)
+
+ระบบเดิมเป็น Next.js (React) + REST API + Prisma ORM, deploy ที่ http://10.77.3.87:2001 (UAT) ยืนยันพฤติกรรมจากการทดสอบด้วยผู้ใช้ทดสอบ 4 บทบาท (test_cs / test_gr / test_dc / test_am) เมื่อ 17/07/2026 ประกอบกับกฎทางธุรกิจจากไฟล์ BUSINESS_RULES.md ของ source code เดิม เอกสารฉบับนี้ใช้รหัสสถานะมาตรฐานใหม่เป็นหลัก โดยกำกับรหัสเดิม (legacy) ไว้ในตาราง mapping หัวข้อ 3.2 และมี SQL migration script แนบแยกไฟล์
+
+1.4 คำจำกัดความ (Definitions)
+
+2. ภาพรวมระบบและบทบาทผู้ใช้ (System Overview & Roles)
+
+ผู้ใช้เข้าสู่ระบบด้วย username/password และถูกนำไปยังเมนูตามบทบาท (role-based menu) จากการทดสอบ UAT พบเมนูจริงดังนี้ (รหัสสถานะเป็นรหัสใหม่)
+
+หมายเหตุ: สถานะ 220 ที่มี reject_flg = "Y" จะถูกจัดเป็นงานของ GR แทน DC (special case จาก canHandle function)
+
+3. Status Model และ Flow การทำงาน
+
+3.1 แผนภาพ Flow ทั้งระบบ (รหัสมาตรฐานใหม่)
+
+สีพื้นหลัง = ผู้รับผิดชอบดำเนินการ:    เหลือง = CS    ฟ้า = GR    เขียว = DC    เทา = ปิดงาน
+
+← เลือก DC Path (สถานะ 200)     |     เลือก Vendor Path (สถานะ 300) →
+
+ทุกสถานะ: ยกเลิกได้ (สถานะ 000 ตามเงื่อนไข FIX-02) · Rollback ถอยทีละขั้นพร้อมเหตุผล · ทุก action บันทึก transaction_log
+
+3.2 มาตรฐานรหัสสถานะใหม่และตาราง Mapping
+
+รหัสสถานะใหม่เป็นตัวเลข 3 หลักเสมอ ออกแบบให้อ่านความคืบหน้าได้จากตัวเลขโดยตรง:
+
+หลักร้อย = เฟส/เส้นทาง: 0 = ยกเลิก, 1 = รับเข้า (ใช้ร่วมกันทุกเส้นทาง), 2 = DC Path, 3 = Vendor Path
+
+หลักสิบ = ลำดับขั้นตอน เพิ่มทีละ 10 (เว้นช่องว่างไว้แทรกสถานะใหม่ในอนาคตโดยไม่ต้องต่อหลัก)
+
+หลักหน่วย = variant: 0 = ขั้นตอนปกติ, 5 = ทางเลือกคู่ขนานของขั้นตอนเดียวกัน (เช่น 270 ไม่ซ่อม / 275 ซ่อมเสร็จ), 9 = ปิดงาน (299, 399)
+
+ความสมมาตรสองเส้นทาง: ขั้นตอนเดียวกันใช้หลักสิบใกล้เคียงกัน เช่น ตีราคา = 240/310, ขออนุมัติ = 250/320, ปิดงาน = x99
+
+การ migrate ข้อมูลเดิม: ใช้ script แนบ status_code_migration.sql (สร้างตาราง mapping แล้ว update ทุกตารางที่อ้างรหัสสถานะภายใน transaction เดียว)
+
+3.3 แผนภาพรายละเอียด (Detailed Diagram — English)
+
+สีในแผนภาพ: เหลือง = CS, ฟ้า = GR, เขียว = DC, เทา = ปิดงาน
+
+3.4 ตารางสถานะและ SLA (ค่าจากหน้า Maintain ของระบบจริง)
+
+3.5 กติกาการเปลี่ยนสถานะ
+
+สถานะเดินไปข้างหน้าทางเดียว (forward-only) ยกเว้นการ Rollback ซึ่งถอยได้ทีละขั้นตาม Rollback Map และต้องระบุเหตุผลเสมอ
+
+GR เป็นผู้เลือกเส้นทาง: update เป็น 200 = DC Path, update เป็น 300 = Vendor Path เมื่อเลือกแล้วเปลี่ยนไม่ได้ (ยกเว้น rollback กลับ 110) ระบบมี validation เตือนหากสินค้าไม่อยู่ในรายการจัดส่งผ่าน DC (ยืนยัน override ได้ — พบจากการทดสอบจริง)
+
+DC ตีกลับสินค้า (Reject): rollback จาก 210/220/230 จะ set reject_flg="Y" + reject_from_status, ล้างข้อมูล DC และลบ attachment ของ step 220
+
+ยกเลิกใบแจ้งซ่อม: set status = 000 ระบบเดิมไม่มี validation ว่าสถานะปัจจุบันยกเลิกได้หรือไม่ — ระบบใหม่ต้องจำกัดตาม FIX-02 (ดู 10)
+
+ทุกการเปลี่ยนสถานะบันทึก transaction_log (ผู้ทำ, IP, ข้อความ, step, request) และ DB trigger อัพเดต status_updated_date เพื่อคำนวณ SLA
+
+3.6 Rollback Map (รหัสใหม่)
+
+หมายเหตุ: 290→275 คงพฤติกรรมเดิม (236→235) คือถอยข้ามขา 280/285 กลับไปจุด Vendor ส่งคืน และ 350/360 ไม่อยู่ใน rollback map ตามระบบเดิม
+
+4. กฎทางธุรกิจเดิมที่ต้องคงไว้ (Core Business Rules)
+
+4.1 การออกเลขที่เอกสาร (Running Number)
+
+เลขที่ใบแจ้งซ่อม: {BU}{StoreNick2}{YY}{MM}{DD}{RUN4} เช่น TWBN2607160004 (BU=TW, สาขา=BN, ปี พ.ศ. 2 หลัก) สร้างแบบ concurrent-safe ด้วย upsert + increment บนตาราง running_doc
+
+เลขที่ใบคืนสินค้า: {BU}R{StoreNick2}{YY}{MM}{DD}{RUN4} ออกเมื่อลูกค้ารับสินค้าคืน
+
+4.2 เอกสารแนบ (Attachments)
+
+เปิดงานต้องแนบรูป Serial Number และรูปสินค้า (บังคับทั้งคู่) ตั้งชื่อไฟล์ {request_no}_{prefix}_{timestamp}{ext}
+
+ทุกจุดส่งมอบ (CS→GR, GR→Vendor, Vendor→DC ฯลฯ) มีฟอร์มบันทึก ผู้ส่งมอบ/ผู้รับ/วันที่/เบอร์ติดต่อ + ไฟล์แนบบังคับ (ยืนยันจากการทดสอบทุกฟอร์ม)
+
+4.3 ใบเสนอราคาและการอนุมัติ (Quotation & Customer Approval)
+
+Mode ของ Quotation ต้องตรงกับ path: DC Path → mode "DC" (สถานะ 250–275), Vendor Path → mode "VEN" (สถานะ 320–345)
+
+ลูกค้าอนุมัติ/ไม่อนุมัติเป็นรายรายการ (user_repair_flg Y/N + เหตุผล) และมีผลสรุปรวม user_approve_flg
+
+ผลอนุมัติกำหนดสถานะถัดไป: อนุมัติ (Y) → 275 (DC) / 345 (Vendor), ไม่อนุมัติ (N) → 270 / 340
+
+4.4 การแจ้ง Vendor (Vendor Notification)
+
+เมื่อสินค้าพร้อมให้รับ ระบบส่งอีเมลอัตโนมัติ: SKU → vendor_name (commodity table) → vendor_email (vendor_info table) พร้อมลิงก์หน้า print {APP_URL}/print/{requestId} หน้า Maintain มี import/export รายชื่อ Vendor + email
+
+4.5 การส่งคืนของ Vendor (3 ช่องทาง)
+
+คืน GR โดยตรง → 360 | คืนผ่าน DC แทนสาขา → 350 → DC ส่งต่อ → 360 | เส้นทาง DC มาตรฐาน → 280
+
+4.6 การปิดงานและลายเซ็น (Closing & Digital Signature)
+
+ลูกค้ารับสินค้าคืนต้องเซ็นอิเล็กทรอนิกส์ (signature canvas → Base64 → JPEG → attachment) พร้อมออกเลขที่ใบคืนสินค้า (สถานะ 299/399)
+
+4.7 อื่น ๆ
+
+internal_flg = "Y" สำหรับสินค้าของพนักงาน/ลูกค้าภายใน
+
+Dashboard: การ์ด KPI 6 ชุด (ทั้งหมด, รอการซ่อมแยก CS/GR/DC, กำลังซ่อม, รอลูกค้ารับคืนแยกอนุมัติ/ไม่อนุมัติ, ส่งมอบแล้ว, ยกเลิกแยกลูกค้า/ร้านค้า) กรองรายวัน/สัปดาห์/เดือน
+
+รายการงานมีตัวชี้วัด On Track / At Risk / Critical พร้อม progress bar ของแต่ละสถานะ และ Export Excel
+
+5. Functional Requirements (ระบบเดิมที่ต้อง Clone)
+
+5.1 Authentication
+
+FR-AUTH-01 Login ด้วย username/password, แสดง error เมื่อกรอกไม่ครบหรือ credential ผิด
+
+FR-AUTH-02 Redirect ตาม role, ซ่อน/disable เมนูที่ไม่มีสิทธิ์ (พบจริง: ปุ่มเปิดใบแจ้งซ่อมเป็นสีเทาสำหรับ GR/DC)
+
+FR-AUTH-03 Session expiry + Logout ทุกหน้า, RBAC ต้องบังคับที่ API ทุก endpoint ไม่ใช่แค่ frontend
+
+5.2 CS
+
+FR-CS-01 ฟอร์มเปิดใบแจ้งซ่อม 2 ส่วน: รายละเอียดลูกค้า (ชื่อ*, นามสกุล*, ที่อยู่, โทรศัพท์*) และรายละเอียดสินค้า (checkbox สินค้าอยู่ในระบบ → lookup SKU/Barcode, SKU*, Barcode*, ประเภทสินค้า*, ยี่ห้อ (filtered), รุ่น, Serial, ไฟล์รูป Serial*, จำนวน*, วันที่รับสินค้า*, อาการที่พบ*, ปัญหาที่เกิด: ในประกัน/นอกประกัน*, ไฟล์แนบ*)
+
+FR-CS-02 บันทึกแล้วออกเลขที่ใบแจ้งและเข้าสถานะ 100 จากนั้น CS บันทึกการส่งสินค้าให้ GR (ฟอร์ม ผู้ส่งมอบ/ผู้รับ/วันที่/เบอร์/ไฟล์แนบ)
+
+FR-CS-03 รายการสถานะ: ค้นหา, Filter, Export Excel, Edit (สถานะต้น ๆ), ยกเลิกพร้อมเหตุผล, ปุ่มดำเนินการตามสถานะที่ตนรับผิดชอบ
+
+FR-CS-04 ขออนุมัติราคาจากลูกค้า (250/320), บันทึกผลอนุมัติรายรายการ (260/330), รับสินค้าคืน (290/390), ส่งมอบลูกค้าพร้อมลายเซ็น (299/399)
+
+5.3 GR
+
+FR-GR-01 รับสินค้าจาก CS (สถานะ 110) แล้วเลือกเส้นทาง: ปุ่ม "จัดส่งให้ DC" / "จัดส่งให้ Vendor" พร้อม dialog ยืนยันเมื่อสินค้าไม่อยู่ในรายการ DC
+
+FR-GR-02 บันทึกรายละเอียด Vendor มารับสินค้า (ผู้ขาย*, ผู้มารับ*, วันที่ส่ง*, เบอร์*, ไฟล์แนบ*)
+
+FR-GR-03 รับสินค้าคืนจาก DC/Vendor (280→285, 350→360) และส่งต่อให้ CS
+
+5.4 DC
+
+FR-DC-01 รับสินค้าจากสาขา (220), ตีกลับได้กรณีไม่ตรง/ไม่ครบ, บันทึกส่งให้ Vendor (230), รับคืนจาก Vendor (ฟอร์ม ผู้ส่งมอบ/ผู้รับ/วันที่รับคืน/เบอร์/ไฟล์แนบ)
+
+5.5 ADMIN — Maintain
+
+FR-AM-01 Status Info: แก้ไข SLA (ชั่วโมง) ของทุกสถานะ กรองตาม Path (ทั้งหมด/DC/VENDOR)
+
+FR-AM-02 Vendor Info: รายชื่อ Vendor + email, มี Template / Import / Export
+
+FR-AM-03 (ระบบใหม่) จัดการผู้ใช้, สาขา, ประเภทสินค้า, ยี่ห้อ, ค่าเปิดเครื่อง, margin, service tier — ดูหมวด 6
+
+6. ส่วนขยายใหม่ (New Features — Service Center Best Practices)
+
+ออกแบบตามแนวปฏิบัติของศูนย์บริการซ่อม โดยฝังเข้ากับ flow เดิมโดยไม่เพิ่มสถานะใหม่ (ใช้ field/flag และตารางใหม่แทน) เพื่อลดผลกระทบต่อ state machine
+
+6.1 ประเภทการให้บริการ (Service Tier: NORMAL / EXPRESS / VIP)
+
+เลือกได้ตอนเปิดใบแจ้งซ่อม (FR-CS-01) เก็บใน field service_tier ของ repair_ticket และแสดง badge ในทุกรายการงาน
+
+Business Rule ST-1: tier มีผลต่อ deadline = status_updated_date + (SLA × tier_multiplier) และตัวชี้วัด On Track / At Risk / Critical
+
+Business Rule ST-2: เปลี่ยน tier ได้เฉพาะก่อนเข้าสถานะตีราคา (240/310) และต้องบันทึก transaction_log พร้อมเหตุผล
+
+Business Rule ST-3: Dashboard เพิ่มตัวกรองและ KPI แยกตาม tier (จำนวนงาน, SLA compliance, รายได้ surcharge)
+
+6.2 ค่าเปิดเครื่อง / ค่าตรวจเช็คเบื้องต้น (Diagnostic Fee ตามประเภทสินค้า)
+
+เรียกเก็บ ณ วันเปิดใบแจ้งซ่อม (เฉพาะงานนอกประกัน — งานในประกันยกเว้นโดย default, config ได้) อัตราค่าเปิดเครื่องกำหนดต่อประเภทสินค้าในหน้า Admin ตัวอย่างโครงสร้างอัตราเริ่มต้น:
+
+Business Rule DF-1: สร้าง payment transaction ประเภท DIAGNOSTIC_FEE + ออกใบเสร็จทันทีที่รับชำระ ก่อนสถานะ 100 → 110
+
+Business Rule DF-2: ถ้าลูกค้าอนุมัติซ่อม ค่าเปิดเครื่องถูกหักออกจากยอดค่าซ่อมสุทธิ (แสดงเป็นส่วนลดในใบเสนอราคา/ใบเสร็จ)
+
+Business Rule DF-3: ถ้าลูกค้าไม่อนุมัติซ่อม ค่าเปิดเครื่องไม่คืน (นโยบาย default — config เป็นคืนบางส่วนได้) ต้องแจ้งลูกค้า ณ วันรับเครื่องและพิมพ์เงื่อนไขบนใบรับเครื่อง
+
+Business Rule DF-4: งานในประกันไม่เก็บค่าเปิดเครื่อง แต่ถ้าตรวจแล้วพบว่าความเสียหายอยู่นอกเงื่อนไขประกัน (เช่น ใช้งานผิดวิธี) ระบบให้ CS แปลงงานเป็นนอกประกันและเรียกเก็บย้อนหลังก่อนเริ่มซ่อม
+
+6.3 ใบเสนอราคาแบบต้นทุนบวกกำไร (Cost-Plus Quotation)
+
+ขยายตาราง quotation เดิม: Vendor แจ้งต้นทุน แล้วระบบคำนวณราคาขายอัตโนมัติจาก margin ที่ config ต่อประเภทสินค้า/tier ก่อนส่งขออนุมัติลูกค้า
+
+Business Rule QT-1: margin ต่ำกว่า floor (default 15%) หรือ discount เกินเพดาน ต้องผ่านการอนุมัติภายใน (Admin/Supervisor) ก่อนส่งลูกค้า — บันทึก approver ใน transaction_log
+
+Business Rule QT-2: ลูกค้าเห็นเฉพาะราคาขาย ไม่เห็นโครงสร้างต้นทุน; สิทธิ์เห็น cost/margin จำกัดที่ GR/DC/Admin
+
+Business Rule QT-3: คงกฎเดิม — อนุมัติรายรายการ, mode ตรงกับ path, ผลอนุมัติกำหนดสถานะ 270/275 หรือ 340/345
+
+Business Rule QT-4: เก็บประวัติทุก revision ของใบเสนอราคา (quotation_version) เพื่อตรวจสอบย้อนหลัง
+
+6.4 การบันทึกการชำระเงิน (Payment Recording)
+
+เพิ่มตาราง payment_transaction ผูกกับใบแจ้งซ่อม รองรับการชำระหลายครั้งต่อใบงาน
+
+Business Rule PM-1: จุดเก็บเงิน — ค่าเปิดเครื่อง/Express surcharge เก็บตอนเปิดงาน (CS), ยอดค่าซ่อมคงเหลือเก็บก่อนส่งมอบสินค้า (สถานะ 290/390 → 299/399 จะเดินต่อได้ต่อเมื่อยอดค้างชำระ = 0)
+
+Business Rule PM-2: หน้าจอส่งมอบสินค้าแสดงสรุป: ยอดใบเสนอราคา − ค่าเปิดเครื่องที่ชำระแล้ว − ส่วนลด + VAT = ยอดต้องชำระ พร้อมประวัติการชำระทั้งหมด
+
+Business Rule PM-3: งานที่ยกเลิกหลังชำระค่าเปิดเครื่อง → ไม่คืนเงิน (default ตาม DF-3); งานยกเลิกโดยความผิดของร้าน → สร้าง REFUND ได้ภายใต้สิทธิ์ Supervisor
+
+Business Rule PM-4: รายงานเงินสดประจำวันต่อสาขา (daily cash reconciliation) แยกตาม method และผู้รับชำระ + export Excel
+
+7. Data Model
+
+7.1 Entities หลัก (เดิม + ส่วนขยาย)
+
+8. API Specification (สรุป)
+
+9. Non-Functional Requirements
+
+Performance: โหลดหน้า < 2 วินาที (LAN), API list < 500ms (paginated ≤ 100 แถว), upload ≤ 10MB/ไฟล์, รองรับ ≥ 50 concurrent users
+
+Security: bcrypt (cost ≥ 12), HTTP-only session cookie/JWT, RBAC ที่ API ทุกเส้น, validate MIME server-side, เก็บไฟล์นอก web root, HTTPS, input sanitisation; ข้อมูลเงิน (cost/margin) ต้องจำกัดสิทธิ์การอ่านที่ API layer
+
+Reliability: อัพเดตสถานะเป็น atomic transaction, uptime 99.5% เวลาทำการ, error boundary ครอบทั้ง app (แก้ BUG-03 เดิม)
+
+Usability: ภาษาไทยเป็นหลัก, พ.ศ. ใน date picker, responsive ≥ 768px, inline validation, เครื่องหมาย * ชัดเจน
+
+Maintainability/Scalability: Git, .env, Prisma migrations, OpenAPI 3.0, stateless API, object storage (MinIO/S3), connection pooling
+
+10. ข้อบกพร่องระบบเดิมและข้อกำหนดการแก้ไข
+
+11. แผนการพัฒนา (Proposed Phases)
+
+จัดทำโดย: Claude (AI Analysis) — วิเคราะห์จากระบบ UAT จริง, BUSINESS_RULES.md และ SRS v1.0 | เวอร์ชัน 2.2 (รหัสสถานะมาตรฐานใหม่) | 17/07/2026
+
+12. ข้อกำหนดเพิ่มเติม (Requirement 16/07/2026)
+
+รวบรวมจากเอกสาร Requirment_2026-07-16.txt และ Flow Diagram (Chart_and_Diagram_updated.xlsx) นำมากำหนดเป็น Functional Requirements ชุดใหม่ (NEW-xx) พร้อมระบุ Phase ที่จะพัฒนา (P1 = MVP, P2 = Phase 2)
+
+12.1 ตารางข้อกำหนดใหม่และ Phase
+
+12.2 สถานะใหม่ที่ต้องเพิ่มใน Status Model (ชุด LON)
+
+หมายเหตุ: รหัสสถานะเป็นข้อเสนอเบื้องต้นให้สอดคล้องมาตรฐานรหัส 3 หลักในหัวข้อ 3.2 — ยืนยันอีกครั้งตอน Design
+
+12.3 Entities ใหม่ใน Data Model
+
+13. แผนการพัฒนาแบ่ง Phase (v2.2 — แทนที่หัวข้อ 11)
+
+แบ่งการพัฒนาเป็น 2 ชุดหลัก: Phase 1 (MVP) เพื่อทดแทนระบบเดิมได้ครบและเปิดใช้เร็วที่สุด และ Phase 2 (Logistics & Finance) สำหรับข้อกำหนดใหม่ด้านโลจิสติกส์ Vendor และการเงิน
+
+13.1 Phase 1 — MVP (ส.ค. – พ.ย. 2569, Go-live ต้น ธ.ค. 2569)
+
+เป้าหมาย: Clone ระบบเดิมครบทุก flow + ข้อกำหนดใหม่ที่จำเป็นต่อการเปิดงานและใบเสนอราคา
+
+13.2 Phase 2 — Logistics & Finance (ธ.ค. 2569 – มี.ค. 2570)
+
+เป้าหมาย: ยกระดับโลจิสติกส์ฝั่ง Vendor/3PL และปิด loop การเงิน
+
+13.3 Timeline สรุป
+
+13.4 เงื่อนไขและความเสี่ยง
+
+=== TABLE 0 ===
+คำ | ความหมาย
+CS | Customer Service — พนักงานสาขา เปิดใบแจ้งซ่อม ติดต่อลูกค้า และส่งมอบสินค้าคืน
+GR | Goods Receiving — พนักงานรับสินค้า เลือกเส้นทางซ่อม และรับสินค้าคืนจาก DC/Vendor
+DC | Distribution Center — ศูนย์กระจายสินค้า ประสานงาน Vendor ในเส้นทาง DC Path
+ADMIN (AM) | ผู้ดูแลระบบ — จัดการผู้ใช้ ข้อมูลอ้างอิง SLA และรายงาน
+Vendor | ผู้ให้บริการซ่อมภายนอก (บุคคลที่สาม)
+SLA | Service Level Agreement — เวลามาตรฐานที่อนุญาตในแต่ละสถานะ (หน่วยชั่วโมง)
+Quotation | ใบเสนอราคาค่าซ่อมที่ต้องขออนุมัติจากลูกค้าเป็นรายรายการ
+Diagnostic Fee | ค่าเปิดเครื่อง/ค่าตรวจเช็คเบื้องต้น เรียกเก็บ ณ วันรับเครื่อง
+Service Tier | ระดับการให้บริการ: NORMAL / EXPRESS / VIP
+Legacy Code | รหัสสถานะของระบบเดิม (เช่น 232, 2360) — ใช้เฉพาะตอน migrate ข้อมูล
+
+=== TABLE 1 ===
+Role | เมนูที่เห็น (ทดสอบจริง) | สถานะที่ดำเนินการได้ (roleActionMap — รหัสใหม่)
+CS | เปิดใบแจ้งซ่อม, ตรวจสอบสถานะใบแจ้งซ่อม, Dashboard | 100, 240, 250, 260, 285, 290, 310, 320, 330, 360, 390
+GR | ตรวจสอบสถานะ, Dashboard (เปิดใบแจ้งซ่อม disabled) | 110, 200, 210, 280, 300, 340, 345, 350
+DC | ตรวจสอบสถานะ, Dashboard | 220, 230, 270, 275
+ADMIN | เปิดใบแจ้งซ่อม, ตรวจสอบสถานะ, Dashboard, Maintain | ทุกสถานะ + จัดการข้อมูลระบบ
+
+=== TABLE 2 ===
+100 · เปิดใบแจ้งซ่อม / ส่งซ่อม CS เปิดงาน + แนบรูป Serial + รูปสินค้า ↓ 110 · GR รับสินค้าซ่อมจาก CS GR เลือกเส้นทางซ่อม (เปลี่ยนไม่ได้)
+
+=== TABLE 3 ===
+DC PATH (2xx) 200 · GR เปิด log DC ↓ 210 · รอ DC มารับสินค้า ↓ 220 · DC รับสินค้าจากสาขา ตีกลับได้ (reject_flg = Y) ↓ 230 · DC รอ Vendor มารับสินค้า ↓ 240 · รอ Vendor ตีราคา ↓ 250 · ขออนุมัติราคาจากลูกค้า ↓ 260 · แจ้งผลการอนุมัติ ↓  อนุมัติ = 275 / ไม่อนุมัติ = 270 270 / 275 · รอ Vendor ส่งคืนสินค้า ไม่อนุมัติซ่อม / ซ่อมเสร็จ ↓ 280 · DC รับคืนจาก Vendor แล้ว ↓ 285 · GR รับคืนจาก DC แล้ว ↓ 290 · CS รับคืน / รอลูกค้ารับ ↓ 299 · ลูกค้ารับสินค้าแล้ว (ปิดงาน) ลายเซ็นดิจิทัล + ใบคืนสินค้า | VENDOR PATH (3xx) 300 · รอ Vendor มารับสินค้า ↓ 310 · รอ Vendor ตีราคา ↓ 320 · ขออนุมัติราคาจากลูกค้า ↓ 330 · แจ้งผลการอนุมัติ ↓  อนุมัติ = 345 / ไม่อนุมัติ = 340 340 / 345 · รอ Vendor ส่งคืนสินค้า ไม่อนุมัติซ่อม / ซ่อมเสร็จ ↓  คืนได้ 3 ช่องทาง 360 · GR รับคืนโดยตรง  |  350 · คืนผ่าน DC แทนสาขา 350 → DC ส่งต่อ → 360 ↓ 390 · CS รับคืน / รอลูกค้ารับ ↓ 399 · ลูกค้ารับสินค้าแล้ว (ปิดงาน) ลายเซ็นดิจิทัล + ใบคืนสินค้า
+
+=== TABLE 4 ===
+รหัสใหม่ | รหัสเดิม | สถานะ | Path
+000 | 0 | ใบแจ้งซ่อมถูกยกเลิก | ALL
+100 | 10 | เปิดใบแจ้งซ่อม / ส่งซ่อม (CS) | ALL
+110 | 11 | GR รับสินค้าซ่อมจาก CS (เลือกเส้นทาง) | ALL
+200 | 20 | GR เปิด log DC | DC
+210 | 201 | รอ DC มารับสินค้า | DC
+220 | 21 | DC รับสินค้าจากสาขาแล้ว | DC
+230 | 22 | DC รอ Vendor มารับสินค้า | DC
+240 | 23 | รอ Vendor ตีราคา | DC
+250 | 232 | ขออนุมัติราคาจากลูกค้า | DC
+260 | 233 | แจ้งผลการอนุมัติ | DC
+270 | 234 | รอ Vendor ส่งคืนสินค้า (ไม่อนุมัติซ่อม) | DC
+275 | 235 | รอ Vendor ส่งคืนสินค้าซ่อมเสร็จ | DC
+280 | 2360 | DC รับสินค้าคืนจาก Vendor แล้ว | DC
+285 | 2361 | GR รับสินค้าคืนจาก DC แล้ว | DC
+290 | 236 | CS รับสินค้าคืนแล้ว / รอลูกค้ารับ | DC
+299 | 237 | ลูกค้ารับสินค้าแล้ว (ปิดงาน) | DC
+300 | 30 | รอ Vendor มารับสินค้า | VENDOR
+310 | 31 | รอ Vendor ตีราคา | VENDOR
+320 | 32 | ขออนุมัติราคาจากลูกค้า | VENDOR
+330 | 33 | แจ้งผลการอนุมัติ | VENDOR
+340 | 34 | รอ Vendor ส่งคืนสินค้า (ไม่อนุมัติซ่อม) | VENDOR
+345 | 35 | รอ Vendor ส่งคืนสินค้าซ่อมเสร็จ | VENDOR
+350 | 360 | Vendor คืนผ่าน DC แทนสาขา (DC รอส่งเข้าสาขา) | VENDOR
+360 | 361 | GR รับสินค้าคืนจาก Vendor / DC แล้ว | VENDOR
+390 | 36 | CS รับสินค้าคืนแล้ว / รอลูกค้ารับ | VENDOR
+399 | 37 | ลูกค้ารับสินค้าแล้ว (ปิดงาน) | VENDOR
+
+=== TABLE 5 ===
+Path | สถานะ | รหัสใหม่ | SLA (ชม.)
+ALL | ใบแจ้งซ่อมถูกยกเลิก | 000 | 0
+ALL | เปิดใบแจ้งซ่อม / ส่งซ่อม | 100 | 1
+ALL | GR รับสินค้าซ่อมจาก CS | 110 | 1
+DC | GR เปิด log DC | 200 | 48
+DC | รอ DC มารับสินค้า | 210 | 120
+DC | DC รับสินค้าจากสาขาแล้ว | 220 | 120
+DC | DC รอ Vendor มารับสินค้า | 230 | 120
+DC | รอ Vendor ตีราคา | 240 | 72
+DC | ขออนุมัติราคาจากลูกค้า | 250 | 24
+DC | แจ้งผลการอนุมัติ | 260 | 24
+DC | รอ Vendor ส่งคืนสินค้า (ไม่อนุมัติซ่อม) | 270 | 168
+DC | รอ Vendor ส่งคืนสินค้าซ่อมเสร็จ | 275 | 168
+DC | DC รับสินค้าคืนจาก Vendor แล้ว | 280 | 168
+DC | GR รับสินค้าคืนจาก DC แล้ว | 285 | 120
+DC | CS รับสินค้าคืนแล้ว / รอลูกค้ารับ | 290 | 24
+DC | ลูกค้ารับสินค้าแล้ว (ปิดงาน) | 299 | 168
+VENDOR | รอ Vendor มารับสินค้า | 300 | 120
+VENDOR | รอ Vendor ตีราคา | 310 | 72
+VENDOR | ขออนุมัติราคาจากลูกค้า | 320 | 24
+VENDOR | แจ้งผลการอนุมัติ | 330 | 24
+VENDOR | รอ Vendor ส่งคืนสินค้า (ไม่อนุมัติซ่อม) | 340 | 168
+VENDOR | รอ Vendor ส่งคืนสินค้าซ่อมเสร็จ | 345 | 168
+VENDOR | Vendor คืนผ่าน DC แทนสาขา | 350 | 120
+VENDOR | GR รับสินค้าคืนจาก Vendor / DC แล้ว | 360 | 168
+VENDOR | CS รับสินค้าคืนแล้ว / รอลูกค้ารับ | 390 | 24
+VENDOR | ลูกค้ารับสินค้าแล้ว (ปิดงาน) | 399 | 168
+
+=== TABLE 6 ===
+สถานะปัจจุบัน | ถอยกลับเป็น | สถานะปัจจุบัน | ถอยกลับเป็น
+200 | 110 | 280 | 275
+210 | 200 | 290 | 275
+220 | 210 | 299 | 290
+230 | 220 | 310 | 300
+240 | 230 | 320 | 310
+250 | 240 | 330 | 320
+260 | 250 | 340 | 330
+270 | 260 | 345 | 340
+275 | 270 | 390 | 345
+ |  | 399 | 390
+
+=== TABLE 7 ===
+คุณสมบัติ | NORMAL | EXPRESS | VIP
+SLA | ตามตาราง SLA มาตรฐาน | 50% ของ SLA มาตรฐาน (ปัดขึ้น) | 50% ของ SLA + ลัดคิวสูงสุด
+ลำดับคิว (Queue Priority) | ตามลำดับเข้า (FIFO) | แทรกก่อน NORMAL | แทรกก่อนทุก tier
+ค่าบริการเพิ่ม (Surcharge) | — | +50% ของค่าเปิดเครื่อง หรือ flat fee ตาม config | ฟรี surcharge (ผูกสิทธิ์สมาชิก/ยอดซื้อ) หรือ flat fee
+การแจ้งเตือนลูกค้า | Email | Email + SMS/LINE | Email + SMS/LINE + โทรแจ้งโดย CS
+บริการรับ-ส่งสินค้า | — | — | มีบริการรับ-ส่งถึงบ้าน (config ได้)
+สิทธิ์การใช้ | ทุกงาน | เฉพาะประเภทสินค้าที่ Vendor รองรับซ่อมด่วน | ต้องตรวจสิทธิ์สมาชิก (member lookup)
+
+=== TABLE 8 ===
+กลุ่มประเภทสินค้า (ตัวอย่าง) | ค่าเปิดเครื่อง (บาท) | หมายเหตุ
+เครื่องใช้ไฟฟ้าขนาดเล็ก (Thermo Pot, Kettle, Utensils & Gadgets) | 100 – 200 | ตรวจในศูนย์
+Power Tools / Fanlamp / Air Care | 150 – 300 | ตรวจในศูนย์
+TV / Microwave / Oven | 200 – 400 | ตรวจในศูนย์
+เครื่องปรับอากาศทุกประเภท (Wall / Ceiling / Cassette) | 300 – 500 | กรณีถอดมาส่ง; on-site คิดค่าเดินทางเพิ่ม
+ประตู / วงกบ / Counter Doors / Basin | 500 | ประเมินหน้างาน (on-site assessment)
+สินค้า Premium with purchase / Pillow / Camping | 0 – 100 | มูลค่าต่ำ อาจยกเว้นเพื่อรักษาความสัมพันธ์ลูกค้า
+
+=== TABLE 9 ===
+องค์ประกอบ | คำอธิบาย
+cost_parts | ต้นทุนอะไหล่จาก Vendor (แนบรายการอะไหล่ได้หลายรายการ)
+cost_labor | ค่าแรงซ่อมของ Vendor (คิดค่าแรง/ชั่วโมงหรือเหมาต่องาน)
+cost_logistics | ค่าขนส่ง/เดินทาง (ไป-กลับ Vendor หรือ on-site)
+cost_total | = parts + labor + logistics
+margin_percent | % กำไรตาม config ประเภทสินค้า (default 30%) — override ได้ภายใต้สิทธิ์
+sell_price | = cost_total × (1 + margin%)
+diagnostic_fee_deduct | หักค่าเปิดเครื่องที่ชำระแล้ว (DF-2)
+discount | ส่วนลด (โปรโมชั่น/VIP) พร้อมเหตุผล
+vat | VAT 7% ของยอดหลังหักส่วนลด
+net_price | ยอดสุทธิที่เสนอลูกค้า
+
+=== TABLE 10 ===
+Field | คำอธิบาย
+payment_id (PK) | รหัสรายการ
+request_id (FK) | ใบแจ้งซ่อมที่เกี่ยวข้อง
+payment_type | DIAGNOSTIC_FEE | DEPOSIT | FINAL | SURCHARGE_EXPRESS | REFUND
+amount | จำนวนเงิน (REFUND เป็นค่าลบ)
+method | CASH | TRANSFER | QR_PROMPTPAY | CREDIT_CARD
+ref_no | เลขอ้างอิงสลิป/เครื่องรูดบัตร
+receipt_no | เลขที่ใบเสร็จ (running แยกชุด: {BU}P{Store}{YYMMDD}{RUN4})
+received_by / received_at | ผู้รับชำระและเวลา
+status | PENDING | CONFIRMED | VOIDED (void ต้องมีเหตุผล + สิทธิ์ Supervisor)
+
+=== TABLE 11 ===
+Entity | Key Fields | หมายเหตุ
+repair_ticket | request_id, request_no, branch, customer_*, sku, barcode, product_type, brand, model, serial_no, quantity, warranty_flg, symptom, internal_flg, reject_flg, reject_from_status, status, status_updated_date, service_tier*, created_* | * = field ใหม่
+running_doc | doc_type, prefix, current_no | ใบแจ้งซ่อม / ใบคืน / ใบเสร็จ*
+attachment | attachment_id, request_id, step_no, file_type, file_url | รวมไฟล์ลายเซ็น
+transaction_log | log_id, request_id, step_no, act_user_name, act_ip_address, act_trans_log, created_at | audit trail ทุก action
+quotation | quotation_id, request_id, mode(DC/VEN), version*, cost_parts*, cost_labor*, cost_logistics*, margin_percent*, sell_price*, discount*, vat*, net_price*, user_approve_flg | รายการย่อยใน quotation_item
+quotation_item | item_id, quotation_id, description, cost*, price, user_repair_flg, user_repair_reason | อนุมัติรายรายการ
+payment_transaction* | ตามตาราง 6.4 | ใหม่ทั้งตาราง
+diagnostic_fee_config* | product_type_id, fee_amount, waive_in_warranty_flg | ใหม่
+service_tier_config* | tier, sla_multiplier, surcharge_type, surcharge_value, active_flg | ใหม่
+margin_config* | product_type_id, margin_percent, margin_floor | ใหม่
+status_info | status_code (ใหม่ 3 หลัก), legacy_code, status_name, path, sla_hours, display_order | single source of truth ของสถานะ
+vendor_info | vendor_id, vendor_name, vendor_email | import/export ได้
+commodity | sku, vendor_name | mapping SKU → Vendor
+users / branch / product_type / brand | ตามระบบเดิม | RBAC + reference data
+
+=== TABLE 12 ===
+Method | Endpoint | คำอธิบาย
+POST | /api/auth/login, /logout, GET /me | Authentication
+GET/POST | /api/request (list/add) | รายการ/เปิดใบแจ้งซ่อม (ออกเลขที่ + แนบไฟล์บังคับ)
+PATCH | /api/request/update-status | เปลี่ยนสถานะ + เลือก path (200/300)
+POST | /api/request/rollback | ถอยสถานะตาม map + เหตุผล (+ DC reject)
+POST | /api/request/cancel | ยกเลิก (ระบบใหม่: เพิ่ม validation ตาม FIX-02)
+POST | /api/request/update-product-return | บันทึกการคืนสินค้า (ProductCustomerReturn / ProductVendorReturn / ProductVendorToDcInstead / ProductVendorToDcReturn)
+POST | /api/request/update-notified | บันทึกผลแจ้งลูกค้า → กำหนดสถานะถัดไป
+POST/PUT | /api/quotation/add, /update-user-approve | ใบเสนอราคา (ขยาย: cost/margin fields)
+POST | /api/notify/vendor-send | ส่งอีเมลแจ้ง Vendor
+POST/GET | /api/payment (new) | บันทึก/เรียกดูการชำระเงิน + ใบเสร็จ
+GET/PUT | /api/admin/* (sla, vendor, fee, margin, tier, users) | ข้อมูลระบบ
+GET | /api/request/export | Export Excel
+
+=== TABLE 13 ===
+ID | ปัญหาในระบบเดิม | ข้อกำหนดระบบใหม่
+FIX-01 | /request/view/:id crash ทั้ง renderer เมื่อ id ไม่ถูกต้อง (BUG-01) | จัดการ 404 + error boundary ราย route
+FIX-02 | ยกเลิกใบแจ้งซ่อมได้ทุกสถานะโดยไม่มี validation | อนุญาตยกเลิกเฉพาะสถานะ 100/110/200/210/300 (ก่อนสินค้าถึง Vendor); หลังจากนั้นต้องเป็น Supervisor + เหตุผล
+FIX-03 | ไม่มีการตรวจ Serial ตอน GR รับสินค้า | GR ต้อง verify serial กับที่ CS กรอก, mismatch ต้อง override พร้อมเหตุผล
+FIX-04 | แจ้งลูกค้าเป็น manual | เพิ่มแจ้งอัตโนมัติ (Email/SMS/LINE OA) เมื่อ: ตีราคาเสร็จ, ซ่อมเสร็จพร้อมรับคืน, ใกล้เกิน SLA
+FIX-05 | รหัสสถานะเดิมยาวสั้นปนกัน (10, 201, 232, 2360) ไม่มีเอกสาร | ใช้รหัสมาตรฐานใหม่ 3 หลัก (หัวข้อ 3.2) + ตาราง status_info เป็น single source of truth + migration script
+
+=== TABLE 14 ===
+Phase | ขอบเขต
+1 — Foundation | Auth + RBAC, DB schema + seed (status ใหม่/SLA/reference) + migration รหัสเดิม→ใหม่, CI/CD, หน้า Maintain
+2 — Core Flow | เปิดใบแจ้งซ่อม, สถานะ + state machine + rollback, ฟอร์มส่งมอบทุกจุด, attachment, transaction log
+3 — Quotation & Payment | Cost-plus quotation, อนุมัติลูกค้า, Diagnostic fee, Payment + ใบเสร็จ, Vendor email
+4 — Service Tier & Dashboard | NORMAL/EXPRESS/VIP, priority queue, SLA per tier, Dashboard + รายงาน + reconciliation
+5 — Notifications & Polish | SMS/LINE OA, barcode scanner, mobile responsive, UAT + data migration
+
+=== TABLE 15 ===
+ID | ข้อกำหนด | รายละเอียด/เงื่อนไข | Phase
+NEW-01 | หน้าเปิดงาน: เงินมัดจำ + ประเภทบริการ + Draft/Ticket | บันทึกเงินมัดจำ (คำนวณอัตโนมัติ), เลือก Express/Regular (ค่าดำเนินการ + ค่าขนส่งตามขนาด S/L), ออกเลขใบงานตั้งแต่สถานะ Draft เพื่อนำไปออก Ticket แล้วกลับมา Save, ระบบ Auto-cancel ใบงาน Draft ที่ค้างเกิน 00:00 ของวันถัดไป (batch job) | P1
+NEW-02 | ผูก SKU กับช่องทาง Vendor/DC | อ้างอิง field distrmcode ของ SKU: 2=DC, 3=Flow Through, 4=Pre-Distribute เพื่อกำหนดเส้นทางส่งซ่อมอัตโนมัติในขั้นตอน GR เลือกช่องทาง | P1
+NEW-03 | ลูกค้าเลือกบริการด่วน/ไม่ด่วน | ให้ลูกค้าเลือกความเร่งด่วน ณ จุดเปิดงาน — นิยาม "ด่วน/ไม่ด่วน" ยังไม่สรุป (TBC รอยืนยันคุณลิ้ม) | P2 (TBC)
+NEW-04 | ข้อตกลง Express/Regular กับ Vendor | Flow Express/Regular ต้องมีข้อตกลง (Agreement) ระดับ Vendor: เงื่อนไขบริการ, ระยะเวลา, อัตราค่าบริการ — เก็บในหน้า Maintain Vendor | P2
+NEW-05 | GR Pack ของ + ใบปะหน้า + ช่องทางส่ง | เพิ่มขั้นตอน GR แพ็คสินค้า พิมพ์ใบปะหน้าส่งของ และเลือกช่องทางส่ง 3 แบบ: รอ Vendor มารับ / ขนส่งของบริษัท / 3PL โดยผูกกับขนาดสินค้า (S/L) และ Vendor | P2
+NEW-06 | Bundle รวมกล่อง | รวมสินค้าหลายใบงานของ Vendor เดียวกันแพ็คลงกล่องใหญ่เดียว (Bundle) พร้อมใบปะหน้ารวม | P2
+NEW-07 | เมล์แจ้ง Vendor | ส่งอีเมลใบแจ้งซ่อมถึง Vendor (มีในระบบเดิม — ดูหัวข้อ 4.4) ปรับให้รองรับข้อมูล Express/Regular และ Bundle | P1 (ต่อยอด P2)
+NEW-08 | SLA รอ Vendor มารับสินค้า รายVendor | สถานะ "รอ Vendor มารับสินค้า" ต้องมี SLA แยกตามแต่ละ Vendor (จากเดิม SLA รายสถานะ) + Alert เมื่อเกิน | P2
+NEW-09 | บันทึกทะเบียนรถ + ลายเซ็นตอน Vendor รับสินค้า | ขั้นตอน Vendor มารับสินค้า เพิ่มช่องบันทึกทะเบียนรถและลายเซ็นผู้รับ (digital signature) | P2
+NEW-10 | ใบเสนอราคา: ค่า GP + พิมพ์ใบเสนอราคา | เพิ่ม field GP (Gross Profit) ในใบเสนอราคา และสามารถแสดง/พิมพ์ใบเสนอราคาฉบับลูกค้า (ราคาขาย = ต้นทุน Vendor + GP) | P1
+NEW-11 | แนบรูป Ticket ในหน้าอนุมัติซ่อม | หน้าบันทึกการอนุมัติซ่อมของลูกค้า เพิ่มการแนบ/บันทึกรูป Ticket | P1
+NEW-12 | ยืนยันซ่อมเสร็จ → แจ้ง 3PL รับสินค้าใน 7 วัน | การรับสินค้าคืนจาก Vendor ต้องมีการยืนยันว่าซ่อมเสร็จก่อน เพื่อให้สาขาแจ้ง 3PL ไปรับสินค้า ภายใน 7 วันหลังซ่อมเสร็จ (นับ SLA) | P2
+NEW-13 | บันทึกการเลื่อนนัดซ่อมของ Vendor | Process ใหม่: กรณี Vendor ซ่อมไม่ทัน บันทึกการเลื่อนกำหนดเสร็จ (Reschedule log: วันที่เดิม, วันที่ใหม่, เหตุผล) + สถานะ "เลื่อนซ่อม" | P2
+NEW-14 | รายงานการเงิน | Report 3 รายการ: ยอดจ่าย Vendor, ยอดรับจากลูกค้า, กำไร (GP) — filter ตามช่วงเวลา/สาขา/Vendor | P2
+NEW-15 | รอบ Due จ่ายเงิน Vendor | กำหนด payment term รายVendor เช่น จ่ายภายใน 7 วันหลังซ่อมเสร็จ + แจ้งเตือนใกล้ครบกำหนด | P2
+
+=== TABLE 16 ===
+รหัส (เสนอ) | สถานะ | คำอธิบาย | Phase
+005 | Draft (เปิดงานร่าง) | ออกเลขใบงานแล้วแต่ยังไม่ Save สมบูรณ์ — Auto-cancel เกิน 00:00 วันถัดไป | P1
+315 | รอ GR Pack/Bundle | GR กำลังแพ็คสินค้า/รวมกล่อง ก่อนส่งออก | P2
+515 | Vendor เลื่อนนัดซ่อม | Vendor แจ้งเลื่อนกำหนดซ่อมเสร็จ (มี Reschedule log) | P2
+615 | ซ่อมเสร็จ รอแจ้ง/รอ 3PL รับสินค้า | ยืนยันซ่อมเสร็จแล้ว สาขาแจ้ง 3PL ไปรับ — SLA 7 วัน | P2
+915 | รอจ่ายเงิน Vendor | งานปิดฝั่งลูกค้าแล้ว รอครบรอบ due จ่าย Vendor | P2
+
+=== TABLE 17 ===
+Entity | Fields หลัก | ใช้กับ | Phase
+Deposit | request_id, amount, calc_method, received_date, ref_no | NEW-01 | P1
+ServiceOption | request_id, type (EXPRESS/REGULAR), handling_fee, transport_size (S/L), transport_fee | NEW-01 | P1
+SkuRouting | sku, distrmcode (2/3/4), vendor_id/dc_id | NEW-02 | P1
+VendorAgreement | vendor_id, service_type, sla_pickup_hrs, payment_due_days, conditions | NEW-04, 08, 15 | P2
+Package (Bundle) | package_no, vendor_id, box_size, items[request_id], label_printed | NEW-05, 06 | P2
+PickupRecord | request_id/package_id, vehicle_plate, driver_name, signature, channel (VENDOR/OWN/3PL), datetime | NEW-05, 09 | P2
+RescheduleLog | request_id, old_due, new_due, reason, recorded_by, datetime | NEW-13 | P2
+VendorPayment | vendor_id, request_id, amount, due_date, paid_date, status | NEW-14, 15 | P2
+
+=== TABLE 18 ===
+กลุ่มงาน | ขอบเขต
+Foundation | Auth + RBAC (CS/GR/DC/ADMIN), DB Schema + Status Model รหัสใหม่ 3 หลัก + Migration ข้อมูลเดิม, Seed reference data
+เปิดใบแจ้งซ่อม (ขยาย) | NEW-01: Draft/Save + ออกเลขตั้งแต่ Draft + Ticket + Auto-cancel, เงินมัดจำ, Express/Regular + ค่าดำเนินการ/ค่าขนส่ง S/L
+Routing | NEW-02: ผูก SKU→Vendor/DC ด้วย distrmcode
+Core Flow (Clone) | State machine + Rollback map, Flow สาขา→DC→Vendor ครบ 3 ช่องทางคืนสินค้า, บันทึกวันที่-เวลา ทุกจุดตาม Flow Diagram
+Quotation | ใบเสนอราคา Cost-plus + NEW-10 (GP + พิมพ์), NEW-11 (รูป Ticket หน้าอนุมัติ), บันทึกผลอนุมัติลูกค้า
+Notification | NEW-07: เมล์แจ้ง Vendor (ต่อยอดของเดิม)
+ปิดงาน | รับคืนสินค้า, ส่งมอบลูกค้า + ลายเซ็นดิจิทัล, ปิดงาน
+Maintain (ADMIN) | Users, Vendor, SLA รายสถานะ, อัตราค่าขนส่ง S/L, ค่าดำเนินการ, Diagnostic fee
+Bug Fixes | FIX-01 ถึง FIX-05 (หัวข้อ 10)
+Report พื้นฐาน | รายการใบงาน + สถานะ + Export
+
+=== TABLE 19 ===
+กลุ่มงาน | ขอบเขต
+Packing & Shipping | NEW-05: GR Pack + ใบปะหน้า + 3 ช่องทางส่ง (Vendor/ขนส่งเรา/3PL) ผูก S/L, NEW-06: Bundle รวมกล่อง
+Vendor Pickup | NEW-09: ทะเบียนรถ + ลายเซ็นผู้รับ
+Vendor Management | NEW-04: Agreement Express/Regular, NEW-08: SLA รายVendor + Alert
+Repair Tracking | NEW-13: เลื่อนนัดซ่อม + Reschedule log, NEW-12: ยืนยันซ่อมเสร็จ → แจ้ง 3PL รับใน 7 วัน
+Finance | Payment Recording (หัวข้อ 6.4), NEW-15: รอบ Due จ่าย Vendor + แจ้งเตือน, NEW-14: Report จ่าย Vendor/รับลูกค้า/กำไร
+Customer Option | NEW-03: ลูกค้าเลือกด่วน/ไม่ด่วน (รอ Confirm นิยามจากคุณลิ้ม — ถ้าสรุปทันอาจดึงเข้า P1)
+Enhancement | แจ้งเตือนอัตโนมัติลูกค้า (SMS/LINE OA — FIX-04 ส่วนขยาย), Dashboard/Priority queue, Service Tier VIP
+
+=== TABLE 20 ===
+ช่วงเวลา | Phase 1 — MVP | Phase 2
+ส.ค. 2569 | Design + DB Schema + Foundation | 
+ก.ย. – ต.ค. 2569 | พัฒนา Core Flow, เปิดงาน, Quotation, Maintain | 
+พ.ย. 2569 | SIT + UAT + Migration ข้อมูล | Design Phase 2 (คู่ขนาน)
+ต้น ธ.ค. 2569 | Go-live MVP | เริ่มพัฒนา Packing/Vendor Mgmt
+ธ.ค. 2569 – ก.พ. 2570 | Hypercare + แก้ไขหลัง Go-live | พัฒนา Finance, Tracking, Bundle
+มี.ค. 2570 |  | UAT + Go-live Phase 2
+
+=== TABLE 21 ===
+ประเด็น | ผลกระทบ | แนวทาง
+NEW-03 ยัง TBC (นิยามด่วน/ไม่ด่วน) | กระทบการคิดค่าบริการ NEW-01 และ Flow NEW-04/05 | ต้อง Confirm กับคุณลิ้มภายในช่วง Design MVP (ส.ค. 2569)
+Migration รหัสสถานะเดิม→ใหม่ | งานเก่าค้างใน pipeline ต้อง map สถานะ | ใช้ status_code_migration.sql + freeze period ช่วง cutover
+ข้อตกลง Vendor (SLA/payment term) | Phase 2 เริ่มไม่ได้ถ้าไม่มีข้อมูล Agreement | ทีม Business เจรจา Vendor คู่ขนานระหว่างพัฒนา MVP
+3PL Integration | ยังไม่ระบุว่าเชื่อมระบบหรือ manual | MVP+P2 ใช้บันทึก manual ก่อน — Integration จริงเป็น backlog
+

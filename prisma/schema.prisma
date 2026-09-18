@@ -1,0 +1,788 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────
+
+enum Role {
+  CS
+  GR
+  DC
+  VD
+  S2
+  ADMIN
+  EXECUTIVE
+}
+
+enum JobStage {
+  PENDING_VENDOR_ASSIGNMENT
+  CS_OPENED
+  GR_RECEIVED
+  GR_PACKED
+  OUTBOUND_TO_DC
+  AT_DC_OUTBOUND
+  OUTBOUND_TO_VD
+  VD_INSPECTING
+  WAITING_APPROVAL
+  REPAIRING
+  RETURN_PACKING
+  INBOUND_TO_DC
+  AT_DC_INBOUND
+  INBOUND_TO_BRANCH
+  GR_RETURN_RECEIVED
+  READY_FOR_PICKUP
+  CLOSED_REPAIRED
+  CLOSED_NOT_REPAIRED
+  CANCELLED
+}
+
+enum JobType {
+  CUSTOMER
+  STOCK
+}
+
+enum Channel {
+  DC
+  DSD
+  TPL
+}
+
+enum ShipmentStatus {
+  PENDING_DISPATCH
+  DISPATCHED
+  PICKED_UP
+  DELIVERED
+  CANCELLED
+}
+
+enum CarrierType {
+  DC_FLEET
+  VD_FLEET
+  TPL
+}
+
+enum ShipmentLegType {
+  BRANCH_TO_DC
+  DC_TO_VD
+  BRANCH_TO_VD
+  VD_TO_DC
+  VD_TO_BRANCH
+  DC_TO_BRANCH
+}
+
+enum TokenType {
+  TRACKING
+  QUOTE
+  PAYMENT
+  DRIVER
+  CSAT
+}
+
+enum SlaClockStatus {
+  RUNNING
+  PAUSED
+  STOPPED
+}
+
+enum ChargeType {
+  OPERATION_FEE
+  SHIPPING_FEE
+  REPAIR
+  OPERATION_FEE_CREDIT
+  INSPECTION_FEE
+}
+
+enum PaymentMethod {
+  PROMPTPAY_QR
+  CARD_LINK
+  POS_RECEIPT
+  CASH
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  VOIDED
+}
+
+enum QuoteDecision {
+  PENDING
+  APPROVED
+  REJECTED
+  AUTO_APPROVED
+}
+
+enum QuoteStatus {
+  SENT
+  SUPERSEDED
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum QuoteLineType {
+  INSPECTION_FEE
+  PART
+  LABOR
+  OTHER
+}
+
+enum PayoutStatus {
+  PENDING
+  SENT
+  PAID
+}
+
+enum TradeInType {
+  TYPE1
+  TYPE2
+}
+
+enum TradeInStatus {
+  ISSUED
+  USED
+  FAILED
+  EXPIRED
+}
+
+enum SiteType {
+  BRANCH
+  DC
+}
+
+// ─────────────────────────────────────────────
+// USERS & AUTH
+// ─────────────────────────────────────────────
+
+model User {
+  id               String    @id @default(cuid())
+  username         String    @unique
+  password         String // bcrypt cost 12
+  fullName         String
+  email            String?
+  role             Role      @default(CS)
+  siteId           String? // Branch or DC site id
+  vendorCenterId   String? // For VD role
+  active           Boolean   @default(true)
+  failedLoginCount Int       @default(0)
+  lockedUntil      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  site          Site?          @relation(fields: [siteId], references: [id])
+  vendorCenter  VendorCenter?  @relation(fields: [vendorCenterId], references: [id])
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+// ─────────────────────────────────────────────
+// SITES (BRANCHES & DC)
+// ─────────────────────────────────────────────
+
+model Site {
+  id        String   @id @default(cuid())
+  code      String   @unique // e.g. "BN", "DC01"
+  name      String // e.g. "บางนา"
+  nickname  String // e.g. "BN"
+  type      SiteType @default(BRANCH)
+  province  String   @default("กรุงเทพมหานคร")
+  address   String?
+  phone     String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users         User[]
+  jobs          Job[]
+  primaryRoutes BranchVendorRoute[] @relation("PrimaryBranch")
+  dcCoverage    BranchVendorRoute[] @relation("DCCoverage")
+
+  @@map("sites")
+}
+
+// ─────────────────────────────────────────────
+// VENDORS
+// ─────────────────────────────────────────────
+
+model VendorParent {
+  id                      String   @id @default(cuid())
+  code                    String   @unique // e.g. "VD-0088"
+  name                    String // e.g. "บ.ช่างเจริญ"
+  defaultGpPct            Float    @default(18.0)
+  defaultRepairSlaDays    Int      @default(7)
+  repairWarrantyDays      Int      @default(30)
+  inspectionFeeCovered    Int      @default(0) // baht, if warranty
+  inspectionFeeNotCovered Int      @default(300) // baht, if no warranty
+  isBrandAuthorized       Boolean  @default(false)
+  active                  Boolean  @default(true)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  brands  VendorBrand[]
+  centers VendorCenter[]
+
+  @@map("vendor_parents")
+}
+
+model VendorCenter {
+  id                    String   @id @default(cuid())
+  code                  String   @unique // e.g. "VD-0088-1"
+  vendorParentId        String
+  zoneSiteId            String? // which site zone this center serves
+  address               String?
+  phone                 String?
+  deliveryMethod        String   @default("DC") // DC, DSD, DC_DSD
+  gpPctOverride         Float?
+  repairSlaDaysOverride Int?
+  active                Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  vendorParent  VendorParent        @relation(fields: [vendorParentId], references: [id])
+  users         User[]
+  jobs          Job[]
+  primaryRoutes BranchVendorRoute[] @relation("PrimaryCenter")
+  backupRoutes  BranchVendorRoute[] @relation("BackupCenter")
+
+  @@map("vendor_centers")
+}
+
+model VendorBrand {
+  vendorParentId String
+  brandId        Int
+
+  vendorParent VendorParent @relation(fields: [vendorParentId], references: [id], onDelete: Cascade)
+  brand        Brand        @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@id([vendorParentId, brandId])
+  @@map("vendor_brands")
+}
+
+model BranchVendorRoute {
+  id              String  @id @default(cuid())
+  branchId        String
+  dcSiteId        String?
+  primaryCenterId String?
+  backupCenterId  String?
+  standardChannel Channel @default(DC)
+  priority        Int     @default(1)
+
+  branch        Site          @relation("PrimaryBranch", fields: [branchId], references: [id])
+  dcSite        Site?         @relation("DCCoverage", fields: [dcSiteId], references: [id])
+  primaryCenter VendorCenter? @relation("PrimaryCenter", fields: [primaryCenterId], references: [id])
+  backupCenter  VendorCenter? @relation("BackupCenter", fields: [backupCenterId], references: [id])
+
+  @@map("branch_vendor_routes")
+}
+
+// ─────────────────────────────────────────────
+// PRODUCT CATALOG
+// ─────────────────────────────────────────────
+
+model Brand {
+  id     Int     @id @default(autoincrement())
+  name   String  @unique
+  active Boolean @default(true)
+
+  vendorBrands VendorBrand[]
+
+  @@map("brands")
+}
+
+model SizeCategory {
+  id        Int    @id @default(autoincrement())
+  code      String @unique // SMALL, LARGE
+  name      String // ขนาดเล็ก, ขนาดใหญ่
+  sortOrder Int    @default(0)
+
+  feeRates FeeRate[]
+
+  @@map("size_categories")
+}
+
+model FeeRate {
+  id             Int      @id @default(autoincrement())
+  sizeCategoryId Int
+  operationFee   Int      @default(0) // baht
+  shippingFee3pl Int      @default(0) // baht
+  effectiveFrom  DateTime @default(now())
+
+  sizeCategory SizeCategory @relation(fields: [sizeCategoryId], references: [id])
+
+  @@map("fee_rates")
+}
+
+model ProductType {
+  id   Int    @id @default(autoincrement())
+  code String @unique
+  name String
+
+  @@map("product_types")
+}
+
+model Commodity {
+  id          Int     @id @default(autoincrement())
+  sku         String  @unique
+  barcode     String?
+  name        String
+  brand       String
+  productType String
+  active      Boolean @default(true)
+
+  @@map("commodities")
+}
+
+// ─────────────────────────────────────────────
+// JOBS (CORE)
+// ─────────────────────────────────────────────
+
+model Job {
+  id             String   @id @default(cuid())
+  jobNo          String   @unique // JB-2609-00001 or STK-2609-00001
+  type           JobType  @default(CUSTOMER)
+  stage          JobStage @default(CS_OPENED)
+  channel        Channel?
+  stageEnteredAt DateTime @default(now())
+  version        Int      @default(1)
+
+  // Branch & Vendor
+  branchId       String
+  vendorCenterId String?
+
+  // Customer (CUSTOMER type only)
+  customerName    String?
+  customerPhone   String?
+  customerAddress String?
+  customerZip     String?
+  taxInvoiceName  String?
+  taxInvoiceId    String? // 13-digit tax ID
+  taxInvoiceAddr  String?
+
+  // Product
+  sku            String?
+  productName    String
+  brandId        Int?
+  brandName      String
+  sizeCategoryId Int?
+  symptom        String?
+  serialNo       String?
+  hasWarranty    Boolean @default(false)
+  allowNonAuth   Boolean @default(false) // allow non-authorized VD
+
+  // Shipping method at intake
+  shippingMethod String @default("STANDARD") // STANDARD, EXPRESS
+
+  // S2 additional info
+  receiverName String? // contact at VD for STOCK jobs
+
+  // Closure
+  decision QuoteDecision @default(PENDING)
+  closedAt DateTime?
+
+  // Auditing
+  createdBy String
+  openedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branch       Site          @relation(fields: [branchId], references: [id])
+  vendorCenter VendorCenter? @relation(fields: [vendorCenterId], references: [id])
+
+  items        JobItem[]
+  events       JobEvent[]
+  charges      JobCharge[]
+  slaClocks    SlaClock[]
+  shipments    Shipment[]
+  quotes       Quote[]
+  payments     Payment[]
+  publicTokens PublicToken[]
+  tradeIns     TradeIn[]
+  payoutLines  PayoutBatchLine[]
+
+  @@map("jobs")
+}
+
+model JobItem {
+  id          String  @id @default(cuid())
+  jobId       String
+  sku         String?
+  productName String
+  quantity    Int     @default(1)
+  holdStockNo String?
+  symptom     String?
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@map("job_items")
+}
+
+model JobEvent {
+  id          String    @id @default(cuid())
+  jobId       String
+  type        String // JOB_OPENED, GR_RECEIVED, VD_RECEIVED, QUOTE_SENT, etc.
+  fromStage   JobStage?
+  toStage     JobStage?
+  actorUserId String?
+  actorRole   String?
+  payload     Json? // action-specific input data
+  note        String?
+  createdAt   DateTime  @default(now())
+
+  job         Job          @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  attachments Attachment[]
+
+  @@map("job_events")
+}
+
+model JobCharge {
+  id          String     @id @default(cuid())
+  jobId       String
+  type        ChargeType
+  amount      Int // baht (can be negative for CREDIT)
+  description String?
+  createdAt   DateTime   @default(now())
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@map("job_charges")
+}
+
+// ─────────────────────────────────────────────
+// SLA ENGINE
+// ─────────────────────────────────────────────
+
+model SlaStep {
+  id         Int     @id @default(autoincrement())
+  seq        Int     @unique
+  code       String  @unique // CS_HANDOVER, GR_PACK, etc.
+  name       String
+  startEvent String // event type(s) that start this clock
+  stopEvent  String // event type(s) that stop this clock
+  ownerDept  String // CS, GR, DC, VD, CUSTOMER, CARRIER, TPL
+  hours      Int     @default(24)
+  appliesTo  String  @default("CUSTOMER,STOCK") // comma-separated job types
+  condition  String? // e.g. "channel=DC"
+  pausable   Boolean @default(false)
+  active     Boolean @default(true)
+
+  clocks SlaClock[]
+
+  @@map("sla_steps")
+}
+
+model SlaClock {
+  id            String         @id @default(cuid())
+  jobId         String
+  slaStepId     Int
+  status        SlaClockStatus @default(RUNNING)
+  startedAt     DateTime       @default(now())
+  dueAt         DateTime
+  stoppedAt     DateTime?
+  pausedAt      DateTime?
+  pausedMinutes Int            @default(0)
+  breached      Boolean        @default(false)
+  breachedAt    DateTime?
+
+  job     Job     @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  slaStep SlaStep @relation(fields: [slaStepId], references: [id])
+
+  @@unique([jobId, slaStepId])
+  @@map("sla_clocks")
+}
+
+// ─────────────────────────────────────────────
+// LOGISTICS
+// ─────────────────────────────────────────────
+
+model Shipment {
+  id           String          @id @default(cuid())
+  jobId        String
+  legType      ShipmentLegType
+  carrier      CarrierType
+  status       ShipmentStatus  @default(PENDING_DISPATCH)
+  trackingNo   String?
+  driverToken  String? // for /d/:token
+  dispatchedAt DateTime?
+  pickedUpAt   DateTime?
+  deliveredAt  DateTime?
+  cancelledAt  DateTime?
+  cost         Int             @default(0) // baht (3PL cost)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@map("shipments")
+}
+
+// ─────────────────────────────────────────────
+// ATTACHMENTS (Photos)
+// ─────────────────────────────────────────────
+
+model Attachment {
+  id         String   @id @default(cuid())
+  jobEventId String
+  kind       String // GR_RECEIVE, GR_PACK, GR_HANDOFF, VD_RETURN_PACK, etc.
+  fileName   String
+  fileUrl    String
+  fileSize   Int?
+  mimeType   String?
+  uploadedBy String?
+  createdAt  DateTime @default(now())
+
+  jobEvent JobEvent @relation(fields: [jobEventId], references: [id], onDelete: Cascade)
+
+  @@map("attachments")
+}
+
+// ─────────────────────────────────────────────
+// QUOTATIONS
+// ─────────────────────────────────────────────
+
+model Quote {
+  id                 String      @id @default(cuid())
+  jobId              String
+  quoteNo            String      @unique // QT-2609-00001
+  version            Int         @default(1)
+  status             QuoteStatus @default(SENT)
+  subtotal           Int         @default(0) // baht, before VAT
+  vatAmount          Int         @default(0) // 7% of subtotal
+  total              Int         @default(0) // subtotal + vat
+  repairDays         Int         @default(1)
+  repairWarrantyDays Int         @default(30)
+  vendorNote         String?
+  sentAt             DateTime?
+  expiresAt          DateTime?
+  decidedAt          DateTime?
+  createdBy          String
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  job   Job         @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  lines QuoteLine[]
+
+  @@map("quotes")
+}
+
+model QuoteLine {
+  id               String        @id @default(cuid())
+  quoteId          String
+  type             QuoteLineType
+  description      String
+  unitPrice        Int           @default(0) // baht before VAT
+  quantity         Int           @default(1)
+  partWaitDays     Int           @default(0)
+  partWarrantyDays Int           @default(0)
+  approved         Boolean? // customer per-line approval (for partial)
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@map("quote_lines")
+}
+
+// ─────────────────────────────────────────────
+// PAYMENTS
+// ─────────────────────────────────────────────
+
+model Payment {
+  id           String        @id @default(cuid())
+  jobId        String
+  chargeType   ChargeType // which charge this pays
+  amount       Int // baht
+  method       PaymentMethod
+  status       PaymentStatus @default(PENDING)
+  posReceiptNo String?
+  externalRef  String? // QR ref or card auth code
+  receivedBy   String?
+  receivedAt   DateTime?
+  voidedAt     DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+// ─────────────────────────────────────────────
+// PUBLIC TOKENS
+// ─────────────────────────────────────────────
+
+model PublicToken {
+  id        String    @id @default(cuid())
+  jobId     String
+  type      TokenType
+  token     String    @unique // 32 bytes base64url
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@map("public_tokens")
+}
+
+// ─────────────────────────────────────────────
+// TRADE-IN
+// ─────────────────────────────────────────────
+
+model PromotionConfig {
+  id             String      @id @default(cuid())
+  name           String
+  tradeInType    TradeInType
+  sizeCategoryId Int?
+  subDept        String?
+  discountPct    Float // 0–100
+  startDate      DateTime
+  endDate        DateTime
+  status         String      @default("ACTIVE") // ACTIVE, DRAFT, CLOSED
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  tradeIns TradeIn[]
+
+  @@map("promotion_configs")
+}
+
+model TradeIn {
+  id             String        @id @default(cuid())
+  tradeInNo      String        @unique // TI-2609-00001
+  type           TradeInType
+  jobId          String? // TYPE2 only
+  promotionId    String?
+  customerName   String
+  customerPhone  String
+  productName    String
+  brandName      String?
+  sizeCategoryId Int?
+  symptom        String?
+  discountPct    Float
+  status         TradeInStatus @default(ISSUED)
+  walletRef      String?
+  createdBy      String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  job       Job?             @relation(fields: [jobId], references: [id])
+  promotion PromotionConfig? @relation(fields: [promotionId], references: [id])
+
+  @@map("trade_ins")
+}
+
+// ─────────────────────────────────────────────
+// VD PAYOUT
+// ─────────────────────────────────────────────
+
+model PayoutCycleConfig {
+  id          Int     @id @default(autoincrement())
+  cycleType   String  @default("BIMONTHLY") // BIMONTHLY, WEEKLY, MONTHLY
+  dayOfMonth1 Int     @default(5)
+  dayOfMonth2 Int     @default(20)
+  active      Boolean @default(true)
+
+  @@map("payout_cycle_configs")
+}
+
+model PayoutBatch {
+  id          String       @id @default(cuid())
+  batchNo     String       @unique
+  periodFrom  DateTime
+  periodTo    DateTime
+  status      PayoutStatus @default(PENDING)
+  totalAmount Int          @default(0)
+  submittedAt DateTime?
+  paidAt      DateTime?
+  createdBy   String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  lines PayoutBatchLine[]
+
+  @@map("payout_batches")
+}
+
+model PayoutBatchLine {
+  id             String       @id @default(cuid())
+  batchId        String
+  jobId          String
+  vendorCenterId String?
+  repairAmount   Int // subtotal before VAT
+  gpPct          Float
+  gpAmount       Int
+  netAmount      Int // repairAmount - gpAmount - deductions
+  status         PayoutStatus @default(PENDING)
+  createdAt      DateTime     @default(now())
+
+  batch PayoutBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  job   Job         @relation(fields: [jobId], references: [id])
+
+  @@map("payout_batch_lines")
+}
+
+// ─────────────────────────────────────────────
+// RUNNING NUMBERS
+// ─────────────────────────────────────────────
+
+model RunningNumber {
+  prefix    String   @id // JB-2609, STK-2609, QT-2609, TI-2609
+  lastSeq   Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@map("running_numbers")
+}
+
+// ─────────────────────────────────────────────
+// SYSTEM CONFIG
+// ─────────────────────────────────────────────
+
+model SystemSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("system_settings")
+}
+
+model SlaStep_Override {
+  // allow admin to override SlaStep hours per VendorCenter
+  id            String @id @default(cuid())
+  slaStepId     Int
+  centerId      String
+  hoursOverride Int
+
+  @@unique([slaStepId, centerId])
+  @@map("sla_step_overrides")
+}
+
+model RoleMenuPermission {
+  id        String  @id @default(cuid())
+  menuKey   String // exec, analytics, jobs, cs, gr, dc, vd, tradein, s2, vd_payment, admin
+  role      Role
+  canAccess Boolean @default(false)
+  canWrite  Boolean @default(false)
+
+  @@unique([menuKey, role])
+  @@map("role_menu_permissions")
+}

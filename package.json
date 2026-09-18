@@ -1,23 +1,43 @@
 {
-  "name": "svcm-root",
-  "version": "0.1.0",
+  "name": "vservice-repair-system",
+  "version": "2.2.0",
   "private": true,
-  "packageManager": "pnpm@12.3.4",
   "scripts": {
-    "dev": "turbo run dev --parallel",
-    "build": "turbo run build",
-    "lint": "turbo run lint",
-    "typecheck": "turbo run typecheck",
-    "test": "turbo run test",
-    "db:generate": "pnpm --filter @svcm/db generate",
-    "db:migrate": "pnpm --filter @svcm/db migrate",
-    "db:studio": "pnpm --filter @svcm/db studio",
-    "db:seed": "pnpm --filter @svcm/db seed",
-    "e2e": "echo \"e2e placeholder (Step 27)\""
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "lint": "next lint",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.4.1",
+    "bcryptjs": "^2.4.3",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "jose": "^6.2.12",
+    "jsonwebtoken": "^9.0.2",
+    "lucide-react": "^0.475.0",
+    "next": "15.1.7",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^3.0.1",
+    "xlsx": "^0.18.5",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
-    "prettier": "^3.5.2",
-    "turbo": "^2.4.4",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.8",
+    "@types/node": "^22.13.4",
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.3",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.5.2",
+    "prisma": "^6.4.1",
+    "tailwindcss": "^3.4.17",
+    "tsx": "^4.19.2",
     "typescript": "^5.7.3"
   }
 }

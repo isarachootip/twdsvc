@@ -1,39 +1,37 @@
-# syntax=docker/dockerfile:1
-FROM node:20-alpine AS base
-
+FROM node:22-alpine AS base
 RUN apk add --no-cache libc6-compat openssl
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
 WORKDIR /app
 
-# ───────────── Stage 1: Dependencies & Build ─────────────
+FROM base AS deps
+COPY package.json package-lock.json ./
+COPY prisma ./prisma
+RUN npm ci
+
 FROM base AS builder
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN npx prisma generate
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
+RUN npm run build
 
-COPY pnpm-lock.yaml package.json pnpm-workspace.yaml turbo.json ./
-COPY packages/ ./packages/
-COPY apps/ ./apps/
-
-RUN pnpm install --frozen-lockfile
-
-# Generate Prisma Client and build monorepo packages
-RUN pnpm db:generate
-RUN pnpm build
-
-# ───────────── Stage 2: Production Runner ─────────────
 FROM base AS runner
 WORKDIR /app
-
 ENV NODE_ENV=production
-ENV HOSTNAME=0.0.0.0
+ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
-ENV API_PORT=4000
+ENV HOSTNAME="0.0.0.0"
 
-# Copy all build artifacts and node_modules
-COPY --from=builder /app /app
-
-COPY entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/package-lock.json ./package-lock.json
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/prisma ./prisma
+COPY entrypoint.sh ./entrypoint.sh
+RUN dos2unix ./entrypoint.sh 2>/dev/null || true
+RUN chmod +x ./entrypoint.sh
 
 EXPOSE 3000
 
-ENTRYPOINT ["/app/entrypoint.sh"]
+ENTRYPOINT ["./entrypoint.sh"]

@@ -1,0 +1,212 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1560 1150" font-family="Segoe UI, Tahoma, Arial, sans-serif">
+  <defs>
+    <marker id="arr" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#444"/>
+    </marker>
+    <marker id="arrO" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#C2571A"/>
+    </marker>
+  </defs>
+  <rect width="1560" height="1150" fill="#FFFFFF"/>
+
+  <text x="40" y="40" font-size="24" font-weight="bold" fill="#1F2937">Request Repair System — GCP Deployment &amp; Infrastructure</text>
+  <text x="40" y="64" font-size="13" fill="#6B7280">Cloud deployment view of the event-driven architecture · Google Cloud Platform · region asia-southeast1 (or TH region when available)</text>
+
+  <!-- Legend -->
+  <g font-size="12" fill="#374151">
+    <rect x="1210" y="20" width="310" height="56" rx="6" fill="#FFFFFF" stroke="#9CA3AF"/>
+    <line x1="1225" y1="38" x2="1275" y2="38" stroke="#444" stroke-width="2" marker-end="url(#arr)"/>
+    <text x="1285" y="42">Synchronous (HTTPS / SQL / private IP)</text>
+    <line x1="1225" y1="60" x2="1275" y2="60" stroke="#C2571A" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrO)"/>
+    <text x="1285" y="64">Asynchronous (Kafka events)</text>
+  </g>
+
+  <!-- USERS (outside cloud) -->
+  <text x="40" y="96" font-size="12" font-weight="bold" fill="#92700B" letter-spacing="1">INTERNET — USERS &amp; PARTNERS</text>
+  <rect x="40" y="104" width="360" height="60" rx="8" fill="#FFF3CD" stroke="#B8860B"/>
+  <text x="220" y="128" font-size="13.5" font-weight="bold" text-anchor="middle" fill="#111">Staff Users — CS · GR · DC · ADMIN</text>
+  <text x="220" y="148" font-size="11" text-anchor="middle" fill="#374151">Browser (HTTPS)</text>
+  <rect x="430" y="104" width="280" height="60" rx="8" fill="#FFF3CD" stroke="#B8860B"/>
+  <text x="570" y="128" font-size="13.5" font-weight="bold" text-anchor="middle" fill="#111">Vendor</text>
+  <text x="570" y="148" font-size="11" text-anchor="middle" fill="#374151">Email link → /print/{requestId}</text>
+  <rect x="740" y="104" width="240" height="60" rx="8" fill="#FFF3CD" stroke="#B8860B" stroke-dasharray="5 4"/>
+  <text x="860" y="128" font-size="13.5" font-weight="bold" text-anchor="middle" fill="#111">3PL Webhook (Phase 2)</text>
+  <text x="860" y="148" font-size="11" text-anchor="middle" fill="#374151">Tracking callbacks (HTTPS)</text>
+
+  <!-- GCP PROJECT BOUNDARY -->
+  <rect x="40" y="210" width="1130" height="700" rx="12" fill="#F8FAFF" stroke="#4285F4" stroke-width="2" stroke-dasharray="10 6"/>
+  <text x="60" y="236" font-size="14" font-weight="bold" fill="#4285F4">Google Cloud Project (per environment: dev / uat / prod)</text>
+
+  <!-- Edge -->
+  <rect x="70" y="252" width="1070" height="58" rx="8" fill="#E2E3E5" stroke="#6C757D"/>
+  <text x="605" y="276" font-size="13.5" font-weight="bold" text-anchor="middle" fill="#111">Cloud DNS · Global External HTTPS Load Balancer · Cloud Armor (WAF, rate limit) · Managed SSL · Cloud CDN (static)</text>
+  <text x="605" y="296" font-size="11" text-anchor="middle" fill="#374151">Only public entry point — everything behind it is private</text>
+  <line x1="220" y1="164" x2="220" y2="252" stroke="#444" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="570" y1="164" x2="570" y2="252" stroke="#444" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="860" y1="164" x2="860" y2="252" stroke="#444" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- VPC -->
+  <rect x="70" y="336" width="1070" height="424" rx="10" fill="#FFFFFF" stroke="#0E7490" stroke-width="1.5"/>
+  <text x="90" y="358" font-size="13" font-weight="bold" fill="#0E7490">VPC (private) — gke &amp; data subnets · Private Service Connect / private IP only · no public IPs on workloads</text>
+
+  <!-- GKE -->
+  <rect x="90" y="372" width="600" height="368" rx="8" fill="#E8F0FE" stroke="#1D4ED8"/>
+  <text x="390" y="396" font-size="13.5" font-weight="bold" text-anchor="middle" fill="#111">GKE (Autopilot, private cluster) — Workload Identity · HPA</text>
+  <line x1="330" y1="310" x2="330" y2="372" stroke="#444" stroke-width="2" marker-end="url(#arr)"/>
+  <text x="345" y="340" font-size="10.5" fill="#6B7280">LB → Ingress (NEG)</text>
+
+  <g font-size="11">
+    <rect x="110" y="412" width="270" height="56" rx="6" fill="#FFFFFF" stroke="#1D4ED8"/>
+    <text x="245" y="434" font-size="12" font-weight="bold" text-anchor="middle" fill="#111">frontend (Next.js) × N</text>
+    <text x="245" y="452" text-anchor="middle" fill="#374151">Deployment + HPA</text>
+
+    <rect x="400" y="412" width="270" height="56" rx="6" fill="#FFFFFF" stroke="#1D4ED8"/>
+    <text x="535" y="434" font-size="12" font-weight="bold" text-anchor="middle" fill="#111">core-api (REST, command side) × N</text>
+    <text x="535" y="452" text-anchor="middle" fill="#374151">Deployment + HPA · Cloud SQL connector</text>
+
+    <rect x="110" y="482" width="270" height="56" rx="6" fill="#FFFFFF" stroke="#1D4ED8"/>
+    <text x="245" y="504" font-size="12" font-weight="bold" text-anchor="middle" fill="#111">outbox-relay</text>
+    <text x="245" y="522" text-anchor="middle" fill="#374151">1 active + standby (leader election)</text>
+
+    <rect x="400" y="482" width="270" height="56" rx="6" fill="#FFFFFF" stroke="#166534"/>
+    <text x="535" y="504" font-size="12" font-weight="bold" text-anchor="middle" fill="#111">consumers: audit · read-model · document</text>
+    <text x="535" y="522" text-anchor="middle" fill="#374151">consumer groups — scale by partitions</text>
+
+    <rect x="110" y="552" width="270" height="56" rx="6" fill="#FFFFFF" stroke="#166534"/>
+    <text x="245" y="574" font-size="12" font-weight="bold" text-anchor="middle" fill="#111">sla-monitor</text>
+    <text x="245" y="592" text-anchor="middle" fill="#374151">consumer + CronJob (deadline sweep)</text>
+
+    <rect x="400" y="552" width="270" height="56" rx="6" fill="#FFFFFF" stroke="#166534"/>
+    <text x="535" y="574" font-size="12" font-weight="bold" text-anchor="middle" fill="#111">notification</text>
+    <text x="535" y="592" text-anchor="middle" fill="#374151">email/LINE via egress · retry → DLQ</text>
+  </g>
+  <text x="390" y="640" font-size="11" text-anchor="middle" fill="#374151">All images from Artifact Registry · config from Secret Manager · zero service-account keys (Workload Identity)</text>
+  <text x="390" y="660" font-size="11" text-anchor="middle" fill="#374151">Rolling / blue-green deploys via Cloud Deploy · pods spread across 3 zones</text>
+
+  <!-- Kafka -->
+  <rect x="720" y="372" width="390" height="104" rx="8" fill="#FDE2CF" stroke="#C2571A" stroke-width="2"/>
+  <text x="915" y="396" font-size="13" font-weight="bold" text-anchor="middle" fill="#111">Managed Service for Apache Kafka</text>
+  <text x="915" y="416" font-size="11" text-anchor="middle" fill="#374151">repair.ticket / quotation / payment / sla events + DLQ</text>
+  <text x="915" y="434" font-size="11" text-anchor="middle" fill="#374151">partition key = request_id · RF 3 across zones</text>
+  <text x="915" y="452" font-size="11" text-anchor="middle" fill="#374151">retention 30d · schema registry · SASL + ACL per service</text>
+  <line x1="690" y1="424" x2="720" y2="424" stroke="#C2571A" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrO)"/>
+  <text x="705" y="414" font-size="9.5" fill="#7C2D12" text-anchor="middle">pub/sub</text>
+
+  <!-- Cloud SQL -->
+  <rect x="720" y="496" width="390" height="116" rx="8" fill="#F0E6FA" stroke="#6B21A8"/>
+  <text x="915" y="520" font-size="13" font-weight="bold" text-anchor="middle" fill="#111">Cloud SQL for PostgreSQL</text>
+  <text x="915" y="540" font-size="11" text-anchor="middle" fill="#374151">Regional HA (primary + standby, auto failover) + read replica</text>
+  <text x="915" y="558" font-size="11" text-anchor="middle" fill="#374151">OLTP · outbox · read models · transaction_log</text>
+  <text x="915" y="576" font-size="11" text-anchor="middle" fill="#374151">Private IP only · PITR + automated backups</text>
+  <text x="915" y="594" font-size="11" text-anchor="middle" fill="#374151">Reports/exports → read replica</text>
+  <line x1="690" y1="554" x2="720" y2="554" stroke="#444" stroke-width="2" marker-end="url(#arr)"/>
+  <text x="705" y="546" font-size="9.5" fill="#6B7280" text-anchor="middle">SQL</text>
+
+  <!-- Memorystore -->
+  <rect x="720" y="628" width="390" height="52" rx="8" fill="#DBF4FF" stroke="#0E7490"/>
+  <text x="915" y="650" font-size="13" font-weight="bold" text-anchor="middle" fill="#111">Memorystore for Redis (HA)</text>
+  <text x="915" y="668" font-size="11" text-anchor="middle" fill="#374151">sessions · cache · locks — private IP</text>
+  <line x1="690" y1="654" x2="720" y2="654" stroke="#444" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- Cloud NAT -->
+  <rect x="720" y="696" width="390" height="44" rx="8" fill="#ECECEC" stroke="#6C757D"/>
+  <text x="915" y="714" font-size="12.5" font-weight="bold" text-anchor="middle" fill="#111">Cloud NAT — controlled egress</text>
+  <text x="915" y="731" font-size="10.5" text-anchor="middle" fill="#374151">outbound only: SMTP API · LINE · 3PL — no inbound</text>
+  <line x1="690" y1="718" x2="720" y2="718" stroke="#444" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- GCS + platform services -->
+  <rect x="70" y="784" width="350" height="102" rx="8" fill="#F0E6FA" stroke="#6B21A8"/>
+  <text x="245" y="808" font-size="13" font-weight="bold" text-anchor="middle" fill="#111">Cloud Storage (GCS)</text>
+  <text x="245" y="828" font-size="11" text-anchor="middle" fill="#374151">attachments · signatures · receipts</text>
+  <text x="245" y="846" font-size="11" text-anchor="middle" fill="#374151">V4 signed URLs (browser up/download direct)</text>
+  <text x="245" y="864" font-size="11" text-anchor="middle" fill="#374151">lifecycle rules · versioning · CMEK (option)</text>
+  <line x1="245" y1="740" x2="245" y2="784" stroke="#444" stroke-width="2" marker-end="url(#arr)"/>
+  <text x="260" y="766" font-size="10" fill="#6B7280">signed URL issue</text>
+
+  <rect x="450" y="784" width="690" height="102" rx="8" fill="#FFFFFF" stroke="#6C757D"/>
+  <text x="795" y="808" font-size="13" font-weight="bold" text-anchor="middle" fill="#111">Platform Services</text>
+  <text x="795" y="830" font-size="11" text-anchor="middle" fill="#374151">Secret Manager · Artifact Registry · Cloud Build + Cloud Deploy (CI/CD, Terraform IaC) · IAM + Workload Identity</text>
+  <text x="795" y="848" font-size="11" text-anchor="middle" fill="#374151">Cloud Monitoring / Logging / Trace — p95 latency · consumer lag · DLQ depth · SLA breach alerts</text>
+  <text x="795" y="866" font-size="11" text-anchor="middle" fill="#374151">BigQuery (option) — long-term analytics fed from events / replica</text>
+
+  <!-- EXTERNAL SERVICES -->
+  <text x="40" y="948" font-size="12" font-weight="bold" fill="#B02A37" letter-spacing="1">EXTERNAL SERVICES (via Cloud NAT egress · HTTPS)</text>
+  <rect x="40" y="958" width="260" height="70" rx="8" fill="#F8D7DA" stroke="#B02A37"/>
+  <text x="170" y="984" font-size="12.5" font-weight="bold" text-anchor="middle" fill="#111">SendGrid / SMTP relay</text>
+  <text x="170" y="1002" font-size="11" text-anchor="middle" fill="#374151">vendor notification email</text>
+  <rect x="330" y="958" width="240" height="70" rx="8" fill="#F8D7DA" stroke="#B02A37"/>
+  <text x="450" y="984" font-size="12.5" font-weight="bold" text-anchor="middle" fill="#111">LINE Notify / SMS</text>
+  <text x="450" y="1002" font-size="11" text-anchor="middle" fill="#374151">SLA escalation · customer pickup</text>
+  <rect x="600" y="958" width="240" height="70" rx="8" fill="#F8D7DA" stroke="#B02A37" stroke-dasharray="5 4"/>
+  <text x="720" y="984" font-size="12.5" font-weight="bold" text-anchor="middle" fill="#111">3PL API (Phase 2)</text>
+  <text x="720" y="1002" font-size="11" text-anchor="middle" fill="#374151">pickup booking · tracking</text>
+  <rect x="870" y="958" width="270" height="70" rx="8" fill="#F8D7DA" stroke="#B02A37" stroke-dasharray="5 4"/>
+  <text x="1005" y="984" font-size="12.5" font-weight="bold" text-anchor="middle" fill="#111">ERP / Accounting (Phase 2)</text>
+  <text x="1005" y="1002" font-size="11" text-anchor="middle" fill="#374151">vendor payment · cash reconciliation export</text>
+
+  <line x1="170" y1="910" x2="170" y2="958" stroke="#444" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="450" y1="910" x2="450" y2="958" stroke="#444" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="720" y1="910" x2="720" y2="958" stroke="#444" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="1005" y1="910" x2="1005" y2="958" stroke="#444" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- Environments strip -->
+  <rect x="40" y="1058" width="1130" height="56" rx="8" fill="#ECECEC" stroke="#6C757D"/>
+  <text x="605" y="1081" font-size="13" font-weight="bold" text-anchor="middle" fill="#111">Environments &amp; DR</text>
+  <text x="605" y="1100" font-size="11" text-anchor="middle" fill="#374151">dev / uat / prod = separate GCP projects (same Terraform) · regional HA across 3 zones by default · Cloud SQL PITR + cross-region backup copy · GCS dual-region (option) · budget alerts per project</text>
+
+  <!-- RIGHT CALLOUTS -->
+  <rect x="1210" y="104" width="310" height="240" rx="8" fill="#FFFFFF" stroke="#0E7490" stroke-width="1.5"/>
+  <text x="1365" y="130" font-size="14" font-weight="bold" text-anchor="middle" fill="#0E7490">Why Managed Services</text>
+  <g font-size="11.5" fill="#374151">
+    <text x="1226" y="156">• Cloud SQL: HA failover, patching, backups —</text>
+    <text x="1226" y="172">   no DBA on-call needed</text>
+    <text x="1226" y="194">• Managed Kafka: broker ops, upgrades handled</text>
+    <text x="1226" y="216">• GKE Autopilot: pay per pod, no node mgmt</text>
+    <text x="1226" y="238">• Memorystore: automatic failover</text>
+    <text x="1226" y="260">• GCS: 11-nines durability, no file-server VM</text>
+    <text x="1226" y="282">• Fits small team: focus on app code,</text>
+    <text x="1226" y="298">   infra is declarative (Terraform)</text>
+    <text x="1226" y="320">• Alternative: Pub/Sub instead of Kafka if</text>
+    <text x="1226" y="336">   cost-optimizing (same outbox pattern)</text>
+  </g>
+
+  <rect x="1210" y="374" width="310" height="256" rx="8" fill="#FFFFFF" stroke="#1D4ED8" stroke-width="1.5"/>
+  <text x="1365" y="400" font-size="14" font-weight="bold" text-anchor="middle" fill="#1D4ED8">Scaling on GCP</text>
+  <g font-size="11.5" fill="#374151">
+    <text x="1226" y="426">• HPA scales pods on CPU / RPS / consumer lag</text>
+    <text x="1226" y="448">• Autopilot adds capacity automatically</text>
+    <text x="1226" y="470">• Global LB absorbs spikes at the edge</text>
+    <text x="1226" y="492">• Files bypass app entirely (signed URLs</text>
+    <text x="1226" y="508">   direct to GCS) — biggest bandwidth saver</text>
+    <text x="1226" y="530">• Add Kafka partitions → consumers scale out</text>
+    <text x="1226" y="552">• Read replica for reports / Excel export</text>
+    <text x="1226" y="574">• ≥ 50 concurrent users (NFR) trivially met;</text>
+    <text x="1226" y="590">   headroom to 1000+ without redesign</text>
+    <text x="1226" y="612">• New branch/BU = data only, no infra change</text>
+  </g>
+
+  <rect x="1210" y="660" width="310" height="290" rx="8" fill="#FFFFFF" stroke="#B02A37" stroke-width="1.5"/>
+  <text x="1365" y="686" font-size="14" font-weight="bold" text-anchor="middle" fill="#B02A37">Security on GCP</text>
+  <g font-size="11.5" fill="#374151">
+    <text x="1226" y="712">• Single public entry: HTTPS LB + Cloud Armor</text>
+    <text x="1226" y="734">• Private GKE · private IP for SQL/Redis/Kafka</text>
+    <text x="1226" y="756">• Workload Identity — no SA key files</text>
+    <text x="1226" y="778">• Secret Manager for DB/SMTP credentials</text>
+    <text x="1226" y="800">• IAM least-privilege per service account</text>
+    <text x="1226" y="822">• Signed URLs expire; buckets non-public</text>
+    <text x="1226" y="844">• Cloud Audit Logs + app transaction_log</text>
+    <text x="1226" y="866">• Egress restricted via Cloud NAT + firewall</text>
+    <text x="1226" y="888">• VPC Service Controls (option, data exfil</text>
+    <text x="1226" y="904">   protection) · CMEK for GCS/SQL (option)</text>
+    <text x="1226" y="926">• RBAC + field-level ACL enforced in core-api</text>
+  </g>
+
+  <rect x="1210" y="980" width="310" height="134" rx="8" fill="#FFFFFF" stroke="#166534" stroke-width="1.5"/>
+  <text x="1365" y="1006" font-size="14" font-weight="bold" text-anchor="middle" fill="#166534">Indicative Sizing (start)</text>
+  <g font-size="11.5" fill="#374151">
+    <text x="1226" y="1030">frontend 2 pods · core-api 2 pods (HPA max 6)</text>
+    <text x="1226" y="1050">consumers 1–2 pods each · Kafka 6 partitions</text>
+    <text x="1226" y="1070">Cloud SQL 2 vCPU/8GB + replica · Redis 1GB</text>
+    <text x="1226" y="1090">Scale up by config only — no code changes</text>
+  </g>
+</svg>

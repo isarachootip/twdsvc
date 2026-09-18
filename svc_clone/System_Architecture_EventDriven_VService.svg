@@ -1,0 +1,225 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1560 1120" font-family="Segoe UI, Tahoma, Arial, sans-serif">
+  <defs>
+    <marker id="arr" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#444"/>
+    </marker>
+    <marker id="arrO" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#C2571A"/>
+    </marker>
+  </defs>
+  <rect width="1560" height="1120" fill="#FFFFFF"/>
+
+  <!-- Title -->
+  <text x="40" y="40" font-size="24" font-weight="bold" fill="#1F2937">Request Repair System — Event-Driven System Architecture</text>
+  <text x="40" y="64" font-size="13" fill="#6B7280">Rebuild/Clone target architecture · aligned with SRS v2.2 · Kafka/Redpanda backbone · CQRS-lite with Transactional Outbox</text>
+
+  <!-- Legend -->
+  <g font-size="12" fill="#374151">
+    <rect x="1210" y="20" width="310" height="56" rx="6" fill="#FFFFFF" stroke="#9CA3AF"/>
+    <line x1="1225" y1="38" x2="1275" y2="38" stroke="#444" stroke-width="2" marker-end="url(#arr)"/>
+    <text x="1285" y="42">Synchronous (HTTPS / REST / SQL)</text>
+    <line x1="1225" y1="60" x2="1275" y2="60" stroke="#C2571A" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrO)"/>
+    <text x="1285" y="64">Asynchronous event (Kafka topic)</text>
+  </g>
+
+  <!-- CLIENT LAYER -->
+  <text x="40" y="100" font-size="12" font-weight="bold" fill="#92700B" letter-spacing="1">CLIENT LAYER</text>
+  <g>
+    <rect x="40" y="110" width="460" height="70" rx="8" fill="#FFF3CD" stroke="#B8860B"/>
+    <text x="270" y="136" font-size="14" font-weight="bold" text-anchor="middle" fill="#111">Web App Users — CS · GR · DC · ADMIN</text>
+    <text x="270" y="156" font-size="11.5" text-anchor="middle" fill="#374151">Browser desktop/tablet (responsive ≥ 768px) · Thai UI · role-based menus</text>
+
+    <rect x="530" y="110" width="330" height="70" rx="8" fill="#FFF3CD" stroke="#B8860B"/>
+    <text x="695" y="136" font-size="14" font-weight="bold" text-anchor="middle" fill="#111">Vendor</text>
+    <text x="695" y="156" font-size="11.5" text-anchor="middle" fill="#374151">Email notification → link /print/{requestId}</text>
+
+    <rect x="890" y="110" width="280" height="70" rx="8" fill="#FFF3CD" stroke="#B8860B" stroke-dasharray="5 4"/>
+    <text x="1030" y="136" font-size="14" font-weight="bold" text-anchor="middle" fill="#111">3PL / Partner (Phase 2)</text>
+    <text x="1030" y="156" font-size="11.5" text-anchor="middle" fill="#374151">Pickup booking · tracking webhooks</text>
+  </g>
+
+  <!-- EDGE -->
+  <rect x="40" y="230" width="1130" height="56" rx="8" fill="#E2E3E5" stroke="#6C757D"/>
+  <text x="605" y="253" font-size="14" font-weight="bold" text-anchor="middle" fill="#111">NGINX / Traefik — Edge Gateway</text>
+  <text x="605" y="272" font-size="11.5" text-anchor="middle" fill="#374151">HTTPS termination · reverse proxy · load balancing · rate limiting · 10 MB upload limit</text>
+  <line x1="270" y1="180" x2="270" y2="230" stroke="#444" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="695" y1="180" x2="695" y2="230" stroke="#444" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="1030" y1="180" x2="1030" y2="230" stroke="#444" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- APPLICATION LAYER -->
+  <text x="40" y="322" font-size="12" font-weight="bold" fill="#1D4ED8" letter-spacing="1">APPLICATION LAYER (stateless · scale horizontally)</text>
+  <rect x="40" y="336" width="330" height="140" rx="8" fill="#CFE2FF" stroke="#1D4ED8"/>
+  <text x="205" y="360" font-size="14" font-weight="bold" text-anchor="middle" fill="#111">Next.js Frontend (SSR/CSR)</text>
+  <text x="205" y="382" font-size="11.5" text-anchor="middle" fill="#374151">Stateless × N replicas</text>
+  <text x="205" y="400" font-size="11.5" text-anchor="middle" fill="#374151">Role-based menu · Buddhist-era date picker</text>
+  <text x="205" y="418" font-size="11.5" text-anchor="middle" fill="#374151">Signature canvas · print view · Excel export UI</text>
+  <text x="205" y="436" font-size="11.5" text-anchor="middle" fill="#374151">Error boundary (FIX BUG-03)</text>
+
+  <rect x="410" y="336" width="480" height="140" rx="8" fill="#CFE2FF" stroke="#1D4ED8"/>
+  <text x="650" y="360" font-size="14" font-weight="bold" text-anchor="middle" fill="#111">Core API Service (REST · OpenAPI 3.0) — Command Side</text>
+  <text x="650" y="382" font-size="11.5" text-anchor="middle" fill="#374151">RBAC enforced on every endpoint (JWT / HTTP-only cookie · bcrypt ≥ 12)</text>
+  <text x="650" y="400" font-size="11.5" text-anchor="middle" fill="#374151">Status state machine + rollback map (status_info = single source of truth)</text>
+  <text x="650" y="418" font-size="11.5" text-anchor="middle" fill="#374151">Running number (running_doc upsert, concurrent-safe) · file MIME validation</text>
+  <text x="650" y="436" font-size="11.5" text-anchor="middle" fill="#374151">Quotation cost-plus engine · payment guard (close only when balance = 0)</text>
+  <text x="650" y="454" font-size="11.5" text-anchor="middle" fill="#374151">Prisma ORM · stateless × N replicas</text>
+
+  <rect x="930" y="336" width="240" height="62" rx="8" fill="#DBF4FF" stroke="#0E7490"/>
+  <text x="1050" y="360" font-size="13.5" font-weight="bold" text-anchor="middle" fill="#111">Redis</text>
+  <text x="1050" y="380" font-size="11.5" text-anchor="middle" fill="#374151">sessions · cache · distributed locks</text>
+
+  <line x1="205" y1="286" x2="205" y2="336" stroke="#444" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="650" y1="286" x2="650" y2="336" stroke="#444" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="370" y1="406" x2="410" y2="406" stroke="#444" stroke-width="2" marker-end="url(#arr)"/>
+  <text x="390" y="398" font-size="10.5" text-anchor="middle" fill="#6B7280">/api/*</text>
+  <line x1="890" y1="367" x2="930" y2="367" stroke="#444" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- Outbox relay -->
+  <rect x="470" y="500" width="360" height="46" rx="8" fill="#FDF0E5" stroke="#C2571A"/>
+  <text x="650" y="519" font-size="12.5" font-weight="bold" text-anchor="middle" fill="#111">Transactional Outbox → Outbox Relay (Debezium CDC / poller)</text>
+  <text x="650" y="536" font-size="10.5" text-anchor="middle" fill="#374151">API writes state + event in ONE DB transaction · relay publishes reliably</text>
+  <line x1="650" y1="476" x2="650" y2="500" stroke="#444" stroke-width="2" marker-end="url(#arr)"/>
+  <text x="740" y="492" font-size="10.5" fill="#6B7280">atomic tx (state + outbox row)</text>
+  <line x1="650" y1="546" x2="650" y2="568" stroke="#C2571A" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrO)"/>
+
+  <!-- KAFKA -->
+  <rect x="40" y="568" width="1130" height="84" rx="8" fill="#FDE2CF" stroke="#C2571A" stroke-width="2"/>
+  <text x="605" y="592" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">Kafka / Redpanda — Event Backbone</text>
+  <text x="605" y="614" font-size="12" text-anchor="middle" fill="#374151">repair.ticket.events · repair.quotation.events · repair.payment.events · repair.sla.events · repair.notify.dlq (+ per-topic DLQ)</text>
+  <text x="605" y="634" font-size="11.5" text-anchor="middle" fill="#7C2D12">partition key = request_id → per-ticket ordering guaranteed · retention 30 days · schema registry (JSON/Avro, versioned events)</text>
+
+  <!-- CONSUMERS -->
+  <text x="40" y="690" font-size="12" font-weight="bold" fill="#166534" letter-spacing="1">EVENT CONSUMERS (consumer groups · scale by partition count)</text>
+  <g>
+    <rect x="40" y="704" width="210" height="112" rx="8" fill="#D4EDDA" stroke="#166534"/>
+    <text x="145" y="726" font-size="13" font-weight="bold" text-anchor="middle" fill="#111">Audit Projector</text>
+    <text x="145" y="746" font-size="11" text-anchor="middle" fill="#374151">transaction_log:</text>
+    <text x="145" y="762" font-size="11" text-anchor="middle" fill="#374151">user · IP · step · message</text>
+    <text x="145" y="778" font-size="11" text-anchor="middle" fill="#374151">immutable audit trail</text>
+    <text x="145" y="794" font-size="11" text-anchor="middle" fill="#374151">of every action</text>
+
+    <rect x="270" y="704" width="210" height="112" rx="8" fill="#D4EDDA" stroke="#166534"/>
+    <text x="375" y="726" font-size="13" font-weight="bold" text-anchor="middle" fill="#111">Read-Model Projector</text>
+    <text x="375" y="746" font-size="11" text-anchor="middle" fill="#374151">Dashboard KPI cards (6 sets)</text>
+    <text x="375" y="762" font-size="11" text-anchor="middle" fill="#374151">work queues per role</text>
+    <text x="375" y="778" font-size="11" text-anchor="middle" fill="#374151">daily cash reconciliation</text>
+    <text x="375" y="794" font-size="11" text-anchor="middle" fill="#374151">Excel export views</text>
+
+    <rect x="500" y="704" width="210" height="112" rx="8" fill="#D4EDDA" stroke="#166534"/>
+    <text x="605" y="726" font-size="13" font-weight="bold" text-anchor="middle" fill="#111">Document Service</text>
+    <text x="605" y="746" font-size="11" text-anchor="middle" fill="#374151">receipt · return slip</text>
+    <text x="605" y="762" font-size="11" text-anchor="middle" fill="#374151">signature Base64 → JPEG</text>
+    <text x="605" y="778" font-size="11" text-anchor="middle" fill="#374151">print page payloads</text>
+    <text x="605" y="794" font-size="11" text-anchor="middle" fill="#374151">stored in MinIO/S3</text>
+
+    <rect x="730" y="704" width="210" height="112" rx="8" fill="#D4EDDA" stroke="#166534"/>
+    <text x="835" y="726" font-size="13" font-weight="bold" text-anchor="middle" fill="#111">SLA Monitor</text>
+    <text x="835" y="746" font-size="11" text-anchor="middle" fill="#374151">deadline = SLA × tier multiplier</text>
+    <text x="835" y="762" font-size="11" text-anchor="middle" fill="#374151">On Track / At Risk / Critical</text>
+    <text x="835" y="778" font-size="11" text-anchor="middle" fill="#374151">publishes repair.sla.events</text>
+    <text x="835" y="794" font-size="11" text-anchor="middle" fill="#374151">(escalations)</text>
+
+    <rect x="960" y="704" width="210" height="112" rx="8" fill="#D4EDDA" stroke="#166534"/>
+    <text x="1065" y="726" font-size="13" font-weight="bold" text-anchor="middle" fill="#111">Notification Service</text>
+    <text x="1065" y="746" font-size="11" text-anchor="middle" fill="#374151">vendor email (SKU→vendor</text>
+    <text x="1065" y="762" font-size="11" text-anchor="middle" fill="#374151">→email + print link)</text>
+    <text x="1065" y="778" font-size="11" text-anchor="middle" fill="#374151">retry w/ backoff → DLQ</text>
+    <text x="1065" y="794" font-size="11" text-anchor="middle" fill="#374151">LINE/SMS (optional)</text>
+  </g>
+  <line x1="145" y1="652" x2="145" y2="704" stroke="#C2571A" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrO)"/>
+  <line x1="375" y1="652" x2="375" y2="704" stroke="#C2571A" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrO)"/>
+  <line x1="605" y1="652" x2="605" y2="704" stroke="#C2571A" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrO)"/>
+  <line x1="850" y1="704" x2="850" y2="652" stroke="#C2571A" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrO)"/>
+  <line x1="820" y1="652" x2="820" y2="704" stroke="#C2571A" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrO)"/>
+  <line x1="1065" y1="652" x2="1065" y2="704" stroke="#C2571A" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrO)"/>
+
+  <!-- DATA LAYER -->
+  <text x="40" y="870" font-size="12" font-weight="bold" fill="#6B21A8" letter-spacing="1">DATA &amp; EXTERNAL LAYER</text>
+  <rect x="40" y="884" width="430" height="104" rx="8" fill="#F0E6FA" stroke="#6B21A8"/>
+  <text x="255" y="906" font-size="13.5" font-weight="bold" text-anchor="middle" fill="#111">PostgreSQL — primary + read replica (via PgBouncer)</text>
+  <text x="255" y="926" font-size="11" text-anchor="middle" fill="#374151">OLTP schema: repair_ticket · quotation · payment_transaction · config</text>
+  <text x="255" y="942" font-size="11" text-anchor="middle" fill="#374151">outbox table · read-model schema (projections) · transaction_log</text>
+  <text x="255" y="958" font-size="11" text-anchor="middle" fill="#374151">DB trigger → status_updated_date (SLA clock) · Prisma migrations</text>
+  <text x="255" y="974" font-size="11" text-anchor="middle" fill="#374151">PITR backup · daily dump · reports read from replica</text>
+
+  <rect x="500" y="884" width="300" height="104" rx="8" fill="#F0E6FA" stroke="#6B21A8"/>
+  <text x="650" y="906" font-size="13.5" font-weight="bold" text-anchor="middle" fill="#111">MinIO / S3 Object Storage</text>
+  <text x="650" y="926" font-size="11" text-anchor="middle" fill="#374151">attachments (serial photo, product photo,</text>
+  <text x="650" y="942" font-size="11" text-anchor="middle" fill="#374151">handover forms) · signature JPEG · receipts</text>
+  <text x="650" y="958" font-size="11" text-anchor="middle" fill="#374151">outside web root · pre-signed URL access</text>
+  <text x="650" y="974" font-size="11" text-anchor="middle" fill="#374151">naming: {request_no}_{prefix}_{timestamp}</text>
+
+  <rect x="830" y="884" width="340" height="104" rx="8" fill="#F8D7DA" stroke="#B02A37"/>
+  <text x="1000" y="906" font-size="13.5" font-weight="bold" text-anchor="middle" fill="#111">External Systems</text>
+  <text x="1000" y="926" font-size="11" text-anchor="middle" fill="#374151">SMTP server — vendor notification email</text>
+  <text x="1000" y="942" font-size="11" text-anchor="middle" fill="#374151">LINE Notify / SMS gateway (optional)</text>
+  <text x="1000" y="958" font-size="11" text-anchor="middle" fill="#374151">3PL API — pickup/tracking (Phase 2)</text>
+  <text x="1000" y="974" font-size="11" text-anchor="middle" fill="#374151">ERP / accounting export (Phase 2)</text>
+
+  <line x1="145" y1="816" x2="145" y2="884" stroke="#444" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="375" y1="816" x2="375" y2="884" stroke="#444" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="605" y1="816" x2="605" y2="884" stroke="#444" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="1065" y1="816" x2="1065" y2="884" stroke="#444" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- API -> PG (left corridor) -->
+  <polyline points="410,455 30,455 30,905 40,905" fill="none" stroke="#444" stroke-width="2" marker-end="url(#arr)"/>
+  <text x="36" y="680" font-size="10.5" fill="#6B7280" transform="rotate(-90 36 680)">SQL read/write (PgBouncer pool)</text>
+
+  <!-- API -> MinIO (right corridor) -->
+  <polyline points="890,455 1185,455 1185,1002 730,1002 730,988" fill="none" stroke="#444" stroke-width="2" marker-end="url(#arr)"/>
+  <text x="1181" y="700" font-size="10.5" fill="#6B7280" transform="rotate(90 1181 700)">file upload / pre-signed URL</text>
+
+  <!-- Observability -->
+  <rect x="40" y="1016" width="1130" height="56" rx="8" fill="#ECECEC" stroke="#6C757D"/>
+  <text x="605" y="1039" font-size="13.5" font-weight="bold" text-anchor="middle" fill="#111">Observability &amp; Operations</text>
+  <text x="605" y="1058" font-size="11.5" text-anchor="middle" fill="#374151">OpenTelemetry tracing (correlation_id = request_id) · Prometheus metrics · Grafana dashboards · Loki logs · Kafka consumer-lag alerts · CI/CD (Git + Prisma migrations)</text>
+
+  <!-- RIGHT CALLOUTS -->
+  <rect x="1210" y="110" width="310" height="330" rx="8" fill="#FFFFFF" stroke="#1D4ED8" stroke-width="1.5"/>
+  <text x="1365" y="136" font-size="14" font-weight="bold" text-anchor="middle" fill="#1D4ED8">Scalability Strategy</text>
+  <g font-size="11.5" fill="#374151">
+    <text x="1226" y="162">• Frontend/API stateless → scale out behind LB</text>
+    <text x="1226" y="184">• Kafka partitions + consumer groups → each</text>
+    <text x="1226" y="200">   consumer scales independently</text>
+    <text x="1226" y="222">• Reports/dashboards read from replica +</text>
+    <text x="1226" y="238">   pre-computed read models (no OLTP load)</text>
+    <text x="1226" y="260">• Redis session store → any node serves any user</text>
+    <text x="1226" y="282">• MinIO distributed mode for file volume growth</text>
+    <text x="1226" y="304">• Target: ≥ 50 concurrent users (NFR), headroom</text>
+    <text x="1226" y="320">   to 500+ by adding replicas/partitions only</text>
+    <text x="1226" y="342">• Idempotent consumers (event_id dedup) →</text>
+    <text x="1226" y="358">   safe retries and replays</text>
+    <text x="1226" y="380">• DLQ + replay tooling per topic</text>
+    <text x="1226" y="402">• Multi-branch ready: branch code in every</text>
+    <text x="1226" y="418">   event · per-branch running_doc rows</text>
+  </g>
+
+  <rect x="1210" y="470" width="310" height="300" rx="8" fill="#FFFFFF" stroke="#B02A37" stroke-width="1.5"/>
+  <text x="1365" y="496" font-size="14" font-weight="bold" text-anchor="middle" fill="#B02A37">Security &amp; Access Control</text>
+  <g font-size="11.5" fill="#374151">
+    <text x="1226" y="522">• JWT in HTTP-only cookie · bcrypt cost ≥ 12</text>
+    <text x="1226" y="544">• RBAC at API layer for every endpoint</text>
+    <text x="1226" y="560">   (roleActionMap per status, not UI-only)</text>
+    <text x="1226" y="582">• Field-level ACL: cost / margin visible to</text>
+    <text x="1226" y="598">   GR · DC · ADMIN only — never to customer</text>
+    <text x="1226" y="620">• Server-side MIME validation · files outside</text>
+    <text x="1226" y="636">   web root · pre-signed, expiring URLs</text>
+    <text x="1226" y="658">• Cancel/rollback guarded by state machine</text>
+    <text x="1226" y="674">   (FIX-02) · reason required, always audited</text>
+    <text x="1226" y="696">• Network zones: edge / app / data — DB and</text>
+    <text x="1226" y="712">   Kafka unreachable from outside</text>
+    <text x="1226" y="734">• Immutable audit: transaction_log +</text>
+    <text x="1226" y="750">   30-day event retention for forensics</text>
+  </g>
+
+  <rect x="1210" y="800" width="310" height="188" rx="8" fill="#FFFFFF" stroke="#166534" stroke-width="1.5"/>
+  <text x="1365" y="826" font-size="14" font-weight="bold" text-anchor="middle" fill="#166534">Core Event Types</text>
+  <g font-size="11.5" fill="#374151">
+    <text x="1226" y="852">TicketCreated · HandoverRecorded</text>
+    <text x="1226" y="872">PathSelected(DC/VEN) · StatusChanged</text>
+    <text x="1226" y="892">TicketRejected(DC) · TicketRolledBack</text>
+    <text x="1226" y="912">QuotationSubmitted · CustomerDecisionRecorded</text>
+    <text x="1226" y="932">PaymentRecorded · RefundIssued</text>
+    <text x="1226" y="952">TicketCancelled · TicketClosed(signature)</text>
+    <text x="1226" y="972">SlaBreachWarning · SlaEscalated</text>
+  </g>
+</svg>
