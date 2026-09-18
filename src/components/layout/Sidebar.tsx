@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { 
   LayoutDashboard, ChartBar, ClipboardList, UserPlus, 
   Package, Truck, Warehouse, Wrench, RefreshCcw, 
-  BarChart3, CreditCard, Settings, LogOut
+  BarChart3, CreditCard, Settings, LogOut, BookOpen
 } from 'lucide-react'
 
 interface NavItem {
@@ -28,6 +28,7 @@ const NAV_ITEMS: NavItem[] = [
   { key: 's2',         label: 'สต็อกสาขา (S2)',      href: '/s2',               icon: <Truck size={18} />,        roles: ['ADMIN', 'S2'] },
   { key: 'vd_payment', label: 'รายงานจ่ายเงิน VD',  href: '/reports/vd-payment', icon: <CreditCard size={18} />,  roles: ['ADMIN', 'EXECUTIVE'] },
   { key: 'admin',      label: 'ตั้งค่าระบบหลังบ้าน', href: '/admin',            icon: <Settings size={18} />,     roles: ['ADMIN'] },
+  { key: 'manual',     label: 'คู่มือใช้งาน & KM',    href: '/manual',           icon: <BookOpen size={18} />,     roles: ['ADMIN', 'EXECUTIVE', 'CS', 'GR', 'DC', 'VD', 'S2'] },
 ]
 
 interface SidebarProps {
