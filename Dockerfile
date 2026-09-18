@@ -3,13 +3,12 @@ RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
 FROM base AS deps
-ENV NODE_ENV=development
 COPY package.json package-lock.json ./
 COPY prisma ./prisma
 RUN npm ci --include=dev
 
 FROM base AS builder
-ENV NODE_ENV=development
+ENV NODE_ENV=production
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npx prisma generate
