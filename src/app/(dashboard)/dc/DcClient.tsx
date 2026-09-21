@@ -37,7 +37,7 @@ export default function DcClient({ role }: { role: string }) {
   const [driverDoc, setDriverDoc] = useState<{ job: JobView; leg: string; url?: string } | null>(null)
   const [label, setLabel] = useState<LabelData | null>(null)
   const { toast } = useToast()
-  const readOnly = role !== 'DC'
+  const readOnly = role !== 'DC' && role !== 'ADMIN'
 
   const list = (k: string) => data.tabs[k] ?? []
   const pending = (k: string) => list(k).filter(j => !done[j.id]).length
@@ -92,7 +92,7 @@ export default function DcClient({ role }: { role: string }) {
       <OverdueSummary items={data.overdue.filter(o => !done[o.id])} onGo={t => setTab(t)} />
       <KpiGrid items={TABS.map(t => ({ tab: t.key, label: t.kpi, count: pending(t.key), over: overCount(t.key) }))} active={tab} onPick={setTab} />
       <TabBar tabs={TABS.map(t => ({ key: t.key, label: t.label, count: pending(t.key) }))} active={tab} onPick={setTab} />
-      {readOnly && <p className="hint"><span className="badge b-amber">โหมดดูอย่างเดียว (Admin)</span></p>}
+      {readOnly && <p className="hint"><span className="badge b-amber">โหมดดูอย่างเดียว</span></p>}
       {loading && <EmptyCard text="กำลังโหลด…" />}
 
       {!loading && tab === 'pickup' && (

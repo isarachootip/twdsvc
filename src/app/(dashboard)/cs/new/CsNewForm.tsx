@@ -17,19 +17,33 @@ import type { JobStage } from '@prisma/client'
 interface Brand { id: number; name: string }
 interface Size { id: number; code: string; name: string }
 interface Commodity { id: number; sku: string; name: string; brand: string }
+interface BranchOption { id: string; code: string; name: string }
 interface Saved {
   id: string; jobNo: string; stage: JobStage; fees: { operationFee: number; shippingFee: number; total: number }
   routing: { centerCode: string; vendorCode: string; vendorName: string; channel: string } | null
   trackingUrl?: string; payUrl?: string
 }
 
-export default function CsNewForm({ role, branchName }: { role: string; branchName: string }) {
+export default function CsNewForm({
+  role,
+  branchName,
+  userBranchId = '',
+  branches = [],
+}: {
+  role: string
+  branchName: string
+  userBranchId?: string
+  branches?: BranchOption[]
+}) {
+  const defaultBranchId = userBranchId || branches.find(b => b.code === 'BN' || b.name.includes('บางนา'))?.id || branches[0]?.id || ''
+  const [selectedBranchId, setSelectedBranchId] = useState(defaultBranchId)
   const router = useRouter()
   const { toast } = useToast()
   const [brands, setBrands] = useState<Brand[]>([])
   const [sizes, setSizes] = useState<Size[]>([])
 
-  const [name, setName] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [phone, setPhone] = useState('')
   const [addr, setAddr] = useState<Address>(emptyAddress)
   const [taxSame, setTaxSame] = useState(true)
@@ -99,7 +113,8 @@ export default function CsNewForm({ role, branchName }: { role: string; branchNa
 
   const onTaxCheckbox = (checked: boolean) => {
     if (checked) { setTaxSame(true); setTax(null); return }
-    setTaxDraft(tax ?? { name: name, id: '', addr: emptyAddress })
+    const fullName = [firstName.trim(), lastName.trim()].filter(Boolean).join(' ')
+    setTaxDraft(tax ?? { name: fullName, id: '', addr: emptyAddress })
     setTaxSame(false)
     setTaxModal(true)
   }
@@ -115,7 +130,9 @@ export default function CsNewForm({ role, branchName }: { role: string; branchNa
   }
 
   const validate = () => {
-    if (!name.trim()) return 'กรุณากรอกชื่อ-นามสกุลลูกค้า'
+    if (role === 'ADMIN' && !selectedBranchId) return 'กรุณาเลือกสาขาที่เปิดงาน'
+    if (!firstName.trim()) return 'กรุณากรอกชื่อลูกค้า'
+    if (!lastName.trim()) return 'กรุณากรอกนามสกุลลูกค้า'
     if (!/^0\d{8,9}$/.test(phone.replace(/\D/g, ''))) return 'กรุณากรอกเบอร์โทรให้ถูกต้อง (เช่น 0812345678)'
     if (!product.trim()) return 'กรุณากรอกชื่อสินค้า'
     if (!brandId) return 'กรุณาเลือกแบรนด์'
@@ -132,9 +149,11 @@ export default function CsNewForm({ role, branchName }: { role: string; branchNa
     setSaving(true)
     try {
       const brand = brands.find(b => String(b.id) === brandId)
+      const fullName = [firstName.trim(), lastName.trim()].filter(Boolean).join(' ')
       const r = await api<Saved>('/api/jobs', {
         body: {
-          customerName: name.trim(), customerPhone: phone, customerAddress: formatAddress(addr) || null, customerZip: addr.zip || null,
+          ...(role === 'ADMIN' ? { branchId: selectedBranchId } : {}),
+          customerName: fullName, customerPhone: phone, customerAddress: formatAddress(addr) || null, customerZip: addr.zip || null,
           ...(tax && !taxSame ? { taxInvoiceName: tax.name, taxInvoiceId: tax.id, taxInvoiceAddr: formatAddress(tax.addr) } : {}),
           sku: sku.trim() || null, productName: product.trim(), brandId: Number(brandId), brandName: brand?.name ?? '',
           symptom: symptom.trim(), hasWarranty: warranty === 'yes', allowNonAuth: warranty === 'no' && allowOutside,
@@ -152,7 +171,7 @@ export default function CsNewForm({ role, branchName }: { role: string; branchNa
     } finally {
       setSaving(false)
     }
-  }, [saved, name, phone, addr, tax, taxSame, sku, product, brandId, brands, symptom, warranty, allowOutside, sizeId, method, photos, defect, fees.total, pay, pos, toast]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [saved, firstName, lastName, phone, addr, tax, taxSame, sku, product, brandId, brands, symptom, warranty, allowOutside, sizeId, method, photos, defect, fees.total, pay, pos, selectedBranchId, role, toast]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const saveAndSend = async () => {
     const r = await save()
@@ -167,15 +186,16 @@ export default function CsNewForm({ role, branchName }: { role: string; branchNa
   }
 
   const reset = () => { window.location.href = '/cs/new' }
-  const readOnly = role !== 'CS'
+  const readOnly = role !== 'CS' && role !== 'ADMIN'
   const brandName = brands.find(b => String(b.id) === brandId)?.name ?? ''
   const sizeName = sizes.find(s => s.id === sizeId)?.name ?? ''
+  const activeBranchName = branchName || branches.find(b => b.id === selectedBranchId)?.name || ''
 
   return (
     <div className="page-wide" style={{ maxWidth: 1180 }}>
       <div className="toprow" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 18px' }}>
         <div>
-          <p className="page-title" style={{ fontSize: 17 }}>เปิดใบแจ้งซ่อม {branchName && <span className="sub-mute" style={{ fontSize: 13 }}>· {branchName}</span>}</p>
+          <p className="page-title" style={{ fontSize: 17 }}>เปิดใบแจ้งซ่อม {activeBranchName && <span className="sub-mute" style={{ fontSize: 13 }}>· {activeBranchName}</span>}</p>
           <p className="page-sub">บันทึกข้อมูลลูกค้า สินค้า และรับชำระค่าดำเนินการ ณ วันเปิดงาน</p>
         </div>
         <div style={{ fontSize: 13.5 }}>
@@ -190,14 +210,33 @@ export default function CsNewForm({ role, branchName }: { role: string; branchNa
             <div className="pcard">
               <h3>ข้อมูลลูกค้า</h3>
               <p className="hint">ข้อมูลพื้นฐานลูกค้าและที่อยู่สำหรับติดต่อ/ออกใบกำกับภาษี</p>
-              <div className="grid2">
-                <div className="field"><label>ชื่อ-นามสกุลลูกค้า <span style={{ color: 'var(--red)' }}>*</span></label><input className="inp" placeholder="ชื่อ นามสกุล" value={name} onChange={e => setName(e.target.value)} /></div>
+              {role === 'ADMIN' && (
+                <div className="field" style={{ marginBottom: 12 }}>
+                  <label>สาขาที่เปิดงาน <span style={{ color: 'var(--red)' }}>*</span></label>
+                  <select className="sel" value={selectedBranchId} onChange={e => setSelectedBranchId(e.target.value)}>
+                    {branches.map(b => (
+                      <option key={b.id} value={b.id}>
+                        {b.name} ({b.code})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <div className="grid3">
+                <div className="field"><label>ชื่อลูกค้า <span style={{ color: 'var(--red)' }}>*</span></label><input className="inp" placeholder="ชื่อ" value={firstName} onChange={e => setFirstName(e.target.value)} /></div>
+                <div className="field"><label>นามสกุล <span style={{ color: 'var(--red)' }}>*</span></label><input className="inp" placeholder="นามสกุล" value={lastName} onChange={e => setLastName(e.target.value)} /></div>
                 <div className="field"><label>เบอร์โทรศัพท์ <span style={{ color: 'var(--red)' }}>*</span></label><input className="inp" inputMode="tel" placeholder="08x-xxx-xxxx" value={phone} onChange={e => setPhone(e.target.value)} /></div>
               </div>
               {found && !saved && (
                 <div className="note blue" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                   <span>พบลูกค้าเดิม: <b>{found.customerName}</b> ({found.jobCount} งาน){found.customerAddress ? ` · ${found.customerAddress}` : ''}</span>
-                  <button type="button" className="btn" onClick={() => { setName(found.customerName); setAddr(a => ({ ...a, street: found.customerAddress ?? a.street, zip: found.customerZip ?? a.zip })); setFound(null) }}>ใช้ข้อมูลนี้</button>
+                  <button type="button" className="btn" onClick={() => {
+                    const parts = (found.customerName || '').trim().split(/\s+/)
+                    setFirstName(parts[0] || '')
+                    setLastName(parts.slice(1).join(' ') || '')
+                    setAddr(a => ({ ...a, street: found.customerAddress ?? a.street, zip: found.customerZip ?? a.zip }))
+                    setFound(null)
+                  }}>ใช้ข้อมูลนี้</button>
                 </div>
               )}
               <div className="divider" />
@@ -307,7 +346,7 @@ export default function CsNewForm({ role, branchName }: { role: string; branchNa
                 <button className="btn" onClick={() => router.push('/cs')}>กลับคิว CS</button>
               </>
             )}
-            {readOnly && <p className="hint">โหมดดูอย่างเดียว (เปิดงานได้เฉพาะ CS)</p>}
+            {readOnly && <p className="hint">โหมดดูอย่างเดียว (เปิดงานได้เฉพาะ CS หรือ Admin)</p>}
           </div>
 
           {saved && (
@@ -349,7 +388,7 @@ export default function CsNewForm({ role, branchName }: { role: string; branchNa
               <div style={{ background: 'var(--surface)', borderRadius: 12, padding: '14px 16px', fontSize: 13 }}>
                 <p style={{ margin: '0 0 6px' }}>รับเรื่องแจ้งซ่อมเรียบร้อย — <b>{saved.jobNo}</b></p>
                 <p style={{ margin: '0 0 4px' }}>สินค้า: {product} ({brandName})</p>
-                <p style={{ margin: '0 0 4px' }}>สาขา: {branchName}</p>
+                <p style={{ margin: '0 0 4px' }}>สาขา: {activeBranchName}</p>
                 <p style={{ margin: '0 0 10px' }}>ค่าใช้จ่ายวันนี้: {fmtBaht(fees.total)} {fees.total > 0 && (paid ? '(ชำระแล้ว)' : '(รอชำระ)')}</p>
                 {saved.trackingUrl && <a href={absUrl(saved.trackingUrl)} target="_blank" rel="noreferrer" style={{ display: 'block', textAlign: 'center', background: 'var(--blue-tint)', color: 'var(--blue)', borderRadius: 8, padding: 10, fontWeight: 500 }}>ติดตามสถานะงานซ่อม ↗</a>}
               </div>
@@ -366,17 +405,17 @@ export default function CsNewForm({ role, branchName }: { role: string; branchNa
             <div className="print-area">
               <div style={{ textAlign: 'center', borderBottom: '1px solid var(--border)', paddingBottom: 10, marginBottom: 10 }}>
                 <p style={{ fontWeight: 600, fontSize: 16, margin: 0 }}>ใบแจ้งซ่อม — ศูนย์บริการซ่อมไทวัสดุ</p>
-                <p style={{ fontSize: 12, color: 'var(--text-mute)', margin: '2px 0 0' }}>Thaiwasadu Service Center · {branchName}</p>
+                <p style={{ fontSize: 12, color: 'var(--text-mute)', margin: '2px 0 0' }}>Thaiwasadu Service Center · {activeBranchName}</p>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px', gap: 12 }}>
                 <div>
-                  {[
-                    ['เลขที่ใบแจ้งซ่อม', saved.jobNo], ['วันที่', new Date().toLocaleString('th-TH')], ['ลูกค้า', name], ['เบอร์โทร', phone],
+                  {([
+                    ['เลขที่ใบแจ้งซ่อม', saved.jobNo], ['วันที่', new Date().toLocaleString('th-TH')], ['ลูกค้า', [firstName.trim(), lastName.trim()].filter(Boolean).join(' ')], ['เบอร์โทร', phone],
                     ['สินค้า', `${product} (${brandName})`], ['SKU', sku || '-'], ['อาการเสีย', symptom], ['ตำหนิ', defect || '-'],
                     ['ประกัน', warranty === 'yes' ? 'มีประกัน' : 'ไม่มีประกัน'], ['ขนาด', sizeName], ['วิธีจัดส่ง', method === 'EXPRESS' ? 'ส่งด่วน (3PL)' : 'มาตรฐาน'],
                     ['ค่าใช้จ่ายวันนี้', `${fmtBaht(fees.total)} ${fees.total > 0 ? (paid ? '(ชำระแล้ว)' : '(รอชำระ)') : ''}`],
                     ['ศูนย์ซ่อม', saved.routing ? `${saved.routing.centerCode} ${saved.routing.vendorName}` : 'รอกำหนด'],
-                  ].map(([k, v]) => <div className="info-row" key={k}><span className="info-label">{k}</span><span>{v}</span></div>)}
+                  ] as [string, string][]).map(([k, v]) => <div className="info-row" key={k}><span className="info-label">{k}</span><span>{v}</span></div>)}
                 </div>
                 <div style={{ textAlign: 'center' }}>
                   {saved.trackingUrl && <QrImage value={absUrl(saved.trackingUrl)} size={120} />}

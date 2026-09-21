@@ -47,7 +47,7 @@ export default function VdClient({ role }: { role: string }) {
   const [label, setLabel] = useState<LabelData | null>(null)
   const [lon, setLon] = useState<JobView | null>(null)
   const { toast } = useToast()
-  const readOnly = role !== 'VD'
+  const readOnly = role !== 'VD' && role !== 'ADMIN'
   const demo = me?.demoMode ?? false
 
   const list = (k: string) => data.tabs[k] ?? []
@@ -137,7 +137,7 @@ export default function VdClient({ role }: { role: string }) {
       <OverdueSummary items={data.overdue.filter(o => !done[o.id])} onGo={t => setTab(t)} />
       <KpiGrid items={TABS.map(t => ({ tab: t.key, label: t.kpi, count: pending(t.key), over: overCount(t.key) }))} active={tab} onPick={setTab} />
       <TabBar tabs={TABS.map(t => ({ key: t.key, label: t.label, count: pending(t.key) }))} active={tab} onPick={setTab} />
-      {readOnly && <p className="hint"><span className="badge b-amber">โหมดดูอย่างเดียว (Admin)</span></p>}
+      {readOnly && <p className="hint"><span className="badge b-amber">โหมดดูอย่างเดียว</span></p>}
       {loading && <EmptyCard text="กำลังโหลด…" />}
 
       {!loading && tab === 'receive' && (

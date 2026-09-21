@@ -30,7 +30,7 @@ export default function CsQueue({ role }: { role: string }) {
   const [sel, setSel] = useState<JobView | null>(null)
   const [openId, setOpenId] = useState<string | null>(null)
   const [pay, setPay] = useState<{ job: JobView; kind: 'intake' | 'repair'; amount: number } | null>(null)
-  const readOnly = role !== 'CS'
+  const readOnly = role !== 'CS' && role !== 'ADMIN'
 
   const list = (k: string) => data.tabs[k] ?? []
   const current = sel ? Object.values(data.tabs).flat().find(j => j.id === sel.id) ?? null : null

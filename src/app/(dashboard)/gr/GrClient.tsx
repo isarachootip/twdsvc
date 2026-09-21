@@ -44,7 +44,7 @@ export default function GrClient({ role }: { role: string }) {
   const [scan, setScan] = useState('')
   const scanRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
-  const readOnly = role !== 'GR'
+  const readOnly = role !== 'GR' && role !== 'ADMIN'
 
   const list = (k: string) => data.tabs[k] ?? []
   const pending = (k: string) => list(k).filter(j => !done[j.id]).length
@@ -100,7 +100,7 @@ export default function GrClient({ role }: { role: string }) {
 
       <form className="filter-bar" onSubmit={onScan}>
         <input ref={scanRef} className="inp" style={{ flex: 1, maxWidth: 460 }} value={scan} onChange={e => setScan(e.target.value)} placeholder="สแกน QR / คีย์เลขใบแจ้งซ่อม แล้วกด Enter เพื่อหางาน" />
-        {readOnly && <span className="badge b-amber">โหมดดูอย่างเดียว (Admin)</span>}
+        {readOnly && <span className="badge b-amber">โหมดดูอย่างเดียว</span>}
       </form>
 
       {loading && <EmptyCard text="กำลังโหลด…" />}
