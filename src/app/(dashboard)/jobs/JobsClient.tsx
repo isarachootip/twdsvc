@@ -1,262 +1,275 @@
 'use client'
 
-import { useState, useCallback } from 'react'
-import Link from 'next/link'
-import { Search, Download, RefreshCw, Plus } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import StageBadge from '@/components/ui/StageBadge'
-import SlaTag from '@/components/ui/SlaTag'
-import { JobStage } from '@prisma/client'
+import JobDetailModal from '@/components/jobs/JobDetail'
+import { useSort, Th } from '@/components/ui/Sortable'
+import { DateRange } from '@/components/ui/Queue'
+import { useToast } from '@/components/ui/Toast'
+import { api, exportXlsx, monthStartBkk, todayBkk } from '@/lib/client'
+import { CHANNEL_LABELS, OWNER_LABELS, STAGE_LABELS, STAGE_ORDER, fmtPhone, type Stage } from '@/lib/constants'
+import type { JobView } from '@/lib/job-view'
 
-interface Job {
-  id: string
-  jobNo: string
-  type: string
-  stage: JobStage
-  channel: string | null
-  customerName: string | null
-  productName: string
-  brandName: string
-  openedAt: string
-  branch: { name: string; nickname: string }
-  vendorCenter?: { code: string; vendorParent: { name: string } } | null
-  slaClocks: Array<{
-    breached: boolean
-    startedAt: string
-    dueAt: string
-    pausedMinutes: number
-    stoppedAt: string | null
-    status: string
-    slaStep: { code: string; ownerDept: string; hours: number }
-  }>
-  charges: Array<{ amount: number; type: string }>
-  payments: Array<{ amount: number; status: string }>
-}
+interface Kpis { total: number; GR: number; VD: number; transport: number; CS: number; unpaid: number }
 
-const CHANNEL_LABELS: Record<string, string> = { DC: 'DC', DSD: 'DSD', TPL: '3PL' }
-
-const KPI_FILTERS = [
-  { label: 'ทั้งหมด', key: 'all', color: 'var(--text-2)' },
-  { label: 'เกิน SLA', key: 'overdue', color: 'var(--red)' },
-  { label: 'รอลูกค้าอนุมัติ', key: 'waiting', color: 'var(--amber)' },
-  { label: 'กำลังซ่อม', key: 'repairing', color: 'var(--blue)' },
-  { label: 'พร้อมรับ', key: 'pickup', color: 'var(--green)' },
-  { label: 'ปิดวันนี้', key: 'closed_today', color: 'var(--text-2)' },
+const KPI_DEFS: Array<{ key: string | null; label: string; cls: string }> = [
+  { key: null, label: 'งานทั้งหมด', cls: 'total' },
+  { key: 'GR', label: 'เกิน SLA ฝั่ง GR', cls: 'urgent' },
+  { key: 'VD', label: 'เกิน SLA ฝั่ง VD', cls: 'urgent' },
+  { key: 'transport', label: 'เกิน SLA ฝั่งขนส่ง (DC/3PL)', cls: 'urgent' },
+  { key: 'CS', label: 'เกิน SLA ฝั่ง CS/ลูกค้า', cls: 'urgent' },
+  { key: 'unpaid', label: 'ยอดค้างชำระ', cls: 'urgent' },
 ]
 
-function getBalance(charges: Job['charges'], payments: Job['payments']) {
-  const totalCharge = charges.reduce((s, c) => s + c.amount, 0)
-  const totalPaid = payments.filter(p => p.status === 'PAID').reduce((s, p) => s + p.amount, 0)
-  return totalCharge - totalPaid
+function ownerOf(j: JobView) {
+  return j.overdue ? j.overdueOwner : j.sla?.owner ?? null
 }
 
-function getActiveClock(job: Job) {
-  return job.slaClocks.find(c => c.status === 'RUNNING' || c.status === 'PAUSED')
+function matchFlag(j: JobView, flag: string | null) {
+  if (!flag) return true
+  if (flag === 'unpaid') return j.unpaid
+  if (!j.overdue) return false
+  if (flag === 'overdue') return true
+  if (flag === 'transport') return ['DC', 'TPL', 'CARRIER'].includes(j.overdueOwner ?? '')
+  if (flag === 'CS') return ['CS', 'CUSTOMER'].includes(j.overdueOwner ?? '')
+  return j.overdueOwner === flag
 }
 
-function hoursIn(clock: Job['slaClocks'][0]) {
-  const end = clock.stoppedAt ? new Date(clock.stoppedAt) : new Date()
-  const ms = end.getTime() - new Date(clock.startedAt).getTime() - clock.pausedMinutes * 60000
-  return Math.floor(Math.max(0, ms) / 3600000)
+export interface JobsClientProps {
+  role?: string
+  user?: { role: string; siteId?: string | null }
+  initialJobs?: JobView[]
 }
 
-interface JobsClientProps {
-  initialJobs: Job[]
-  user: { role: string; siteId: string | null }
-}
+export default function JobsClient({ role: initialRole, user, initialJobs }: JobsClientProps) {
+  const role = initialRole ?? user?.role ?? 'CS'
+  const sp = useSearchParams()
+  const router = useRouter()
+  const { toast } = useToast()
 
-export default function JobsClient({ initialJobs, user }: JobsClientProps) {
-  const [jobs, setJobs] = useState<Job[]>(initialJobs)
-  const [search, setSearch] = useState('')
-  const [kpiFilter, setKpiFilter] = useState('all')
-  const [loading, setLoading] = useState(false)
-  const [selected, setSelected] = useState<Job | null>(null)
+  const hasSpecificFilter = Boolean(sp.get('open') || sp.get('search') || sp.get('stage') || sp.get('stages') || sp.get('flag') || sp.get('overdue'))
+  const [from, setFrom] = useState(hasSpecificFilter ? '' : monthStartBkk())
+  const [to, setTo] = useState(hasSpecificFilter ? '' : todayBkk())
 
-  const today = new Date().toDateString()
+  const [jobs, setJobs] = useState<JobView[]>(initialJobs && initialJobs.length > 0 ? initialJobs : [])
+  const [loading, setLoading] = useState<boolean>(!initialJobs || initialJobs.length === 0)
 
-  const filtered = jobs.filter(job => {
-    if (search) {
-      const q = search.toLowerCase()
-      if (!job.jobNo.toLowerCase().includes(q) && !(job.customerName ?? '').toLowerCase().includes(q) && !job.productName.toLowerCase().includes(q)) return false
-    }
-    if (kpiFilter === 'overdue') return job.slaClocks.some(c => c.breached)
-    if (kpiFilter === 'waiting') return job.stage === 'WAITING_APPROVAL'
-    if (kpiFilter === 'repairing') return job.stage === 'REPAIRING'
-    if (kpiFilter === 'pickup') return job.stage === 'READY_FOR_PICKUP'
-    if (kpiFilter === 'closed_today') return ['CLOSED_REPAIRED', 'CLOSED_NOT_REPAIRED'].includes(job.stage) // && same day check simplified
-    return true
-  })
+  // Parse initial filter flags from URL params
+  const initialFlag = sp.get('flag') ?? (sp.get('overdue') === 'true' || sp.get('overdue') === '1' ? 'overdue' : null)
+  const [flag, setFlag] = useState<string | null>(initialFlag)
+  const [branch, setBranch] = useState('')
+  const [channel, setChannel] = useState('')
+  const [status, setStatus] = useState(sp.get('stage') ?? '')
+  const [stageGroup, setStageGroup] = useState<string[]>((sp.get('stages') ?? '').split(',').filter(Boolean))
+  const [search, setSearch] = useState(sp.get('search') ?? '')
+  const [openId, setOpenId] = useState<string | null>(sp.get('open'))
 
-  const kpiCounts = {
-    all: jobs.length,
-    overdue: jobs.filter(j => j.slaClocks.some(c => c.breached)).length,
-    waiting: jobs.filter(j => j.stage === 'WAITING_APPROVAL').length,
-    repairing: jobs.filter(j => j.stage === 'REPAIRING').length,
-    pickup: jobs.filter(j => j.stage === 'READY_FOR_PICKUP').length,
-    closed_today: jobs.filter(j => ['CLOSED_REPAIRED', 'CLOSED_NOT_REPAIRED'].includes(j.stage)).length,
-  }
-
-  const refresh = useCallback(async () => {
+  const load = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/jobs?limit=100')
-      const data = await res.json()
-      setJobs(data.jobs ?? [])
+      const qs = new URLSearchParams({ limit: '1000' })
+      if (from) qs.set('from', from)
+      if (to) qs.set('to', to)
+      const d = await api<{ jobs: JobView[]; kpis: Kpis }>(`/api/jobs?${qs}`)
+      setJobs(d.jobs ?? [])
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'โหลดข้อมูลไม่สำเร็จ', 'error')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [from, to, toast])
+
+  // Always fetch on mount if jobs are empty or to ensure sync
+  useEffect(() => {
+    if (!initialJobs || initialJobs.length === 0) {
+      load()
+    }
+  }, [load, initialJobs])
+
+  // Synchronize when searchParams change
+  useEffect(() => {
+    const o = sp.get('open')
+    if (o) setOpenId(o)
+    const s = sp.get('search')
+    if (s !== null) setSearch(s)
+    const stg = sp.get('stage')
+    if (stg !== null) setStatus(stg)
+    const stgs = sp.get('stages')
+    if (stgs !== null) setStageGroup(stgs.split(',').filter(Boolean))
+    const isOverdue = sp.get('overdue') === 'true' || sp.get('overdue') === '1'
+    const flg = sp.get('flag')
+    if (isOverdue) setFlag('overdue')
+    else if (flg !== null) setFlag(flg)
+  }, [sp])
+
+  const branches = useMemo(() => [...new Map(jobs.map(j => [j.branch.id, j.branch.name])).entries()], [jobs])
+
+  const base = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    const digits = q.replace(/\D/g, '')
+    return jobs.filter(j => {
+      if (branch && j.branch.id !== branch) return false
+      if (channel && j.channel !== channel) return false
+      if (status && j.stage !== status) return false
+      if (stageGroup.length && !stageGroup.includes(j.stage)) return false
+      if (q) {
+        const hit = j.jobNo.toLowerCase().includes(q) || (j.customerName ?? '').toLowerCase().includes(q) || j.productName.toLowerCase().includes(q) ||
+          (digits.length >= 3 && (j.customerPhone ?? '').replace(/\D/g, '').includes(digits))
+        if (!hit) return false
+      }
+      return true
+    })
+  }, [jobs, branch, channel, status, search, stageGroup])
+
+  const kpiCount = (key: string | null) => base.filter(j => matchFlag(j, key)).length
+  const filtered = useMemo(() => base.filter(j => matchFlag(j, flag)), [base, flag])
+
+  const { sorted, sort, toggle } = useSort(filtered, {
+    id: j => j.jobNo,
+    customer: j => j.customerName ?? '',
+    product: j => j.productName,
+    branch: j => j.branch.name,
+    channel: j => j.channel ?? '',
+    status: j => STAGE_ORDER.indexOf(j.stage as Stage),
+    owner: j => ownerOf(j) ?? '',
+    hours: j => j.sla?.hoursInStep ?? 0,
+  }, { key: 'id', dir: -1 })
+
+  const flags = (j: JobView) => {
+    const out: string[] = []
+    if (j.overdue) out.push(`เกิน SLA (${OWNER_LABELS[j.overdueOwner ?? ''] ?? j.overdueOwner})`)
+    if (j.unpaid) out.push('ค้างชำระ')
+    if (j.intakeUnpaid && ['CS_OPENED', 'PENDING_VENDOR_ASSIGNMENT'].includes(j.stage)) out.push('รอชำระค่าดำเนินการ')
+    if (j.stage === 'PENDING_VENDOR_ASSIGNMENT') out.push('รอกำหนดศูนย์ซ่อม')
+    return out
+  }
+
+  const doExport = () => exportXlsx([{
+    name: 'งานซ่อม',
+    rows: sorted.map(j => ({
+      'เลขที่ใบแจ้งซ่อม': j.jobNo,
+      'วันที่เปิด': new Date(j.openedAt).toLocaleDateString('th-TH'),
+      'ลูกค้า': j.customerName ?? '',
+      'เบอร์โทร': j.customerPhone ?? '',
+      'สินค้า': j.productName,
+      'แบรนด์': j.brandName,
+      'สาขา': j.branch.name,
+      'ช่องทาง': j.channel ? CHANNEL_LABELS[j.channel] : '',
+      'สถานะ': j.stageLabel,
+      'ส่วนงานที่รับผิดชอบ': OWNER_LABELS[ownerOf(j) ?? ''] ?? '',
+      'ชั่วโมงใน step นี้': j.sla?.hoursInStep ?? '',
+      'SLA (ชม.)': j.sla?.slaHours ?? '',
+      'เกิน SLA': j.overdue ? 'ใช่' : 'ไม่',
+      'ค้างชำระ': j.unpaid ? 'ใช่' : 'ไม่',
+      'ศูนย์ซ่อม': j.vendor ? `${j.vendor.code} ${j.vendor.name}` : '',
+    })),
+  }], `service_center_jobs_${todayBkk()}.xlsx`)
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold" style={{ color: 'var(--text)' }}>งานซ่อมทั้งหมด</h1>
-        <div className="flex items-center gap-2">
-          <button onClick={refresh} disabled={loading} className="p-2 rounded-lg border hover:bg-gray-50" style={{ borderColor: 'var(--border)' }}>
-            <RefreshCw size={16} className={loading ? 'animate-spin' : ''} style={{ color: 'var(--text-2)' }} />
-          </button>
-          {['CS', 'ADMIN'].includes(user.role) && (
-            <Link href="/cs/new" className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white" style={{ background: 'var(--red)' }}>
-              <Plus size={16} /> เปิดใบแจ้งซ่อม
-            </Link>
-          )}
+    <div className="page">
+      <div className="toprow">
+        <div>
+          <p className="page-title">งานซ่อมทั้งหมด</p>
+          <p className="page-sub">กดที่ตัวเลขเพื่อดูเฉพาะรายการเร่งด่วนตามส่วนงานที่รับผิดชอบ SLA</p>
         </div>
+        <DateRange from={from} to={to} onChange={(f, t) => { setFrom(f); setTo(t) }} onExport={doExport} />
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-6 gap-3">
-        {KPI_FILTERS.map(f => (
+      <div className="kpi-grid">
+        {KPI_DEFS.map(k => (
           <button
-            key={f.key}
-            onClick={() => setKpiFilter(f.key)}
-            className={`card text-left transition-all ${kpiFilter === f.key ? 'ring-2' : 'hover:shadow-sm'}`}
-            style={{ ringColor: f.color } as any}
+            key={k.label}
+            className={`kpi-card ${k.cls} ${flag === k.key && k.key !== null ? 'active' : ''}`}
+            onClick={() => setFlag(flag === k.key ? null : k.key)}
           >
-            <div className="text-2xl font-bold" style={{ color: kpiFilter === f.key ? f.color : 'var(--text)' }}>
-              {kpiCounts[f.key as keyof typeof kpiCounts]}
-            </div>
-            <div className="text-xs mt-0.5" style={{ color: 'var(--text-mute)' }}>{f.label}</div>
+            <div className="num">{kpiCount(k.key)}</div>
+            <div className="lbl">{k.label}</div>
           </button>
         ))}
       </div>
 
-      {/* Search */}
-      <div className="card flex items-center gap-3 py-3">
-        <Search size={16} style={{ color: 'var(--text-mute)' }} />
+      <div className="filter-bar">
+        <select className="sel" value={branch} onChange={e => setBranch(e.target.value)}>
+          <option value="">ทุกสาขา</option>
+          {branches.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+        </select>
+        <select className="sel" value={channel} onChange={e => setChannel(e.target.value)}>
+          <option value="">ทุกช่องทาง</option>
+          <option value="DSD">DSD</option>
+          <option value="DC">DC</option>
+          <option value="TPL">3PL</option>
+        </select>
+        <select className="sel" value={status} onChange={e => setStatus(e.target.value)}>
+          <option value="">ทุกสถานะ</option>
+          {STAGE_ORDER.map(s => <option key={s} value={s}>{STAGE_LABELS[s]}</option>)}
+        </select>
         <input
+          className="inp"
+          style={{ flex: 1, minWidth: 220 }}
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder="ค้นหาเลขงาน / ชื่อลูกค้า / สินค้า..."
-          className="flex-1 text-sm outline-none"
-          style={{ background: 'transparent', color: 'var(--text)' }}
+          placeholder="ค้นหา: เลขที่ใบแจ้งซ่อม / ชื่อลูกค้า / เบอร์โทร"
         />
-        {search && (
-          <button onClick={() => setSearch('')} className="text-xs" style={{ color: 'var(--text-mute)' }}>ล้าง</button>
+        {flag && <button className="clear-filter" onClick={() => setFlag(null)}>✕ ล้างตัวกรองรายการเร่งด่วน</button>}
+        {stageGroup.length > 0 && <button className="clear-filter" onClick={() => setStageGroup([])}>✕ ล้างตัวกรองกลุ่มสถานะ ({stageGroup.length})</button>}
+        {status && <button className="clear-filter" onClick={() => setStatus('')}>✕ ล้างสถานะ</button>}
+        {['CS', 'ADMIN'].includes(role) && (
+          <button className="btn btn-primary" onClick={() => router.push('/cs/new')}>+ เปิดใบแจ้งซ่อม</button>
         )}
       </div>
 
-      {/* Table */}
-      <div className="card p-0 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr style={{ background: 'var(--surface-2)', borderBottom: '1px solid var(--border)', color: 'var(--text-2)' }}>
-              <th className="px-4 py-3 text-left font-medium">เลขงาน</th>
-              <th className="px-4 py-3 text-left font-medium">ลูกค้า</th>
-              <th className="px-4 py-3 text-left font-medium">สินค้า</th>
-              <th className="px-4 py-3 text-left font-medium">สถานะ</th>
-              <th className="px-4 py-3 text-left font-medium">ช่องทาง</th>
-              <th className="px-4 py-3 text-left font-medium">สาขา</th>
-              <th className="px-4 py-3 text-left font-medium">VD</th>
-              <th className="px-4 py-3 text-left font-medium">SLA</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 && (
+      <div className="tcard">
+        <div className="tbl-wrap">
+          <table className="tbl">
+            <thead>
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-sm" style={{ color: 'var(--text-mute)' }}>
-                  ไม่พบงานในเงื่อนไขนี้
-                </td>
+                <Th k="id" label="เลขที่ใบแจ้งซ่อม" sort={sort} toggle={toggle} />
+                <Th k="customer" label="ลูกค้า" sort={sort} toggle={toggle} />
+                <Th k="product" label="สินค้า" sort={sort} toggle={toggle} />
+                <Th k="branch" label="สาขา" sort={sort} toggle={toggle} />
+                <Th k="channel" label="ช่องทาง" sort={sort} toggle={toggle} />
+                <Th k="status" label="สถานะ" sort={sort} toggle={toggle} />
+                <Th k="owner" label="ส่วนงานที่รับผิดชอบ" sort={sort} toggle={toggle} />
+                <Th k="hours" label="อยู่ใน step นี้มา" sort={sort} toggle={toggle} />
+                <th>หมายเหตุ</th>
               </tr>
-            )}
-            {filtered.map(job => {
-              const clock = getActiveClock(job)
-              const isOverdue = job.slaClocks.some(c => c.breached)
-              return (
-                <tr
-                  key={job.id}
-                  onClick={() => setSelected(job)}
-                  className="border-b cursor-pointer hover:bg-gray-50 transition-colors"
-                  style={{ borderColor: 'var(--border)' }}
-                >
-                  <td className="px-4 py-3 font-mono font-medium" style={{ color: isOverdue ? 'var(--red)' : 'var(--text)' }}>
-                    {job.jobNo}
+            </thead>
+            <tbody>
+              {loading && <tr><td colSpan={9} className="empty">กำลังโหลด…</td></tr>}
+              {!loading && sorted.length === 0 && <tr><td colSpan={9} className="empty">ไม่พบรายการที่ตรงกับตัวกรอง</td></tr>}
+              {!loading && sorted.map(j => (
+                <tr key={j.id} className="clickable" onClick={() => setOpenId(j.id)}>
+                  <td>
+                    <div className={`jobid ${j.overdue ? 'overdue' : ''}`}>{j.jobNo}</div>
+                    <div className="sub-mute">{new Date(j.openedAt).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: '2-digit' })}</div>
                   </td>
-                  <td className="px-4 py-3" style={{ color: 'var(--text)' }}>{job.customerName ?? '-'}</td>
-                  <td className="px-4 py-3">
-                    <div style={{ color: 'var(--text)' }}>{job.productName}</div>
-                    <div className="text-xs" style={{ color: 'var(--text-mute)' }}>{job.brandName}</div>
-                  </td>
-                  <td className="px-4 py-3"><StageBadge stage={job.stage} size="sm" /></td>
-                  <td className="px-4 py-3 text-xs" style={{ color: 'var(--text-2)' }}>{job.channel ? CHANNEL_LABELS[job.channel] : '-'}</td>
-                  <td className="px-4 py-3 text-xs" style={{ color: 'var(--text-2)' }}>{job.branch.nickname}</td>
-                  <td className="px-4 py-3 text-xs" style={{ color: 'var(--text-2)' }}>{job.vendorCenter?.vendorParent.name ?? '-'}</td>
-                  <td className="px-4 py-3">
-                    {clock ? (
-                      <SlaTag hoursInStep={hoursIn(clock)} slaHours={clock.slaStep.hours} isOverdue={clock.breached} ownerDept={clock.slaStep.ownerDept} />
-                    ) : <span className="text-xs" style={{ color: 'var(--text-mute)' }}>-</span>}
-                  </td>
+                  <td>{j.type === 'STOCK' ? <span className="sub-mute">สต็อกสาขา</span> : j.customerName}<div className="sub-mute">{j.customerPhone && !j.customerPhone.includes('x') ? fmtPhone(j.customerPhone) : j.customerPhone}</div></td>
+                  <td>{j.productName}<div className="sub-mute">{j.brandName}</div></td>
+                  <td>{j.branch.name}</td>
+                  <td>{j.channel ? CHANNEL_LABELS[j.channel] : '-'}</td>
+                  <td><StageBadge stage={j.stage} /></td>
+                  <td>{OWNER_LABELS[ownerOf(j) ?? ''] ?? '-'}</td>
+                  <td>{j.sla ? <>{j.sla.hoursInStep} ชม.<div className="sub-mute">SLA {j.sla.slaHours} ชม.</div></> : '-'}</td>
+                  <td>{flags(j).length ? <span className="flag">{flags(j).join(', ')}</span> : '-'}</td>
                 </tr>
-              )
-            })}
-          </tbody>
-        </table>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* Job Detail Modal */}
-      {selected && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.4)' }}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 overflow-hidden max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
-              <div>
-                <span className="font-mono font-bold text-base" style={{ color: selected.slaClocks.some(c => c.breached) ? 'var(--red)' : 'var(--text)' }}>
-                  {selected.jobNo}
-                </span>
-                <StageBadge stage={selected.stage} size="sm" />
-              </div>
-              <button onClick={() => setSelected(null)} className="text-2xl font-light" style={{ color: 'var(--text-2)' }}>×</button>
-            </div>
-            <div className="overflow-y-auto p-6 grid grid-cols-2 gap-6">
-              {/* Left: Job info */}
-              <div className="space-y-3 text-sm">
-                <h3 className="font-semibold" style={{ color: 'var(--text)' }}>ข้อมูลงาน</h3>
-                <div><span style={{ color: 'var(--text-2)' }}>ลูกค้า:</span> <span className="font-medium">{selected.customerName ?? '-'}</span></div>
-                <div><span style={{ color: 'var(--text-2)' }}>สินค้า:</span> <span className="font-medium">{selected.productName}</span></div>
-                <div><span style={{ color: 'var(--text-2)' }}>ยี่ห้อ:</span> {selected.brandName}</div>
-                <div><span style={{ color: 'var(--text-2)' }}>ช่องทาง:</span> {selected.channel ? CHANNEL_LABELS[selected.channel] : '-'}</div>
-                <div><span style={{ color: 'var(--text-2)' }}>สาขา:</span> {selected.branch.name}</div>
-                <div><span style={{ color: 'var(--text-2)' }}>VD:</span> {selected.vendorCenter?.vendorParent.name ?? 'ยังไม่ได้กำหนด'}</div>
-                <div><span style={{ color: 'var(--text-2)' }}>ยอดค้างชำระ:</span> <span className="font-medium text-overdue">฿{getBalance(selected.charges, selected.payments).toLocaleString()}</span></div>
-                <Link
-                  href={`/jobs/${selected.id}`}
-                  className="block w-full text-center py-2 rounded-lg text-sm font-medium text-white mt-4"
-                  style={{ background: 'var(--red)' }}
-                >
-                  ดูรายละเอียดเต็ม
-                </Link>
-              </div>
-              {/* Right: Timeline placeholder */}
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Timeline</h3>
-                <div className="text-xs" style={{ color: 'var(--text-mute)' }}>ขั้นตอนการดำเนินงาน</div>
-                <div className="space-y-1 text-xs" style={{ color: 'var(--text-2)' }}>
-                  <div>● เปิดงาน → {new Date(selected.openedAt).toLocaleDateString('th-TH')}</div>
-                  <div className="font-medium" style={{ color: 'var(--amber)' }}>◉ {selected.stage}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <JobDetailModal
+        jobId={openId}
+        role={role}
+        onClose={() => {
+          setOpenId(null)
+          if (sp.get('open')) {
+            router.replace('/jobs')
+          }
+        }}
+        onChanged={load}
+      />
     </div>
   )
 }

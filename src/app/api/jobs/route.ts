@@ -1,178 +1,209 @@
+import crypto from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
+import type { Prisma, JobStage, Channel, PaymentMethod } from '@prisma/client'
 import { prisma } from '@/lib/db'
-import { getCurrentUser } from '@/lib/auth'
-import { JobStage, JobType, Channel } from '@prisma/client'
+import { requireUser, jobScope, handleError, HttpError } from '@/lib/api'
 import { generateJobNo } from '@/lib/number-generator'
 import { calcIntakeFees } from '@/lib/fees'
+import { resolveRouting } from '@/lib/routing'
+import { slaOnEvent, refreshBreaches } from '@/lib/sla-engine'
+import { JOB_LIST_INCLUDE, serializeJob, type JobView } from '@/lib/job-view'
+import { STAGE_ORDER } from '@/lib/constants'
 
-function buildScope(user: { role: string; siteId?: string | null; vendorCenterId?: string | null }) {
-  if (user.role === 'ADMIN' || user.role === 'EXECUTIVE') return {}
-  if (user.role === 'CS' || user.role === 'GR' || user.role === 'S2') return { branchId: user.siteId ?? '' }
-  if (user.role === 'DC') return { channel: Channel.DC }
-  if (user.role === 'VD') return { vendorCenterId: user.vendorCenterId ?? '' }
-  return {}
-}
+function bkkStart(d: string) { return new Date(`${d}T00:00:00+07:00`) }
+function bkkEnd(d: string) { return new Date(`${d}T23:59:59.999+07:00`) }
 
+// GET /api/jobs?from&to&stage&type&branchId&channel&search&flag&limit
 export async function GET(req: NextRequest) {
-  const user = await getCurrentUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  try {
+    const user = await requireUser()
+    await refreshBreaches()
+    const sp = new URL(req.url).searchParams
+    const scope = await jobScope(user)
+    const and: Prisma.JobWhereInput[] = [scope]
 
-  const { searchParams } = new URL(req.url)
-  const stage = searchParams.get('stage') as JobStage | null
-  const search = searchParams.get('search') ?? ''
-  const page = Math.max(1, Number(searchParams.get('page') ?? '1'))
-  const limit = Math.min(100, Number(searchParams.get('limit') ?? '50'))
-  const skip = (page - 1) * limit
+    const stages = (sp.get('stage') ?? '').split(',').filter(s => STAGE_ORDER.includes(s as never)) as JobStage[]
+    if (stages.length) and.push({ stage: { in: stages } })
+    const type = sp.get('type')
+    if (type === 'CUSTOMER' || type === 'STOCK') and.push({ type })
+    const branchId = sp.get('branchId')
+    if (branchId) and.push({ branchId })
+    const channel = sp.get('channel')
+    if (channel === 'DC' || channel === 'DSD' || channel === 'TPL') and.push({ channel: channel as Channel })
+    const from = sp.get('from')
+    const to = sp.get('to')
+    if (from) and.push({ openedAt: { gte: bkkStart(from) } })
+    if (to) and.push({ openedAt: { lte: bkkEnd(to) } })
+    if (sp.get('open') === '1') and.push({ stage: { notIn: ['CLOSED_REPAIRED', 'CLOSED_NOT_REPAIRED', 'CANCELLED'] } })
+    const search = (sp.get('search') ?? '').trim()
+    if (search) {
+      const digits = search.replace(/\D/g, '')
+      and.push({
+        OR: [
+          { jobNo: { contains: search, mode: 'insensitive' } },
+          { customerName: { contains: search, mode: 'insensitive' } },
+          { productName: { contains: search, mode: 'insensitive' } },
+          { sku: { contains: search, mode: 'insensitive' } },
+          { receiverName: { contains: search, mode: 'insensitive' } },
+          { items: { some: { sku: { contains: search, mode: 'insensitive' } } } },
+          { vendorCenter: { code: { contains: search, mode: 'insensitive' } } },
+          { vendorCenter: { vendorParent: { name: { contains: search, mode: 'insensitive' } } } },
+          ...(digits.length >= 4 ? [{ customerPhone: { contains: digits } }] : []),
+        ],
+      })
+    }
+    const limit = Math.min(1000, Math.max(1, Number(sp.get('limit') ?? '300')))
 
-  const where: Record<string, unknown> = {
-    ...buildScope(user),
-    ...(stage ? { stage } : {}),
-    ...(search ? {
-      OR: [
-        { jobNo: { contains: search, mode: 'insensitive' } },
-        { customerName: { contains: search, mode: 'insensitive' } },
-        { productName: { contains: search, mode: 'insensitive' } },
-      ],
-    } : {}),
-  }
-
-  const [jobs, total] = await Promise.all([
-    prisma.job.findMany({
-      where,
-      skip,
+    const rows = await prisma.job.findMany({
+      where: { AND: and },
       take: limit,
       orderBy: { openedAt: 'desc' },
-      include: {
-        branch: { select: { name: true, nickname: true } },
-        vendorCenter: { select: { code: true, vendorParent: { select: { name: true } } } },
-        slaClocks: {
-          where: { status: { in: ['RUNNING', 'PAUSED'] } },
-          include: { slaStep: { select: { code: true, ownerDept: true, hours: true } } },
-          orderBy: { startedAt: 'desc' },
-          take: 1,
-        },
-        charges: { select: { amount: true, type: true } },
-        payments: { select: { amount: true, status: true } },
-      },
-    }),
-    prisma.job.count({ where }),
-  ])
+      include: JOB_LIST_INCLUDE,
+    })
+    let jobs: JobView[] = rows.map(j => serializeJob(j, user.role))
 
-  return NextResponse.json({ jobs, total, page, limit, pages: Math.ceil(total / limit) })
+    const kpis = {
+      total: jobs.length,
+      GR: jobs.filter(j => j.overdue && j.overdueOwner === 'GR').length,
+      VD: jobs.filter(j => j.overdue && j.overdueOwner === 'VD').length,
+      transport: jobs.filter(j => j.overdue && ['DC', 'TPL', 'CARRIER'].includes(j.overdueOwner ?? '')).length,
+      CS: jobs.filter(j => j.overdue && ['CS', 'CUSTOMER'].includes(j.overdueOwner ?? '')).length,
+      unpaid: jobs.filter(j => j.unpaid).length,
+      overdue: jobs.filter(j => j.overdue).length,
+    }
+
+    const flag = sp.get('flag')
+    if (flag === 'unpaid') jobs = jobs.filter(j => j.unpaid)
+    else if (flag === 'overdue') jobs = jobs.filter(j => j.overdue)
+    else if (flag === 'GR' || flag === 'VD') jobs = jobs.filter(j => j.overdue && j.overdueOwner === flag)
+    else if (flag === 'transport') jobs = jobs.filter(j => j.overdue && ['DC', 'TPL', 'CARRIER'].includes(j.overdueOwner ?? ''))
+    else if (flag === 'CS') jobs = jobs.filter(j => j.overdue && ['CS', 'CUSTOMER'].includes(j.overdueOwner ?? ''))
+
+    return NextResponse.json({ jobs, kpis, total: jobs.length })
+  } catch (e) {
+    return handleError(e)
+  }
 }
 
+// POST /api/jobs — เปิดใบแจ้งซ่อม (action `open`, 04 §3)
 export async function POST(req: NextRequest) {
-  const user = await getCurrentUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!['CS', 'ADMIN'].includes(user.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-
   try {
-    const body = await req.json()
+    const user = await requireUser(['CS', 'ADMIN'])
+    const body = (await req.json()) as Record<string, unknown>
     const {
       productName, brandName, brandId, symptom, customerName, customerPhone,
-      customerAddress, customerZip, hasWarranty = false, shippingMethod = 'STANDARD',
+      customerAddress, customerZip, hasWarranty = false, shippingMethod: rawMethod = 'STANDARD',
       sizeCategoryId, sku, serialNo, allowNonAuth = false,
+      taxInvoiceName, taxInvoiceId, taxInvoiceAddr,
+      defectNote, photos, paymentMethod, posReceiptNo,
     } = body
 
-    if (!productName || !brandName || !customerName || !customerPhone || !symptom) {
-      return NextResponse.json({ error: 'กรุณากรอกข้อมูลที่จำเป็นให้ครบ' }, { status: 400 })
-    }
+    const phone = String(customerPhone ?? '').replace(/\D/g, '')
+    if (!String(customerName ?? '').trim()) throw new HttpError(400, 'กรุณากรอกชื่อลูกค้า')
+    if (!/^0\d{8,9}$/.test(phone)) throw new HttpError(400, 'เบอร์โทรไม่ถูกต้อง (เช่น 0812345678)')
+    if (!String(productName ?? '').trim()) throw new HttpError(400, 'กรุณากรอกชื่อสินค้า')
+    if (!String(brandName ?? '').trim()) throw new HttpError(400, 'กรุณาเลือกแบรนด์')
+    if (!String(symptom ?? '').trim()) throw new HttpError(400, 'กรุณากรอกอาการเสีย')
+    if (!sizeCategoryId) throw new HttpError(400, 'กรุณาเลือกขนาดสินค้า')
+    if (taxInvoiceId && !/^\d{13}$/.test(String(taxInvoiceId))) throw new HttpError(400, 'เลขผู้เสียภาษีต้องมี 13 หลัก')
 
-    const branchId = user.siteId
-    if (!branchId) return NextResponse.json({ error: 'ไม่พบข้อมูลสาขา' }, { status: 400 })
+    const shippingMethod: 'STANDARD' | 'EXPRESS' = rawMethod === 'EXPRESS' ? 'EXPRESS' : 'STANDARD'
 
-    // Resolve routing
-    let vendorCenterId: string | null = null
-    let channel: Channel = Channel.DC
-    let stage: JobStage = JobStage.CS_OPENED
+    const branchId: string | undefined = user.role === 'ADMIN' ? ((body.branchId as string) ?? user.siteId) : user.siteId ?? undefined
+    if (!branchId) throw new HttpError(400, 'ผู้ใช้ไม่ได้ผูกกับสาขา')
 
-    if (shippingMethod === 'EXPRESS') {
-      channel = Channel.TPL
-    }
-
-    const route = await prisma.branchVendorRoute.findFirst({
-      where: { branchId },
-      include: {
-        primaryCenter: { include: { vendorParent: { include: { brands: true } } } },
-      },
-      orderBy: { priority: 'asc' },
+    const routing = await resolveRouting({
+      branchId, brandId: brandId ? Number(brandId) : null, sizeCategoryId: Number(sizeCategoryId),
+      shippingMethod, allowNonAuth: !!allowNonAuth, jobType: 'CUSTOMER',
     })
+    const stage: JobStage = routing ? 'CS_OPENED' : 'PENDING_VENDOR_ASSIGNMENT'
+    const channel: Channel | null = routing ? routing.channel : (shippingMethod === 'EXPRESS' ? 'TPL' : null)
 
-    if (route?.primaryCenter) {
-      const vendor = route.primaryCenter.vendorParent
-      const hasBrand = !brandId || vendor.brands.some((b) => b.brandId === Number(brandId))
-      if (hasBrand || allowNonAuth) {
-        vendorCenterId = route.primaryCenter.id
-        channel = shippingMethod === 'EXPRESS' ? Channel.TPL : route.standardChannel
-      }
-    }
-
-    if (!vendorCenterId) {
-      stage = JobStage.PENDING_VENDOR_ASSIGNMENT
-    }
-
-    // Get fee rate
-    let feeResult = { operationFee: 0, shippingFee: 0, total: 0 }
-    if (sizeCategoryId) {
-      const feeRate = await prisma.feeRate.findFirst({
-        where: { sizeCategoryId: Number(sizeCategoryId) },
-        orderBy: { effectiveFrom: 'desc' },
-      })
-      if (feeRate) {
-        feeResult = calcIntakeFees({
-          jobType: 'CUSTOMER',
-          hasWarranty,
-          shippingMethod,
-          feeRate: { operationFee: feeRate.operationFee, shippingFee3pl: feeRate.shippingFee3pl },
-        })
-      }
+    const feeRate = await prisma.feeRate.findFirst({
+      where: { sizeCategoryId: Number(sizeCategoryId), effectiveFrom: { lte: new Date() } },
+      orderBy: [{ effectiveFrom: 'desc' }, { id: 'desc' }],
+    })
+    const fees = calcIntakeFees({
+      jobType: 'CUSTOMER', hasWarranty: !!hasWarranty, shippingMethod,
+      feeRate: { operationFee: feeRate?.operationFee ?? 0, shippingFee3pl: feeRate?.shippingFee3pl ?? 0 },
+    })
+    if (fees.total > 0 && paymentMethod === 'POS_RECEIPT' && !String(posReceiptNo ?? '').trim()) {
+      throw new HttpError(400, 'กรุณากรอกเลขที่ใบเสร็จ POS')
     }
 
     const jobNo = await generateJobNo('CUSTOMER')
+    const now = new Date()
 
-    const job = await prisma.$transaction(async (tx) => {
-      const newJob = await tx.job.create({
+    const result = await prisma.$transaction(async tx => {
+      const job = await tx.job.create({
         data: {
-          jobNo, type: JobType.CUSTOMER, stage, channel,
-          branchId, vendorCenterId,
-          customerName, customerPhone, customerAddress, customerZip,
-          sku, productName, brandName, brandId: brandId ? Number(brandId) : null,
-          sizeCategoryId: sizeCategoryId ? Number(sizeCategoryId) : null,
-          symptom, serialNo, hasWarranty, shippingMethod, allowNonAuth,
-          createdBy: user.username,
+          jobNo, type: 'CUSTOMER', stage, channel, branchId,
+          vendorCenterId: routing?.vendorCenterId ?? null,
+          customerName: String(customerName).trim(), customerPhone: phone,
+          customerAddress: (customerAddress as string) || null, customerZip: (customerZip as string) || null,
+          taxInvoiceName: (taxInvoiceName as string) || null, taxInvoiceId: (taxInvoiceId as string) || null, taxInvoiceAddr: (taxInvoiceAddr as string) || null,
+          sku: (sku as string) || null, productName: String(productName).trim(), brandName: String(brandName).trim(),
+          brandId: brandId ? Number(brandId) : null, sizeCategoryId: Number(sizeCategoryId),
+          symptom: String(symptom).trim(), serialNo: (serialNo as string) || null, hasWarranty: !!hasWarranty,
+          shippingMethod, allowNonAuth: !!allowNonAuth, createdBy: user.username,
+          openedAt: now, stageEnteredAt: now,
         },
       })
+      if (fees.operationFee > 0) await tx.jobCharge.create({ data: { jobId: job.id, type: 'OPERATION_FEE', amount: fees.operationFee, description: 'ค่าดำเนินการ' } })
+      if (fees.shippingFee > 0) await tx.jobCharge.create({ data: { jobId: job.id, type: 'SHIPPING_FEE', amount: fees.shippingFee, description: 'ค่าขนส่ง 3PL' } })
 
-      // Create charges
-      if (feeResult.operationFee > 0) {
-        await tx.jobCharge.create({ data: { jobId: newJob.id, type: 'OPERATION_FEE', amount: feeResult.operationFee, description: 'ค่าดำเนินการ' } })
-      }
-      if (feeResult.shippingFee > 0) {
-        await tx.jobCharge.create({ data: { jobId: newJob.id, type: 'SHIPPING_FEE', amount: feeResult.shippingFee, description: 'ค่าขนส่ง 3PL' } })
+      const extra: Record<string, string> = {}
+      if (fees.total > 0) {
+        const method: PaymentMethod = paymentMethod === 'CARD_LINK' || paymentMethod === 'POS_RECEIPT' ? paymentMethod : 'PROMPTPAY_QR'
+        const paid = method === 'POS_RECEIPT'
+        for (const [type, amount] of [['OPERATION_FEE', fees.operationFee], ['SHIPPING_FEE', fees.shippingFee]] as const) {
+          if (amount > 0) {
+            await tx.payment.create({
+              data: {
+                jobId: job.id, chargeType: type, amount, method, status: paid ? 'PAID' : 'PENDING',
+                posReceiptNo: paid ? String(posReceiptNo).trim() : null, receivedAt: paid ? now : null, receivedBy: paid ? user.id : null,
+              },
+            })
+          }
+        }
+        if (!paid) {
+          const payToken = crypto.randomBytes(24).toString('base64url')
+          await tx.publicToken.create({ data: { jobId: job.id, type: 'PAYMENT', token: payToken, expiresAt: new Date(now.getTime() + 7 * 86400000) } })
+          extra.payUrl = `/pay/${payToken}`
+        }
       }
 
-      // Create job event
-      await tx.jobEvent.create({
+      const event = await tx.jobEvent.create({
         data: {
-          jobId: newJob.id, type: 'JOB_OPENED',
-          toStage: stage,
-          actorUserId: user.id, actorRole: user.role,
+          jobId: job.id, type: 'JOB_OPENED', toStage: stage, actorUserId: user.id, actorRole: user.role,
+          note: defectNote ? `ตำหนิ: ${defectNote}` : null,
+          payload: { defectNote: defectNote || null, paymentMethod: paymentMethod || null, routing: routing ? { centerCode: routing.centerCode, channel: routing.channel } : null },
         },
       })
+      if (Array.isArray(photos) && photos.length) {
+        await tx.attachment.createMany({
+          data: photos.slice(0, 4).map((p: { fileUrl: string; fileName?: string; mimeType?: string; fileSize?: number }) => ({
+            jobEventId: event.id, kind: 'INTAKE', fileUrl: p.fileUrl, fileName: p.fileName ?? 'photo.jpg', mimeType: p.mimeType ?? null, fileSize: p.fileSize ?? null, uploadedBy: user.id,
+          })),
+        })
+      }
+      const trackToken = crypto.randomBytes(24).toString('base64url')
+      await tx.publicToken.create({ data: { jobId: job.id, type: 'TRACKING', token: trackToken, expiresAt: new Date(now.getTime() + 90 * 86400000) } })
+      extra.trackingUrl = `/t/${trackToken}`
 
-      // Create tracking token
-      const crypto = await import('crypto')
-      const trackToken = crypto.randomBytes(32).toString('base64url')
-      await tx.publicToken.create({
-        data: { jobId: newJob.id, type: 'TRACKING', token: trackToken, expiresAt: new Date(Date.now() + 90 * 24 * 3600 * 1000) },
-      })
+      await slaOnEvent(tx, { id: job.id, type: job.type, channel: job.channel, vendorCenterId: job.vendorCenterId }, 'JOB_OPENED', now)
+      return { job, extra }
+    }, { timeout: 20000 })
 
-      return newJob
-    })
-
-    return NextResponse.json(job, { status: 201 })
+    return NextResponse.json({
+      id: result.job.id,
+      jobNo: result.job.jobNo,
+      stage: result.job.stage,
+      fees,
+      routing,
+      ...result.extra,
+    }, { status: 201 })
   } catch (e) {
-    console.error('[POST /api/jobs]', e)
-    return NextResponse.json({ error: 'เกิดข้อผิดพลาด' }, { status: 500 })
+    return handleError(e)
   }
 }

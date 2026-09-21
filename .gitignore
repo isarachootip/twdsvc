@@ -23,11 +23,17 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
+.env
 .env*.local
+
+# agent swarm runs
+.agents/
 
 # uploads
 /public/uploads/*
 !/public/uploads/.gitkeep
+/uploads/*
+!/uploads/.gitkeep
 
 # typescript
 *.tsbuildinfo

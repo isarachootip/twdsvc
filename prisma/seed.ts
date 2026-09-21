@@ -60,11 +60,11 @@ async function main() {
   })
   console.log('  ✓ Size categories')
 
-  // ─── Fee Rates ─────────────────────────────────────────────────────────────
+  // ─── Fee Rates (Values in Satang integers: 150 THB = 15000 satang) ───────
   await prisma.feeRate.createMany({
     data: [
-      { sizeCategoryId: small.id, operationFee: 150, shippingFee3pl: 80 },
-      { sizeCategoryId: large.id, operationFee: 300, shippingFee3pl: 250 },
+      { sizeCategoryId: small.id, operationFee: 15000, shippingFee3pl: 8000 },
+      { sizeCategoryId: large.id, operationFee: 30000, shippingFee3pl: 25000 },
     ],
     skipDuplicates: true,
   })
@@ -107,7 +107,7 @@ async function main() {
       defaultRepairSlaDays: 7,
       repairWarrantyDays: 30,
       inspectionFeeCovered: 0,
-      inspectionFeeNotCovered: 300,
+      inspectionFeeNotCovered: 30000, // 300 THB in satang
       isBrandAuthorized: true,
     },
   })

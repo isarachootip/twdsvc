@@ -1,51 +1,89 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { requireUser, handleError, HttpError } from '@/lib/api'
 
 export async function GET() {
-  const user = await getCurrentUser()
-  if (!user || user.role !== 'ADMIN')
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-
-  const [sizes, rates] = await Promise.all([
-    prisma.sizeCategory.findMany({ orderBy: { sortOrder: 'asc' } }),
-    prisma.feeRate.findMany({ orderBy: { effectiveFrom: 'desc' } }),
-  ])
-
-  // Get latest fee rate per size category
-  const latestRates = sizes.map((sz) => {
-    const rate = rates.find((r) => r.sizeCategoryId === sz.id)
-    return { sizeCategory: sz, rate: rate ?? null }
-  })
-
-  return NextResponse.json(latestRates)
+  try {
+    // Keep CS and EXECUTIVE allowed to prevent Bug C9
+    await requireUser(['ADMIN', 'CS', 'EXECUTIVE'])
+    const [sizes, rates] = await Promise.all([
+      prisma.sizeCategory.findMany({ orderBy: { sortOrder: 'asc' } }),
+      prisma.feeRate.findMany({
+        where: { effectiveFrom: { lte: new Date() } },
+        orderBy: [{ effectiveFrom: 'desc' }, { id: 'desc' }],
+      }),
+    ])
+    return NextResponse.json(
+      sizes.map(sz => ({
+        sizeCategory: sz,
+        rate: rates.find(r => r.sizeCategoryId === sz.id) ?? null,
+      }))
+    )
+  } catch (e) {
+    return handleError(e)
+  }
 }
 
+// PUT [{ sizeCategoryId?, name?, operationFee, shippingFee3pl }]
 export async function PUT(req: NextRequest) {
-  const user = await getCurrentUser()
-  if (!user || user.role !== 'ADMIN')
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-
   try {
-    const updates: Array<{ sizeCategoryId: number; operationFee: number; shippingFee3pl: number }> =
-      await req.json()
+    await requireUser(['ADMIN'])
+    const updates: Array<{
+      sizeCategoryId?: number | null
+      name?: string
+      operationFee: number
+      shippingFee3pl: number
+    }> = await req.json()
 
-    const results = await Promise.all(
-      updates.map((u) =>
-        prisma.feeRate.create({
-          data: {
-            sizeCategoryId: u.sizeCategoryId,
-            operationFee: u.operationFee,
-            shippingFee3pl: u.shippingFee3pl,
-            effectiveFrom: new Date(),
-          },
-        })
-      )
-    )
+    const current = await prisma.feeRate.findMany({
+      orderBy: [{ effectiveFrom: 'desc' }, { id: 'desc' }],
+    })
 
-    return NextResponse.json(results)
+    await prisma.$transaction(async tx => {
+      for (const u of updates) {
+        const op = Math.round(Number(u.operationFee))
+        const sh = Math.round(Number(u.shippingFee3pl))
+        if (!(op >= 0) || !(sh >= 0)) {
+          throw new HttpError(400, 'ค่าธรรมเนียมต้องเป็นตัวเลข ≥ 0')
+        }
+
+        let sizeId = u.sizeCategoryId
+        if (!sizeId) {
+          if (!u.name?.trim()) {
+            throw new HttpError(400, 'กรุณาระบุชื่อประเภทสินค้าใหม่')
+          }
+          const count = await tx.sizeCategory.count()
+          const sz = await tx.sizeCategory.create({
+            data: {
+              code: `SIZE_${Date.now().toString(36).toUpperCase()}`,
+              name: u.name.trim(),
+              sortOrder: count + 1,
+            },
+          })
+          sizeId = sz.id
+        } else if (u.name?.trim()) {
+          await tx.sizeCategory.update({
+            where: { id: sizeId },
+            data: { name: u.name.trim() },
+          })
+        }
+
+        const latest = current.find(r => r.sizeCategoryId === sizeId)
+        if (!latest || latest.operationFee !== op || latest.shippingFee3pl !== sh) {
+          await tx.feeRate.create({
+            data: {
+              sizeCategoryId: sizeId,
+              operationFee: op,
+              shippingFee3pl: sh,
+              effectiveFrom: new Date(),
+            },
+          })
+        }
+      }
+    })
+
+    return NextResponse.json({ ok: true })
   } catch (e) {
-    console.error('[PUT /api/admin/fees]', e)
-    return NextResponse.json({ error: 'เกิดข้อผิดพลาด' }, { status: 500 })
+    return handleError(e)
   }
 }

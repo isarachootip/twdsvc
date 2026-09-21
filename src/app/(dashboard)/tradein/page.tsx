@@ -1,551 +1,737 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { CheckCircle2, Tag, TrendingUp, BarChart2, RefreshCcw, ChevronRight } from 'lucide-react'
-import RadioCardGroup from '@/components/ui/RadioCardGroup'
+import {
+  CheckCircle2, Tag, TrendingUp, BarChart2,
+  RefreshCcw, ChevronRight, Camera, Search, X, AlertCircle
+} from 'lucide-react'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface KPIs { total: number; used: number; conversion: number }
-interface Promo { id: string; name: string; discountPct: number }
-interface SizeCategory { id: number; code: string; name: string }
-interface TradeInJob {
-  id: string; jobNo: string; customerName: string | null
-  productName: string; sizeCategoryId: number | null; stage: string
+interface KPIs {
+  total: number
+  used: number
+  conversion: number
 }
+
+interface Promo {
+  id: string
+  name: string
+  discountPct: number
+}
+
+interface SizeCategory {
+  id: number
+  code: string
+  name: string
+}
+
+interface EligibleJob {
+  id: string
+  jobNo: string
+  customerName: string | null
+  customerPhone: string | null
+  productName: string
+  brandName: string
+  sizeCategoryId: number | null
+  stage: string
+  decision: string
+}
+
 interface TradeInRecord {
-  id: string; tradeInNo: string; type: string; customerName: string
-  customerPhone: string; productName: string; discountPct: number
-  status: string; createdAt: string; promotion?: { name: string } | null
+  id: string
+  tradeInNo: string
+  type: string
+  customerName: string
+  customerPhone: string
+  productName: string
+  brandName?: string | null
+  discountPct: number
+  status: string
+  createdAt: string
+  promotion?: { name: string } | null
 }
 
-// ─── Toast ────────────────────────────────────────────────────────────────────
-
-function Toast({ message, onClose }: { message: string; onClose: () => void }) {
-  useEffect(() => {
-    const t = setTimeout(onClose, 4000)
-    return () => clearTimeout(t)
-  }, [onClose])
-
-  return (
-    <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-4 rounded-2xl shadow-xl text-white text-sm font-medium"
-      style={{ background: 'var(--green)' }}>
-      <CheckCircle2 size={18} />
-      {message}
-    </div>
-  )
-}
-
-// ─── KPI Card ─────────────────────────────────────────────────────────────────
-
-function KpiCard({ label, value, icon, color }: { label: string; value: string | number; icon: React.ReactNode; color: string }) {
-  return (
-    <div className="card flex items-center gap-4">
-      <div className="rounded-xl p-3" style={{ background: color + '20' }}>
-        <span style={{ color }}>{icon}</span>
-      </div>
-      <div>
-        <div className="text-2xl font-bold" style={{ color: 'var(--text)' }}>{value}</div>
-        <div className="text-xs mt-0.5" style={{ color: 'var(--text-2)' }}>{label}</div>
-      </div>
-    </div>
-  )
-}
-
-// ─── Promo Preview ────────────────────────────────────────────────────────────
-
-function PromoPreview({ sizeCategoryId, type }: { sizeCategoryId: number | null; type: string }) {
-  const [promo, setPromo] = useState<Promo | null>(null)
-  const [loading, setLoading] = useState(false)
-
-  useEffect(() => {
-    if (!sizeCategoryId) { setPromo(null); return }
-    setLoading(true)
-    const params = new URLSearchParams({ type, sizeCategoryId: String(sizeCategoryId) })
-    fetch(`/api/promotions?${params}`)
-      .then((r) => r.json())
-      .then(setPromo)
-      .catch(() => setPromo(null))
-      .finally(() => setLoading(false))
-  }, [sizeCategoryId, type])
-
-  if (!sizeCategoryId) return null
-  if (loading) return (
-    <div className="p-3 rounded-xl text-sm" style={{ background: 'var(--blue-tint)', color: 'var(--blue)' }}>
-      กำลังโหลดโปรโมชัน...
-    </div>
-  )
-  if (!promo) return (
-    <div className="p-3 rounded-xl text-sm" style={{ background: 'var(--surface-2)', color: 'var(--text-mute)' }}>
-      ไม่พบโปรโมชันที่ใช้งานได้สำหรับสินค้าขนาดนี้
-    </div>
-  )
-  return (
-    <div className="p-3 rounded-xl text-sm flex items-center gap-2" style={{ background: 'var(--blue-tint)', color: 'var(--blue)' }}>
-      <Tag size={15} />
-      <span>
-        ระบบเลือกโปร <strong>'{promo.name}'</strong> ให้อัตโนมัติ — ส่วนลด{' '}
-        <strong>{promo.discountPct}%</strong>
-      </span>
-    </div>
-  )
-}
-
-// ─── Type 1 Form ──────────────────────────────────────────────────────────────
-
-function Type1Form({
-  sizes,
-  onSubmit,
-  loading,
-}: {
-  sizes: SizeCategory[]
-  onSubmit: (data: object) => Promise<Promo | null>
-  loading: boolean
-}) {
-  const [customerName, setCustomerName] = useState('')
-  const [customerPhone, setCustomerPhone] = useState('')
-  const [productName, setProductName] = useState('')
-  const [brandName, setBrandName] = useState('')
-  const [symptom, setSymptom] = useState('')
-  const [sizeCategoryId, setSizeCategoryId] = useState<number | null>(null)
-  const [error, setError] = useState('')
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    if (!customerName || !customerPhone || !productName) {
-      setError('กรุณากรอกข้อมูลที่จำเป็น')
-      return
-    }
-    if (!sizeCategoryId) {
-      setError('กรุณาเลือกขนาดสินค้า')
-      return
-    }
-    const promo = await onSubmit({ type: 'TYPE1', customerName, customerPhone, productName, brandName, symptom, sizeCategoryId })
-    if (promo) {
-      setCustomerName(''); setCustomerPhone(''); setProductName('')
-      setBrandName(''); setSymptom(''); setSizeCategoryId(null)
-    }
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
-            ชื่อลูกค้า <span className="text-red-500">*</span>
-          </label>
-          <input value={customerName} onChange={(e) => setCustomerName(e.target.value)}
-            placeholder="ชื่อ-นามสกุล"
-            className="w-full px-3 py-2.5 border rounded-xl text-sm outline-none"
-            style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--text)' }}
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
-            เบอร์โทร <span className="text-red-500">*</span>
-          </label>
-          <input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)}
-            placeholder="08x-xxx-xxxx"
-            className="w-full px-3 py-2.5 border rounded-xl text-sm outline-none"
-            style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--text)' }}
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
-            ชื่อสินค้า <span className="text-red-500">*</span>
-          </label>
-          <input value={productName} onChange={(e) => setProductName(e.target.value)}
-            placeholder="ชื่อสินค้า"
-            className="w-full px-3 py-2.5 border rounded-xl text-sm outline-none"
-            style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--text)' }}
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
-            ยี่ห้อ
-          </label>
-          <input value={brandName} onChange={(e) => setBrandName(e.target.value)}
-            placeholder="ยี่ห้อ (ถ้ามี)"
-            className="w-full px-3 py-2.5 border rounded-xl text-sm outline-none"
-            style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--text)' }}
-          />
-        </div>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
-          อาการ
-        </label>
-        <textarea rows={2} value={symptom} onChange={(e) => setSymptom(e.target.value)}
-          placeholder="อธิบายอาการสินค้า..."
-          className="w-full px-3 py-2 border rounded-xl text-sm outline-none resize-none"
-          style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--text)' }}
-        />
-      </div>
-
-      <RadioCardGroup
-        label="ขนาดสินค้า"
-        required
-        value={sizeCategoryId ? String(sizeCategoryId) : ''}
-        onChange={(v) => setSizeCategoryId(Number(v))}
-        options={sizes.map((s) => ({ value: String(s.id), label: s.code, sublabel: s.name }))}
-      />
-
-      <PromoPreview sizeCategoryId={sizeCategoryId} type="TYPE1" />
-
-      {error && (
-        <div className="p-3 rounded-xl text-sm" style={{ background: 'var(--red-tint)', color: 'var(--red-dark)' }}>
-          {error}
-        </div>
-      )}
-
-      <button type="submit" disabled={loading}
-        className="w-full py-3 rounded-xl font-semibold text-white text-sm disabled:opacity-60"
-        style={{ background: 'var(--red)' }}>
-        {loading ? 'กำลังสร้าง...' : 'สร้างคูปอง TYPE 1'}
-      </button>
-    </form>
-  )
-}
-
-// ─── Type 2 Form ──────────────────────────────────────────────────────────────
-
-function Type2Form({
-  sizes,
-  onSubmit,
-  loading,
-}: {
-  sizes: SizeCategory[]
-  onSubmit: (data: object) => Promise<Promo | null>
-  loading: boolean
-}) {
-  const [jobs, setJobs] = useState<TradeInJob[]>([])
-  const [selectedJob, setSelectedJob] = useState<TradeInJob | null>(null)
-  const [sizeCategoryId, setSizeCategoryId] = useState<number | null>(null)
-  const [error, setError] = useState('')
-
-  useEffect(() => {
-    // Fetch eligible jobs (READY_FOR_PICKUP or CLOSED_NOT_REPAIRED with REJECTED decision)
-    fetch('/api/jobs?stage=CLOSED_NOT_REPAIRED&limit=50')
-      .then((r) => r.json())
-      .then((d) => setJobs(d.jobs ?? []))
-      .catch(() => {})
-  }, [])
-
-  const handleSelect = (job: TradeInJob) => {
-    setSelectedJob(job)
-    if (job.sizeCategoryId) setSizeCategoryId(job.sizeCategoryId)
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    if (!selectedJob) { setError('กรุณาเลือกงานซ่อม'); return }
-    if (!sizeCategoryId) { setError('กรุณาเลือกขนาดสินค้า'); return }
-    const promo = await onSubmit({
-      type: 'TYPE2',
-      jobId: selectedJob.id,
-      customerName: selectedJob.customerName ?? 'ลูกค้า',
-      customerPhone: '-',
-      productName: selectedJob.productName,
-      sizeCategoryId,
-    })
-    if (promo) { setSelectedJob(null); setSizeCategoryId(null) }
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
-          เลือกงานซ่อมที่ลูกค้าไม่อนุมัติ
-        </label>
-        {jobs.length === 0 ? (
-          <div className="py-6 text-center text-sm border rounded-xl" style={{ borderColor: 'var(--border)', color: 'var(--text-mute)' }}>
-            ไม่มีงานที่มีสิทธิ์สร้าง Trade-in ขณะนี้
-          </div>
-        ) : (
-          <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-            {jobs.map((job) => (
-              <button
-                key={job.id}
-                type="button"
-                onClick={() => handleSelect(job)}
-                className="w-full flex items-center justify-between px-4 py-3 border-2 rounded-xl text-left transition-all"
-                style={{
-                  borderColor: selectedJob?.id === job.id ? 'var(--red)' : 'var(--border)',
-                  background: selectedJob?.id === job.id ? 'var(--red-tint)' : 'var(--surface)',
-                }}
-              >
-                <div>
-                  <div className="text-sm font-medium" style={{ color: 'var(--text)' }}>
-                    {job.jobNo}
-                  </div>
-                  <div className="text-xs mt-0.5" style={{ color: 'var(--text-2)' }}>
-                    {job.customerName ?? '-'} — {job.productName}
-                  </div>
-                </div>
-                {selectedJob?.id === job.id && (
-                  <CheckCircle2 size={18} style={{ color: 'var(--red)' }} />
-                )}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {selectedJob && (
-        <>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-2)' }}>ลูกค้า</label>
-              <div className="px-3 py-2 border rounded-xl text-sm" style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text)' }}>
-                {selectedJob.customerName ?? '-'}
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-2)' }}>สินค้า</label>
-              <div className="px-3 py-2 border rounded-xl text-sm" style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text)' }}>
-                {selectedJob.productName}
-              </div>
-            </div>
-          </div>
-
-          <RadioCardGroup
-            label="ขนาดสินค้า"
-            required
-            value={sizeCategoryId ? String(sizeCategoryId) : ''}
-            onChange={(v) => setSizeCategoryId(Number(v))}
-            options={sizes.map((s) => ({ value: String(s.id), label: s.code, sublabel: s.name }))}
-          />
-
-          <PromoPreview sizeCategoryId={sizeCategoryId} type="TYPE2" />
-        </>
-      )}
-
-      {error && (
-        <div className="p-3 rounded-xl text-sm" style={{ background: 'var(--red-tint)', color: 'var(--red-dark)' }}>
-          {error}
-        </div>
-      )}
-
-      <button type="submit" disabled={loading || !selectedJob}
-        className="w-full py-3 rounded-xl font-semibold text-white text-sm disabled:opacity-60"
-        style={{ background: 'var(--red)' }}>
-        {loading ? 'กำลังสร้าง...' : 'สร้างคูปอง TYPE 2'}
-      </button>
-    </form>
-  )
-}
-
-// ─── Status Badge ─────────────────────────────────────────────────────────────
-
-function TradeInStatusBadge({ status }: { status: string }) {
-  const map: Record<string, { label: string; cls: string }> = {
-    ISSUED: { label: 'ออกแล้ว', cls: 'b-blue' },
-    USED: { label: 'ใช้แล้ว', cls: 'b-green' },
-    FAILED: { label: 'ล้มเหลว', cls: 'b-red' },
-    EXPIRED: { label: 'หมดอายุ', cls: 'b-gray' },
-  }
-  const { label, cls } = map[status] ?? { label: status, cls: 'b-gray' }
-  return <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${cls}`}>{label}</span>
-}
-
-// ─── Main Page ────────────────────────────────────────────────────────────────
+const APPLIANCE_TYPES = [
+  'เครื่องมือช่างไฟฟ้า (Power Tools)',
+  'เครื่องใช้ไฟฟ้าในบ้าน (Home Appliances)',
+  'ปั๊มน้ำ / อุปกรณ์สวน (Pumps & Garden)',
+  'อุปกรณ์ฮาร์ดแวร์ทั่วไป (Hardware Tools)',
+]
 
 export default function TradeInPage() {
-  const [kpis, setKpis] = useState<KPIs | null>(null)
-  const [tradeInType, setTradeInType] = useState<'TYPE1' | 'TYPE2'>('TYPE1')
+  const [kpis, setKpis] = useState<KPIs>({ total: 0, used: 0, conversion: 0 })
+  const [selectedType, setSelectedType] = useState<1 | 2>(1)
   const [sizes, setSizes] = useState<SizeCategory[]>([])
   const [history, setHistory] = useState<TradeInRecord[]>([])
   const [historyLoading, setHistoryLoading] = useState(true)
-  const [submitLoading, setSubmitLoading] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const [toast, setToast] = useState('')
 
-  const loadData = useCallback(() => {
-    Promise.all([
-      fetch('/api/tradein/kpis').then((r) => r.json()),
-      fetch('/api/tradein').then((r) => r.json()),
-    ])
-      .then(([k, h]) => {
-        setKpis(k)
-        setHistory(Array.isArray(h) ? h : [])
-      })
-      .catch(() => {})
-      .finally(() => setHistoryLoading(false))
+  // Type 1 State
+  const [t1Name, setT1Name] = useState('')
+  const [t1Phone, setT1Phone] = useState('')
+  const [t1Sku, setT1Sku] = useState('')
+  const [t1Product, setT1Product] = useState('')
+  const [t1Brand, setT1Brand] = useState('')
+  const [t1Symptom, setT1Symptom] = useState('')
+  const [t1ApplianceType, setT1ApplianceType] = useState(APPLIANCE_TYPES[0])
+  const [t1SizeId, setT1SizeId] = useState<number | null>(null)
+  const [t1ConditionChecks, setT1ConditionChecks] = useState({
+    powersOn: false,
+    bodyIntact: true,
+    completeParts: true,
+  })
+  const [t1Photos, setT1Photos] = useState<string[]>(['', '', '', ''])
 
-    // Load size categories (reuse fee admin endpoint or create dedicated)
-    fetch('/api/admin/fees')
-      .then((r) => r.json())
-      .then((d) => {
-        if (Array.isArray(d)) {
-          setSizes(d.map((entry: { sizeCategory: SizeCategory }) => entry.sizeCategory))
+  // Type 2 State
+  const [eligibleJobs, setEligibleJobs] = useState<EligibleJob[]>([])
+  const [selectedJob, setSelectedJob] = useState<EligibleJob | null>(null)
+
+  const [submitting, setSubmitting] = useState(false)
+  const [activePromo, setActivePromo] = useState<Promo | null>(null)
+
+  // 1. Load Size Categories (Bug C9 fix: CS can read via /api/size-categories or /api/admin/fees)
+  const loadSizes = useCallback(() => {
+    fetch('/api/size-categories')
+      .then(async (r) => {
+        if (!r.ok) {
+          // Fallback to /api/admin/fees
+          const feeRes = await fetch('/api/admin/fees')
+          if (!feeRes.ok) throw new Error('Fees fetch failed')
+          const feeData = await feeRes.json()
+          return feeData.map((f: { sizeCategory: SizeCategory }) => f.sizeCategory)
+        }
+        return r.json()
+      })
+      .then((data: SizeCategory[]) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setSizes(data)
+          setT1SizeId(data[0].id)
+        } else {
+          setSizes([
+            { id: 1, code: 'SMALL', name: 'สินค้าขนาดเล็ก' },
+            { id: 2, code: 'LARGE', name: 'สินค้าขนาดใหญ่' },
+          ])
+          setT1SizeId(1)
         }
       })
-      .catch(() => setSizes([
-        { id: 1, code: 'SMALL', name: 'ขนาดเล็ก' },
-        { id: 2, code: 'LARGE', name: 'ขนาดใหญ่' },
-      ]))
+      .catch(() => {
+        setSizes([
+          { id: 1, code: 'SMALL', name: 'สินค้าขนาดเล็ก' },
+          { id: 2, code: 'LARGE', name: 'สินค้าขนาดใหญ่' },
+        ])
+        setT1SizeId(1)
+      })
   }, [])
 
-  useEffect(() => { loadData() }, [loadData])
+  // 2. Load KPIs and History
+  const loadKpisAndHistory = useCallback(() => {
+    fetch('/api/tradein/kpis')
+      .then((r) => r.json())
+      .then(setKpis)
+      .catch(() => {})
 
-  const handleSubmit = async (data: object): Promise<Promo | null> => {
-    setSubmitLoading(true)
+    setHistoryLoading(true)
+    fetch('/api/tradein')
+      .then((r) => r.json())
+      .then((d) => setHistory(Array.isArray(d) ? d : []))
+      .catch(() => {})
+      .finally(() => setHistoryLoading(false))
+  }, [])
+
+  // 3. Load Type 2 Eligible Jobs (rejected customer jobs)
+  const loadEligibleJobs = useCallback(() => {
+    fetch('/api/jobs?limit=50')
+      .then((r) => r.json())
+      .then((d) => {
+        const jobs: EligibleJob[] = (d.jobs ?? []).filter(
+          (j: EligibleJob) =>
+            j.decision === 'REJECTED' ||
+            j.stage === 'READY_FOR_PICKUP' ||
+            j.stage === 'CLOSED_NOT_REPAIRED'
+        )
+        setEligibleJobs(jobs)
+      })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    loadSizes()
+    loadKpisAndHistory()
+    loadEligibleJobs()
+  }, [loadSizes, loadKpisAndHistory, loadEligibleJobs])
+
+  // Update promotion preview based on type and size
+  const currentSizeId = selectedType === 1 ? t1SizeId : selectedJob?.sizeCategoryId ?? sizes[0]?.id
+  useEffect(() => {
+    if (!currentSizeId) return
+    const typeStr = selectedType === 1 ? 'TYPE1' : 'TYPE2'
+    fetch(`/api/promotions?type=${typeStr}&sizeCategoryId=${currentSizeId}`)
+      .then((r) => r.json())
+      .then((promo: Promo | null) => {
+        if (promo) {
+          setActivePromo(promo)
+        } else {
+          // Default business discount percentage rules if no custom promotion active
+          const isLarge = sizes.find((s) => s.id === currentSizeId)?.code === 'LARGE'
+          const defaultPct = selectedType === 1 ? (isLarge ? 8 : 10) : (isLarge ? 15 : 12)
+          setActivePromo({
+            id: '',
+            name: selectedType === 1 ? 'โปรโมชั่น Trade-in ประจำเดือน' : 'โปรโมชั่นเปลี่ยนสินค้าซ่อมไม่คุ้ม',
+            discountPct: defaultPct,
+          })
+        }
+      })
+      .catch(() => {
+        setActivePromo({
+          id: '',
+          name: 'โปรโมชั่นมาตรฐาน',
+          discountPct: selectedType === 1 ? 10 : 15,
+        })
+      })
+  }, [selectedType, currentSizeId, sizes])
+
+  // Photo upload handler
+  const handlePhotoUpload = async (index: number, file: File | undefined) => {
+    if (!file) return
     try {
-      // First get promo
-      const payload = data as { type: string; sizeCategoryId?: number }
-      let promoId: string | null = null
-      let discountPct = 0
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/upload', { method: 'POST', body: fd })
+      if (!res.ok) {
+        // Fallback simulate URL
+        const mockUrl = URL.createObjectURL(file)
+        const updated = [...t1Photos]
+        updated[index] = mockUrl
+        setT1Photos(updated)
+        return
+      }
+      const j = await res.json()
+      const updated = [...t1Photos]
+      updated[index] = j.fileUrl
+      setT1Photos(updated)
+    } catch {
+      const mockUrl = URL.createObjectURL(file)
+      const updated = [...t1Photos]
+      updated[index] = mockUrl
+      setT1Photos(updated)
+    }
+  }
 
-      if (payload.sizeCategoryId) {
-        const promoRes = await fetch(`/api/promotions?type=${payload.type}&sizeCategoryId=${payload.sizeCategoryId}`)
-        const promo: Promo | null = await promoRes.json()
-        promoId = promo?.id ?? null
-        discountPct = promo?.discountPct ?? 0
+  // Submit Trade-in Creation
+  const handleCreateTradeIn = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSubmitting(true)
+    try {
+      const discountPct = activePromo?.discountPct ?? 10
+      let payload: Record<string, unknown> = {}
+
+      if (selectedType === 1) {
+        if (!t1Name.trim() || !t1Phone.trim() || !t1Product.trim()) {
+          alert('กรุณากรอกชื่อลูกค้า เบอร์โทรศัพท์ และชื่อสินค้า')
+          setSubmitting(false)
+          return
+        }
+        payload = {
+          type: 'TYPE1',
+          customerName: t1Name,
+          customerPhone: t1Phone,
+          productName: t1Product,
+          brandName: t1Brand || '-',
+          sizeCategoryId: t1SizeId,
+          symptom: t1Symptom || `ประเภท: ${t1ApplianceType}`,
+          discountPct,
+          promotionId: activePromo?.id || null,
+        }
+      } else {
+        if (!selectedJob) {
+          alert('กรุณาเลือกงานซ่อมที่ลูกค้าไม่อนุมัติ')
+          setSubmitting(false)
+          return
+        }
+        payload = {
+          type: 'TYPE2',
+          jobId: selectedJob.id,
+          customerName: selectedJob.customerName || 'ลูกค้า',
+          customerPhone: selectedJob.customerPhone || '081-xxx-xxxx',
+          productName: selectedJob.productName,
+          brandName: selectedJob.brandName || '-',
+          sizeCategoryId: selectedJob.sizeCategoryId || sizes[0]?.id,
+          symptom: 'ลูกค้าเปลี่ยนใจรับส่วนลดซื้อใหม่ (หลังไม่อนุมัติซ่อม)',
+          discountPct,
+          promotionId: activePromo?.id || null,
+        }
       }
 
       const res = await fetch('/api/tradein', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...payload, discountPct, promotionId: promoId }),
+        body: JSON.stringify(payload),
       })
 
-      if (!res.ok) return null
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'สร้างคูปองไม่สำเร็จ')
 
-      const created: TradeInRecord = await res.json()
-      setToast(`สร้างคูปอง ${created.tradeInNo} สำเร็จ — ส่วนลด ${discountPct}%`)
-      loadData()
-      return { id: promoId ?? '', name: '', discountPct }
-    } catch {
-      return null
+      setToast(`สร้างคูปอง ${data.tradeInNo} สำเร็จ — ส่วนลด ${discountPct}% ส่งเข้า Wallet แล้ว`)
+      loadKpisAndHistory()
+
+      // Reset form
+      if (selectedType === 1) {
+        setT1Name('')
+        setT1Phone('')
+        setT1Product('')
+        setT1Brand('')
+        setT1Sku('')
+        setT1Symptom('')
+        setT1Photos(['', '', '', ''])
+      } else {
+        setSelectedJob(null)
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการสร้างคูปอง')
     } finally {
-      setSubmitLoading(false)
+      setSubmitting(false)
     }
   }
 
-  const formatDate = (d: string) =>
-    new Date(d).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: '2-digit' })
+  // Filter history
+  const filteredHistory = history.filter((item) => {
+    if (!searchQuery.trim()) return true
+    const q = searchQuery.toLowerCase()
+    return (
+      item.tradeInNo.toLowerCase().includes(q) ||
+      item.customerName.toLowerCase().includes(q) ||
+      item.customerPhone.includes(q) ||
+      item.productName.toLowerCase().includes(q)
+    )
+  })
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6 pb-12">
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-4 rounded-2xl shadow-xl text-white text-sm font-medium bg-[#1D9E75] animate-fade-in">
+          <CheckCircle2 size={20} />
+          <span>{toast}</span>
+          <button onClick={() => setToast('')} className="ml-2 hover:opacity-80">
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold" style={{ color: 'var(--text)' }}>
-          Trade-in / คูปอง
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--text)' }}>
+            Trade-in / คูปอง
+          </h1>
+          <span className="text-xs bg-[#E6F1FB] text-[#185FA5] px-2.5 py-1 rounded-full font-medium">
+            สิทธิ์: CS & Admin
+          </span>
+        </div>
         <p className="text-sm mt-1" style={{ color: 'var(--text-2)' }}>
-          ออกคูปองส่วนลดสำหรับลูกค้าแลกสินค้าชำรุด
+          สร้างคูปองส่วนลดซื้อสินค้าใหม่ให้ลูกค้า — รันเลขที่เอกสารรูปแบบ TI-YYMM-XXXXX
         </p>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-3 gap-4">
-        <KpiCard
-          label="คูปองที่ออก"
-          value={kpis?.total ?? '—'}
-          icon={<Tag size={20} />}
-          color="var(--blue)"
-        />
-        <KpiCard
-          label="ใช้แล้ว"
-          value={kpis?.used ?? '—'}
-          icon={<CheckCircle2 size={20} />}
-          color="var(--green)"
-        />
-        <KpiCard
-          label="Conversion %"
-          value={kpis ? `${kpis.conversion}%` : '—'}
-          icon={<TrendingUp size={20} />}
-          color="var(--amber)"
-        />
+        <div className="card flex items-center gap-4">
+          <div className="rounded-xl p-3 bg-[#E6F1FB] text-[#185FA5]">
+            <Tag size={22} />
+          </div>
+          <div>
+            <div className="text-2xl font-bold" style={{ color: 'var(--text)' }}>
+              {kpis.total}
+            </div>
+            <div className="text-xs text-[#6B6459]">คูปองที่ออกทั้งหมด</div>
+          </div>
+        </div>
+
+        <div className="card flex items-center gap-4">
+          <div className="rounded-xl p-3 bg-[#E1F5EE] text-[#1D9E75]">
+            <CheckCircle2 size={22} />
+          </div>
+          <div>
+            <div className="text-2xl font-bold" style={{ color: 'var(--text)' }}>
+              {kpis.used}
+            </div>
+            <div className="text-xs text-[#6B6459]">ใช้งานแล้ว</div>
+          </div>
+        </div>
+
+        <div className="card flex items-center gap-4">
+          <div className="rounded-xl p-3 bg-[#FAEEDA] text-[#BA7517]">
+            <TrendingUp size={22} />
+          </div>
+          <div>
+            <div className="text-2xl font-bold" style={{ color: 'var(--text)' }}>
+              {kpis.conversion}%
+            </div>
+            <div className="text-xs text-[#6B6459]">อัตราการใช้คูปอง (Conversion)</div>
+          </div>
+        </div>
       </div>
 
-      {/* Type selector */}
+      {/* Type Selector Tabs */}
+      <div className="space-y-2">
+        <label className="text-sm font-semibold" style={{ color: 'var(--text)' }}>
+          เลือกประเภท Trade-in
+        </label>
+        <div className="grid grid-cols-2 gap-4">
+          <button
+            type="button"
+            onClick={() => setSelectedType(1)}
+            className={`text-left p-4 rounded-2xl border-2 transition-all ${
+              selectedType === 1
+                ? 'border-[#C8102E] bg-[#FBE7E9]'
+                : 'border-[#E4DED2] bg-white hover:border-[#D2C9B8]'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="font-bold text-sm text-[#2B2723]">ประเภท 1 — หน้างาน (Walk-in)</h3>
+              {selectedType === 1 && <CheckCircle2 size={18} className="text-[#C8102E]" />}
+            </div>
+            <p className="text-xs text-[#6B6459] leading-relaxed">
+              ลูกค้าถือสินค้ามา ประเมินแล้วซ่อมไม่คุ้ม แนะนำซื้อใหม่ทันที ไม่ต้องเปิดใบแจ้งซ่อม
+            </p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSelectedType(2)}
+            className={`text-left p-4 rounded-2xl border-2 transition-all ${
+              selectedType === 2
+                ? 'border-[#C8102E] bg-[#FBE7E9]'
+                : 'border-[#E4DED2] bg-white hover:border-[#D2C9B8]'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="font-bold text-sm text-[#2B2723]">ประเภท 2 — หลังบ้าน (Post-Rejection)</h3>
+              {selectedType === 2 && <CheckCircle2 size={18} className="text-[#C8102E]" />}
+            </div>
+            <p className="text-xs text-[#6B6459] leading-relaxed">
+              ลูกค้ามารับสินค้าที่ส่งซ่อมแล้วไม่อนุมัติซ่อม ขอเปลี่ยนเป็นส่วนลดซื้อใหม่แทน
+            </p>
+          </button>
+        </div>
+      </div>
+
+      {/* Form Card */}
       <div className="card">
-        <h2 className="font-semibold mb-4" style={{ color: 'var(--text)' }}>เลือกประเภท Trade-in</h2>
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          {[
-            { value: 'TYPE1', label: 'ประเภท 1 หน้างาน', sublabel: 'ลูกค้านำสินค้ามาแลก ณ จุดขาย', icon: <RefreshCcw size={22} /> },
-            { value: 'TYPE2', label: 'ประเภท 2 หลังบ้าน', sublabel: 'ผูกกับงานซ่อมที่ลูกค้าไม่อนุมัติ', icon: <ChevronRight size={22} /> },
-          ].map((opt) => {
-            const selected = tradeInType === opt.value
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setTradeInType(opt.value as 'TYPE1' | 'TYPE2')}
-                className="radio-card relative text-left p-5 gap-3 flex flex-row items-start"
-                style={{
-                  borderColor: selected ? 'var(--red)' : 'var(--border)',
-                  background: selected ? 'var(--red-tint)' : 'var(--surface)',
-                }}
-              >
-                {selected && (
-                  <span className="absolute top-3 right-3">
-                    <CheckCircle2 size={16} style={{ color: 'var(--red)' }} />
-                  </span>
-                )}
-                <span className="mt-0.5" style={{ color: selected ? 'var(--red)' : 'var(--text-2)' }}>
-                  {opt.icon}
-                </span>
+        <form onSubmit={handleCreateTradeIn} className="space-y-4">
+          {selectedType === 1 ? (
+            /* Type 1 Form */
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-bold text-base text-[#2B2723]">สร้าง Trade-in ประเภท 1 — หน้างาน</h3>
+                <p className="text-xs text-[#6B6459]">กรอกข้อมูลลูกค้า สินค้า และการประเมินเพื่อสร้างคูปอง</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <div className="text-sm font-semibold" style={{ color: selected ? 'var(--red-dark)' : 'var(--text)' }}>
-                    {opt.label}
+                  <label className="block text-xs font-medium text-[#2B2723] mb-1">
+                    ชื่อลูกค้า <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    value={t1Name}
+                    onChange={(e) => setT1Name(e.target.value)}
+                    placeholder="เช่น สมชาย ใจดี"
+                    className="w-full px-3 py-2 border border-[#D2C9B8] rounded-xl text-sm outline-none focus:border-[#C8102E]"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-[#2B2723] mb-1">
+                    เบอร์โทรศัพท์ (08x-xxx-xxxx) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    value={t1Phone}
+                    onChange={(e) => setT1Phone(e.target.value)}
+                    placeholder="0812345678"
+                    className="w-full px-3 py-2 border border-[#D2C9B8] rounded-xl text-sm outline-none focus:border-[#C8102E]"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-[#2B2723] mb-1">หมวดหมู่เครื่องใช้</label>
+                  <select
+                    value={t1ApplianceType}
+                    onChange={(e) => setT1ApplianceType(e.target.value)}
+                    className="w-full px-3 py-2 border border-[#D2C9B8] rounded-xl text-xs outline-none bg-white focus:border-[#C8102E]"
+                  >
+                    {APPLIANCE_TYPES.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-[#2B2723] mb-1">
+                    ชื่อสินค้า <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    value={t1Product}
+                    onChange={(e) => setT1Product(e.target.value)}
+                    placeholder="เช่น สว่านกระแทกไร้สาย"
+                    className="w-full px-3 py-2 border border-[#D2C9B8] rounded-xl text-sm outline-none focus:border-[#C8102E]"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-[#2B2723] mb-1">แบรนด์</label>
+                  <input
+                    value={t1Brand}
+                    onChange={(e) => setT1Brand(e.target.value)}
+                    placeholder="เช่น BOSCH, MAKITA"
+                    className="w-full px-3 py-2 border border-[#D2C9B8] rounded-xl text-sm outline-none focus:border-[#C8102E]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-[#2B2723] mb-1">ขนาดสินค้า (Size Category)</label>
+                  <select
+                    value={t1SizeId ?? ''}
+                    onChange={(e) => setT1SizeId(Number(e.target.value))}
+                    className="w-full px-3 py-2 border border-[#D2C9B8] rounded-xl text-sm outline-none bg-white focus:border-[#C8102E]"
+                  >
+                    {sizes.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name} ({s.code})</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-[#2B2723] mb-1">อาการเสียที่ประเมิน</label>
+                  <input
+                    value={t1Symptom}
+                    onChange={(e) => setT1Symptom(e.target.value)}
+                    placeholder="เช่น มอเตอร์ไหม้ ไม่คุ้มค่าซ่อม"
+                    className="w-full px-3 py-2 border border-[#D2C9B8] rounded-xl text-sm outline-none focus:border-[#C8102E]"
+                  />
+                </div>
+              </div>
+
+              {/* Working Condition Assessment Checklist */}
+              <div className="bg-[#FAF7F2] p-3.5 rounded-xl border border-[#E4DED2] space-y-2">
+                <span className="text-xs font-bold text-[#2B2723]">รายการตรวจสอบสภาพสินค้าก่อนรับ Trade-in</span>
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={t1ConditionChecks.powersOn}
+                      onChange={(e) => setT1ConditionChecks({ ...t1ConditionChecks, powersOn: e.target.checked })}
+                      className="rounded text-[#C8102E]"
+                    />
+                    <span>เครื่องเปิดติด / มอเตอร์ตอบสนอง</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={t1ConditionChecks.bodyIntact}
+                      onChange={(e) => setT1ConditionChecks({ ...t1ConditionChecks, bodyIntact: e.target.checked })}
+                      className="rounded text-[#C8102E]"
+                    />
+                    <span>โครงสร้างภายนอกไม่แตกหักรุนแรง</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={t1ConditionChecks.completeParts}
+                      onChange={(e) => setT1ConditionChecks({ ...t1ConditionChecks, completeParts: e.target.checked })}
+                      className="rounded text-[#C8102E]"
+                    />
+                    <span>ชิ้นส่วนหลักครบถ้วน</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* 4 Product Photos Grid */}
+              <div>
+                <label className="block text-xs font-semibold text-[#2B2723] mb-1.5">
+                  ภาพถ่ายสภาพสินค้า (4 ด้าน)
+                </label>
+                <div className="grid grid-cols-4 gap-3">
+                  {[0, 1, 2, 3].map((idx) => (
+                    <label
+                      key={idx}
+                      className="aspect-square border-2 border-dashed border-[#D2C9B8] rounded-xl flex flex-col items-center justify-center p-2 cursor-pointer hover:bg-gray-50 transition-colors overflow-hidden relative"
+                    >
+                      {t1Photos[idx] ? (
+                        <img src={t1Photos[idx]} alt={`ภาพ ${idx + 1}`} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="text-center text-[#9A9384] space-y-1">
+                          <Camera size={20} className="mx-auto" />
+                          <span className="text-[11px] block">📷 ภาพที่ {idx + 1}</span>
+                        </div>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handlePhotoUpload(idx, e.target.files?.[0])}
+                      />
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Type 2 Form */
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-bold text-base text-[#2B2723]">สร้าง Trade-in ประเภท 2 — หลังบ้าน</h3>
+                <p className="text-xs text-[#6B6459]">เลือกงานซ่อมที่ลูกค้าไม่อนุมัติเพื่อดึงข้อมูลเข้าระบบ Trade-in</p>
+              </div>
+
+              {/* Eligible Jobs Picker */}
+              <div>
+                <label className="block text-xs font-medium text-[#2B2723] mb-2">
+                  เลือกงานที่ลูกค้าไม่อนุมัติซ่อม
+                </label>
+                {eligibleJobs.length === 0 ? (
+                  <div className="p-4 border border-[#E4DED2] rounded-xl text-center text-xs text-[#9A9384]">
+                    ไม่พบรายการงานซ่อมที่ไม่อนุมัติ
                   </div>
-                  <div className="text-xs mt-0.5" style={{ color: 'var(--text-mute)' }}>
-                    {opt.sublabel}
+                ) : (
+                  <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                    {eligibleJobs.map((job) => {
+                      const isSelected = selectedJob?.id === job.id
+                      return (
+                        <button
+                          key={job.id}
+                          type="button"
+                          onClick={() => setSelectedJob(job)}
+                          className={`w-full text-left p-3 rounded-xl border-2 transition-all flex items-center justify-between ${
+                            isSelected
+                              ? 'border-[#C8102E] bg-[#FBE7E9]'
+                              : 'border-[#E4DED2] bg-white hover:border-[#D2C9B8]'
+                          }`}
+                        >
+                          <div>
+                            <div className="font-mono font-bold text-xs text-[#2B2723]">{job.jobNo}</div>
+                            <div className="text-xs text-[#6B6459]">
+                              {job.customerName ?? 'ลูกค้า'} ({job.customerPhone ?? '-'}) — {job.productName} ({job.brandName})
+                            </div>
+                          </div>
+                          {isSelected && <CheckCircle2 size={18} className="text-[#C8102E]" />}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {selectedJob && (
+                <div className="grid grid-cols-3 gap-3 bg-[#FAF7F2] p-3 rounded-xl border border-[#E4DED2] text-xs">
+                  <div>
+                    <span className="text-[#6B6459]">ลูกค้า:</span>
+                    <div className="font-semibold text-[#2B2723]">{selectedJob.customerName || '-'}</div>
+                  </div>
+                  <div>
+                    <span className="text-[#6B6459]">สินค้า:</span>
+                    <div className="font-semibold text-[#2B2723]">{selectedJob.productName}</div>
+                  </div>
+                  <div>
+                    <span className="text-[#6B6459]">ขนาด:</span>
+                    <div className="font-semibold text-[#2B2723]">
+                      {sizes.find((s) => s.id === selectedJob.sizeCategoryId)?.name || 'ขนาดมาตรฐาน'}
+                    </div>
                   </div>
                 </div>
-              </button>
-            )
-          })}
-        </div>
+              )}
+            </div>
+          )}
 
-        {/* Form */}
-        {tradeInType === 'TYPE1' ? (
-          <Type1Form sizes={sizes} onSubmit={handleSubmit} loading={submitLoading} />
-        ) : (
-          <Type2Form sizes={sizes} onSubmit={handleSubmit} loading={submitLoading} />
-        )}
+          {/* Promotion & Valuation Preview Box */}
+          {activePromo && (
+            <div className="bg-[#E6F1FB] border border-[#185FA5] p-3.5 rounded-2xl flex items-center gap-3 text-xs text-[#185FA5]">
+              <Tag size={20} className="shrink-0" />
+              <div>
+                <div className="font-bold">
+                  ระบบเลือกโปรโมชั่น "{activePromo.name}" — ส่วนลด {activePromo.discountPct}%
+                </div>
+                <div className="text-[11px] opacity-85">
+                  คูปองจะออกเป็นรหัส TI-YYMM-XXXXX ใช้เป็นส่วนลดซื้อสินค้าใหม่ที่เคาน์เตอร์แคชเชียร์ไทวัสดุ
+                </div>
+              </div>
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={submitting || (selectedType === 2 && !selectedJob)}
+            className="w-full py-3.5 rounded-xl bg-[#C8102E] text-white font-bold text-sm shadow hover:bg-[#9C0C22] transition-colors disabled:opacity-60"
+          >
+            {submitting ? 'กำลังสร้างคูปอง...' : `สร้างคูปอง Trade-in ประเภท ${selectedType} (ส่วนลด ${activePromo?.discountPct ?? 10}%)`}
+          </button>
+        </form>
       </div>
 
-      {/* History */}
-      <div className="card">
-        <div className="flex items-center gap-2 mb-4">
-          <BarChart2 size={18} style={{ color: 'var(--text-2)' }} />
-          <h2 className="font-semibold" style={{ color: 'var(--text)' }}>ประวัติการออกคูปอง</h2>
+      {/* History Table Card */}
+      <div className="card space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <BarChart2 size={18} className="text-[#6B6459]" />
+            <h2 className="font-bold text-sm text-[#2B2723]">ประวัติการออกคูปอง Trade-in</h2>
+          </div>
+          <div className="relative w-64">
+            <Search size={14} className="absolute left-3 top-2.5 text-[#9A9384]" />
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="ค้นหา: เลข TI / ชื่อ / เบอร์โทร..."
+              className="w-full pl-8 pr-3 py-1.5 text-xs border border-[#D2C9B8] rounded-xl outline-none focus:border-[#C8102E]"
+            />
+          </div>
         </div>
+
         {historyLoading ? (
-          <div className="py-8 text-center text-sm" style={{ color: 'var(--text-mute)' }}>กำลังโหลด...</div>
-        ) : history.length === 0 ? (
-          <div className="py-8 text-center text-sm" style={{ color: 'var(--text-mute)' }}>ยังไม่มีรายการ</div>
+          <div className="py-8 text-center text-xs text-[#9A9384]">กำลังโหลดประวัติ...</div>
+        ) : filteredHistory.length === 0 ? (
+          <div className="py-8 text-center text-xs text-[#9A9384]">ไม่พบรายการคูปอง Trade-in</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-xs">
               <thead>
-                <tr className="border-b" style={{ borderColor: 'var(--border)' }}>
-                  {['เลขที่ TI', 'ประเภท', 'ลูกค้า', 'เบอร์', 'สินค้า', 'ส่วนลด%', 'สถานะ', 'วันที่'].map((h) => (
-                    <th key={h} className="text-left py-2.5 px-3 font-medium text-xs" style={{ color: 'var(--text-2)' }}>{h}</th>
-                  ))}
+                <tr className="border-b border-[#E4DED2] text-[#6B6459]">
+                  <th className="text-left py-2.5 px-3 font-semibold">เลขที่ Trade-in</th>
+                  <th className="text-left py-2.5 px-3 font-semibold">ประเภท</th>
+                  <th className="text-left py-2.5 px-3 font-semibold">ลูกค้า</th>
+                  <th className="text-left py-2.5 px-3 font-semibold">เบอร์โทร</th>
+                  <th className="text-left py-2.5 px-3 font-semibold">สินค้า</th>
+                  <th className="text-left py-2.5 px-3 font-semibold">ส่วนลด</th>
+                  <th className="text-left py-2.5 px-3 font-semibold">สถานะ</th>
+                  <th className="text-left py-2.5 px-3 font-semibold">วันที่ออก</th>
                 </tr>
               </thead>
               <tbody>
-                {history.map((ti) => (
-                  <tr key={ti.id} className="border-b hover:bg-gray-50 transition-colors" style={{ borderColor: 'var(--border)' }}>
-                    <td className="py-2.5 px-3 font-mono text-xs font-medium" style={{ color: 'var(--text)' }}>{ti.tradeInNo}</td>
+                {filteredHistory.map((item) => (
+                  <tr key={item.id} className="border-b border-[#F3EEE6] hover:bg-gray-50 transition-colors">
+                    <td className="py-2.5 px-3 font-mono font-bold text-[#2B2723]">{item.tradeInNo}</td>
                     <td className="py-2.5 px-3">
-                      <span className="text-xs px-2 py-0.5 rounded-full font-medium"
-                        style={{ background: ti.type === 'TYPE1' ? 'var(--blue-tint)' : 'var(--amber-tint)', color: ti.type === 'TYPE1' ? 'var(--blue)' : 'var(--amber)' }}>
-                        {ti.type}
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                        item.type === 'TYPE1' ? 'bg-[#E6F1FB] text-[#185FA5]' : 'bg-[#FAEEDA] text-[#BA7517]'
+                      }`}>
+                        {item.type}
                       </span>
                     </td>
-                    <td className="py-2.5 px-3 text-xs" style={{ color: 'var(--text)' }}>{ti.customerName}</td>
-                    <td className="py-2.5 px-3 text-xs" style={{ color: 'var(--text-2)' }}>{ti.customerPhone}</td>
-                    <td className="py-2.5 px-3 text-xs" style={{ color: 'var(--text)' }}>{ti.productName}</td>
-                    <td className="py-2.5 px-3 text-xs font-medium" style={{ color: 'var(--green)' }}>{ti.discountPct}%</td>
-                    <td className="py-2.5 px-3"><TradeInStatusBadge status={ti.status} /></td>
-                    <td className="py-2.5 px-3 text-xs" style={{ color: 'var(--text-2)' }}>{formatDate(ti.createdAt)}</td>
+                    <td className="py-2.5 px-3 text-[#2B2723]">{item.customerName}</td>
+                    <td className="py-2.5 px-3 font-mono text-[#6B6459]">{item.customerPhone}</td>
+                    <td className="py-2.5 px-3 text-[#2B2723]">{item.productName}</td>
+                    <td className="py-2.5 px-3 font-bold text-[#1D9E75]">{item.discountPct}%</td>
+                    <td className="py-2.5 px-3">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                        item.status === 'USED' ? 'bg-[#E1F5EE] text-[#1D9E75]' : 'bg-gray-100 text-[#6B6459]'
+                      }`}>
+                        {item.status === 'USED' ? 'ใช้แล้ว' : 'ยังไม่ใช้'}
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-3 text-[#6B6459]">
+                      {new Date(item.createdAt).toLocaleDateString('th-TH')}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -553,8 +739,6 @@ export default function TradeInPage() {
           </div>
         )}
       </div>
-
-      {toast && <Toast message={toast} onClose={() => setToast('')} />}
     </div>
   )
 }
