@@ -26,6 +26,7 @@ import './e2e/tier2-boundaries/boundary_concurrency_locking.test'
 import './e2e/tier2-boundaries/boundary_production_engine.test'
 import './e2e/tier2-boundaries/boundary_pg_integration.test'
 import './e2e/tier2-boundaries/boundary_reports_empirical.test'
+import './e2e/tier2-boundaries/boundary_intake_payment_flow.test'
 
 // Tier 3: Cross-Feature Combinations (Pairwise Flows A, B, C, D)
 import './e2e/tier3-combinations/flow_a_standard_repair.test'

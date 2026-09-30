@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth'
 import { calcBalance, getHoursInStep } from '@/lib/fees'
+import { calcMoney } from '@/lib/job-view'
 import { resolveOwner } from '@/lib/sla-engine'
 import { executeAction } from '@/lib/state-machine'
 
@@ -47,8 +48,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'ไม่มีสิทธิ์เข้าถึงงานที่ไม่ได้ผ่าน DC' }, { status: 403 })
     }
 
-    // Compute balance
+    // Compute balance and financial breakdown
     const balance = calcBalance(job.charges, job.payments)
+    const money = calcMoney(job)
+    const intakeUnpaid = job.type === 'CUSTOMER' && money.intakeBalance > 0
 
     // Compute SLA for current stage
     const activeClock = job.slaClocks.find(c => c.status === 'RUNNING' || c.status === 'PAUSED')
@@ -59,7 +62,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       ownerDept: resolveOwner(activeClock.slaStep.ownerDept, activeClock.slaStep.code, job.channel),
     } : null
 
-    return NextResponse.json({ ...job, balance, slaInfo })
+    return NextResponse.json({ ...job, balance, money, intakeUnpaid, slaInfo })
   } catch (e) {
     return NextResponse.json({ error: 'ไม่พบงานนี้' }, { status: 404 })
   }

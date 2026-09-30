@@ -124,7 +124,7 @@ export default function CsQueue({ role }: { role: string }) {
                   <td>{j.customerName}<div className="sub-mute">{fmtPhone(j.customerPhone)}</div></td>
                   <td>{j.productName}<div className="sub-mute">{j.brandName}</div></td>
                   <td>{j.channel ? CHANNEL_LABELS[j.channel] : '-'}</td>
-                  <td><StageBadge stage={j.stage} /></td>
+                  <td><StageBadge stage={j.stage} intakeUnpaid={j.intakeUnpaid} /></td>
                   <td>{j.money && j.money.intakeBalance > 0 ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
                       <span className="badge b-amber">ค้างชำระ {fmtBaht(j.money.intakeBalance)}</span>

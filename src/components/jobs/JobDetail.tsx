@@ -110,7 +110,7 @@ export default function JobDetailModal({
           <p style={{ fontSize: 12, color: 'var(--text-2)', margin: 0 }}>เลขที่ใบแจ้งซ่อม</p>
           <h2 style={{ margin: '2px 0 0', fontSize: 20, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <span className={d.overdue ? 'jobid-over' : ''}>{d.jobNo}</span>
-            <StageBadge stage={d.stage} />
+            <StageBadge stage={d.stage} intakeUnpaid={d.intakeUnpaid} />
             {d.type === 'STOCK' && <span className="badge b-gray">งานสต็อกสาขา</span>}
             {d.overdue && <span className="badge b-red">เกิน SLA ({OWNER_LABELS[d.overdueOwner] ?? d.overdueOwner})</span>}
           </h2>
@@ -192,7 +192,7 @@ export default function JobDetailModal({
               <Row l="วิธีจัดส่ง" v={d.shippingMethod === 'EXPRESS' ? 'ส่งด่วน (3PL)' : `มาตรฐาน (${d.channel ? CHANNEL_LABELS[d.channel] : '-'})`} />
               <Row l="สาขา" v={d.branch?.name ?? '-'} />
               <Row l="วันที่เปิดใบแจ้งซ่อม" v={fmtDate(d.openedAt)} />
-              <Row l="สถานะปัจจุบัน" v={<StageBadge stage={d.stage} />} />
+              <Row l="สถานะปัจจุบัน" v={<StageBadge stage={d.stage} intakeUnpaid={d.intakeUnpaid} />} />
               <Row l="ศูนย์ซ่อม" v={d.vendor ? `${d.vendor.name} (${d.vendor.centerCode}) · ช่องทาง ${d.channel ? CHANNEL_LABELS[d.channel] : '-'}` : (d.vendorCenter ? `${d.vendorCenter.vendorParent?.name} (${d.vendorCenter.code})` : 'ยังไม่ได้กำหนด')} />
               {d.location && <Row l="Location ปัจจุบัน" v={d.location} />}
               {m && d.type === 'CUSTOMER' && (

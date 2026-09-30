@@ -248,7 +248,7 @@ export default function JobsClient({ role: initialRole, user, initialJobs }: Job
                   <td>{j.productName}<div className="sub-mute">{j.brandName}</div></td>
                   <td>{j.branch.name}</td>
                   <td>{j.channel ? CHANNEL_LABELS[j.channel] : '-'}</td>
-                  <td><StageBadge stage={j.stage} /></td>
+                  <td><StageBadge stage={j.stage} intakeUnpaid={j.intakeUnpaid} /></td>
                   <td>{OWNER_LABELS[ownerOf(j) ?? ''] ?? '-'}</td>
                   <td>{j.sla ? <>{j.sla.hoursInStep} ชม.<div className="sub-mute">SLA {j.sla.slaHours} ชม.</div></> : '-'}</td>
                   <td>{flags(j).length ? <span className="flag">{flags(j).join(', ')}</span> : '-'}</td>

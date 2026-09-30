@@ -100,13 +100,16 @@ export async function queueHandler(dept: keyof typeof QUEUES, req: Request) {
         take: 500,
       })
       const serialized = rows.map(r => serializeJob(r, user.role, { preferSla: t.sla }))
-      tabs[t.key] = serialized
-      kpis[t.key] = serialized.length
+      const filtered = (dept === 'GR' && t.key === 'receive')
+        ? serialized.filter(j => !j.intakeUnpaid)
+        : serialized
+      tabs[t.key] = filtered
+      kpis[t.key] = filtered.length
       if (t.aliasKey) {
-        tabs[t.aliasKey] = serialized
-        kpis[t.aliasKey] = serialized.length
+        tabs[t.aliasKey] = filtered
+        kpis[t.aliasKey] = filtered.length
       }
-      for (const j of serialized) {
+      for (const j of filtered) {
         if (j.sla?.overdue) {
           overdue.push({ id: j.id, jobNo: j.jobNo, customerName: j.customerName, productName: j.productName, tab: t.key, tabLabel: t.label, stepName: j.sla.stepName, overHours: j.sla.overHours })
         }

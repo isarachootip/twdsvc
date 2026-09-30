@@ -17,7 +17,7 @@ interface JobNextActionCardProps {
 }
 
 export function JobNextActionCard({ job, onPayClick }: JobNextActionCardProps) {
-  const isIntakeUnpaid = Boolean(job.intakeUnpaid && (job.money?.intakeBalance ?? 0) > 0)
+  const isIntakeUnpaid = Boolean(job.intakeUnpaid || ((job.money?.intakeBalance ?? 0) > 0))
 
   // 1. รอชำระค่าดำเนินการ
   if (isIntakeUnpaid && ['CS_OPENED', 'PENDING_VENDOR_ASSIGNMENT'].includes(job.stage)) {
@@ -48,7 +48,7 @@ export function JobNextActionCard({ job, onPayClick }: JobNextActionCardProps) {
           onClick={onPayClick}
           style={{ fontSize: 12.5, padding: '6px 14px', background: '#b45309', borderColor: '#b45309' }}
         >
-          💳 รับชำระเงิน (QR / POS)
+          💳 ดำเนินการชำระเงิน (QR / POS)
         </button>
       </div>
     )
