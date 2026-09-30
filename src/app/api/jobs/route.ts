@@ -210,7 +210,7 @@ export async function POST(req: NextRequest) {
       })
       if (Array.isArray(photos) && photos.length) {
         await tx.attachment.createMany({
-          data: photos.slice(0, 4).map((p: { fileUrl: string; fileName?: string; mimeType?: string; fileSize?: number }) => ({
+          data: photos.slice(0, 5).map((p: { fileUrl: string; fileName?: string; mimeType?: string; fileSize?: number }) => ({
             jobEventId: event.id, kind: 'INTAKE', fileUrl: p.fileUrl, fileName: p.fileName ?? 'photo.jpg', mimeType: p.mimeType ?? null, fileSize: p.fileSize ?? null, uploadedBy: user.id,
           })),
         })

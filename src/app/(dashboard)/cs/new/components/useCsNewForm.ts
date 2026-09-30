@@ -156,8 +156,9 @@ export function useCsNewForm({
           customerName: fullName, customerPhone: phone, customerAddress: formatAddress(addr) || null, customerZip: addr.zip || null,
           ...(tax && !taxSame ? { taxInvoiceName: tax.name, taxInvoiceId: tax.id, taxInvoiceAddr: formatAddress(tax.addr) } : {}),
           sku: sku.trim() || null, productName: product.trim(), brandId: Number(brandId), brandName: brand?.name ?? '',
-          symptom: symptom.trim(), hasWarranty: warranty === 'yes', allowNonAuth: warranty === 'no' && allowOutside,
-          sizeCategoryId: sizeId, shippingMethod: method, photos, defectNote: defect.trim() || null,
+          sizeCategoryId: sizeId, shippingMethod: method,
+          photos: photos.filter((p): p is Photo => Boolean(p && p.fileUrl)),
+          defectNote: defect.trim() || null,
           paymentMethod: fees.total > 0 ? pay : null, posReceiptNo: pay === 'POS_RECEIPT' ? pos.trim() : null,
         },
       })

@@ -251,10 +251,25 @@ describe('Feature 5: CS Intake (/cs/new)', () => {
     expect(largeExpress.totalSatang).toBe(55000)
   })
 
-  it('F05-T05: Intake form captures 4 photos and persists customer tracking token', () => {
+  it('F05-T05: Intake form captures photos and persists customer tracking token', () => {
     const job = createMockJob()
     const trackingToken = job.tokens.find((t) => t.type === 'TRACKING')
     expect(trackingToken).toBeDefined()
     expect(trackingToken?.token.length).toBeGreaterThanOrEqual(16)
+  })
+
+  it('F05-T06: Intake form provides 5 standardized photo slots (Front, Side, Top, Bottom, Serial_no) with sample guides', async () => {
+    const { PHOTO_SLOTS } = await import('@/components/ui/photo-guide/types')
+    expect(PHOTO_SLOTS.length).toBe(5)
+    expect(PHOTO_SLOTS.map(s => s.id)).toEqual(['front', 'side', 'top', 'bottom', 'serial_no'])
+    expect(PHOTO_SLOTS[0].title).toBe('1. รูปด้านหน้า')
+    expect(PHOTO_SLOTS[1].title).toBe('2. รูปด้านข้าง')
+    expect(PHOTO_SLOTS[2].title).toBe('3. รูปด้านบน')
+    expect(PHOTO_SLOTS[3].title).toBe('4. รูปด้านล่าง')
+    expect(PHOTO_SLOTS[4].title).toBe('5. รูป Serial_no')
+    PHOTO_SLOTS.forEach(slot => {
+      expect(slot.description.length).toBeGreaterThan(0)
+      expect(slot.tips.length).toBeGreaterThan(0)
+    })
   })
 })
