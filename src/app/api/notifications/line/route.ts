@@ -4,7 +4,7 @@ import { sendQuoteFlexMessage, sendJobStatusFlexMessage } from '@/lib/line'
 import { prisma } from '@/lib/db'
 
 export async function POST(req: NextRequest) {
-  const user = await getCurrentUser()
+  const user = await getCurrentUser(req)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {

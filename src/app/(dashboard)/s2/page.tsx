@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import StageBadge from '@/components/ui/StageBadge'
 import RadioCardGroup from '@/components/ui/RadioCardGroup'
+import { useMe } from '@/components/ui/useMe'
 import { JobStage, Channel } from '@prisma/client'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -246,9 +247,30 @@ function VendorCombobox({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function S2Page() {
+  const me = useMe()
+  const isAdmin = me?.user?.role === 'ADMIN'
+  const [branchId, setBranchId] = useState('')
+  const [sites, setSites] = useState<Array<{ id: string; code: string; name: string; type: string }>>([])
   const [vendorCenter, setVendorCenter] = useState<VendorCenter | null>(null)
   const [receiverName, setReceiverName] = useState('')
   const [channel, setChannel] = useState<'DC' | 'DSD'>('DC')
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetch('/api/sites')
+        .then((r) => r.json())
+        .then((d) => {
+          if (Array.isArray(d)) {
+            const branches = d.filter((s) => s.type === 'BRANCH')
+            setSites(branches)
+            if (branches.length > 0 && !branchId) {
+              setBranchId(branches[0].id)
+            }
+          }
+        })
+        .catch(() => {})
+    }
+  }, [isAdmin, branchId])
 
   // Multi-SKU Items capturing holdStockNo (F17-T04)
   const [items, setItems] = useState<StockItemInput[]>([
@@ -312,6 +334,7 @@ export default function S2Page() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          branchId: isAdmin && branchId ? branchId : undefined,
           vendorCenterId: vendorCenter.id,
           receiverName,
           channel,
@@ -414,6 +437,26 @@ export default function S2Page() {
               ส่วนที่ 1 — ข้อมูล VD ปลายทาง
             </h2>
           </div>
+
+          {isAdmin && sites.length > 0 && (
+            <div>
+              <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text)' }}>
+                สาขาต้นทาง (ผู้ดูแลระบบเลือกสาขาที่เปิดงาน)
+              </label>
+              <select
+                value={branchId}
+                onChange={(e) => setBranchId(e.target.value)}
+                className="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-[#C8102E] bg-white"
+                style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
+              >
+                {sites.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.code} - {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <VendorCombobox value={vendorCenter} onChange={setVendorCenter} />
 
@@ -624,8 +667,8 @@ export default function S2Page() {
                     <td className="py-2.5 px-3 font-mono text-[#6B6459]">{job.vendorCenter?.code ?? '-'}</td>
                     <td className="py-2.5 px-3 text-[#2B2723]">{job.vendorCenter?.vendorParent.name ?? '-'}</td>
                     <td className="py-2.5 px-3">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                        job.channel === 'DC' ? 'bg-[#E6F1FB] text-[#185FA5]' : 'bg-[#E1F5EE] text-[#1D9E75]'
+                      <span className={`text-xs font-semibold ${
+                        job.channel === 'DC' ? 'text-[#185FA5]' : 'text-[#1D9E75]'
                       }`}>
                         {job.channel ?? '-'}
                       </span>

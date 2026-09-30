@@ -4,7 +4,7 @@ import { findToken, rateLimited, ensureTrackingToken } from '@/lib/public-token'
 import { getSetting } from '@/lib/settings'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
-  if (rateLimited(req)) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+  if (await rateLimited(req)) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   const { token } = await params
   const pt = await findToken(token, ['PAYMENT', 'QUOTE'])
   if (!pt) return NextResponse.json({ error: 'ลิงก์ไม่ถูกต้อง' }, { status: 404 })

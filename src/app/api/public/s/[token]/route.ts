@@ -3,7 +3,7 @@ import { prisma } from '@/lib/db'
 import { findToken, rateLimited } from '@/lib/public-token'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
-  if (rateLimited(req)) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+  if (await rateLimited(req)) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   const { token } = await params
   const pt = await findToken(token, 'CSAT')
   if (!pt) return NextResponse.json({ error: 'ลิงก์ไม่ถูกต้อง' }, { status: 404 })
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
-  if (rateLimited(req)) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+  if (await rateLimited(req)) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   const { token } = await params
   const pt = await findToken(token, 'CSAT')
   if (!pt || pt.usedAt || pt.expiresAt < new Date()) {

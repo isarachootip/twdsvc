@@ -6,7 +6,7 @@ import { getSetting } from '@/lib/settings'
 
 // Mock payment provider — ใช้ได้เฉพาะเมื่อ DEMO_MODE=true (STEP-29 จะเปลี่ยนเป็น webhook ของ payment gateway)
 export async function POST(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
-  if (rateLimited(req)) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+  if (await rateLimited(req)) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   if ((await getSetting('DEMO_MODE')) === 'false') return NextResponse.json({ error: 'ระบบจะยืนยันการชำระเงินอัตโนมัติเมื่อได้รับแจ้งจากธนาคาร' }, { status: 400 })
   const { token } = await params
   const pt = await findToken(token, ['PAYMENT', 'QUOTE'])

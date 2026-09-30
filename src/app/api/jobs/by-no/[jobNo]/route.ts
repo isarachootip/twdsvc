@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireUser, jobScope, handleError } from '@/lib/api'
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ jobNo: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ jobNo: string }> }) {
   try {
-    const user = await requireUser()
+    const user = await requireUser(undefined, req)
     const { jobNo } = await params
     const scope = await jobScope(user)
     const job = await prisma.job.findFirst({

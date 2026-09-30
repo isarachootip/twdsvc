@@ -12,6 +12,7 @@ import './e2e/tier1-features/features06_to_10.test'
 import './e2e/tier1-features/features11_to_15.test'
 import './e2e/tier1-features/features16_to_20.test'
 import './e2e/tier1-features/features21_to_25.test'
+import './e2e/tier1-features/admin_full_access.test'
 
 // Tier 2: Boundary & Corner Cases
 import './e2e/tier2-boundaries/boundary_financial_satang.test'
@@ -23,6 +24,7 @@ import './e2e/tier2-boundaries/boundary_search_and_inputs.test'
 import './e2e/tier2-boundaries/boundary_payout_and_admin.test'
 import './e2e/tier2-boundaries/boundary_concurrency_locking.test'
 import './e2e/tier2-boundaries/boundary_production_engine.test'
+import './e2e/tier2-boundaries/boundary_pg_integration.test'
 import './e2e/tier2-boundaries/boundary_reports_empirical.test'
 
 // Tier 3: Cross-Feature Combinations (Pairwise Flows A, B, C, D)

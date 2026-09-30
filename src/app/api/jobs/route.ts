@@ -16,7 +16,7 @@ function bkkEnd(d: string) { return new Date(`${d}T23:59:59.999+07:00`) }
 // GET /api/jobs?from&to&stage&type&branchId&channel&search&flag&limit
 export async function GET(req: NextRequest) {
   try {
-    const user = await requireUser()
+    const user = await requireUser(undefined, req)
     await refreshBreaches()
     const sp = new URL(req.url).searchParams
     const scope = await jobScope(user)
@@ -88,7 +88,7 @@ export async function GET(req: NextRequest) {
 // POST /api/jobs — เปิดใบแจ้งซ่อม (action `open`, 04 §3)
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireUser(['CS', 'ADMIN'])
+    const user = await requireUser(['CS', 'ADMIN'], req)
     const body = (await req.json()) as Record<string, unknown>
     const {
       productName, brandName, brandId, symptom, customerName, customerPhone,
@@ -109,8 +109,36 @@ export async function POST(req: NextRequest) {
 
     const shippingMethod: 'STANDARD' | 'EXPRESS' = rawMethod === 'EXPRESS' ? 'EXPRESS' : 'STANDARD'
 
-    const branchId: string | undefined = user.role === 'ADMIN' ? ((body.branchId as string) ?? user.siteId) : user.siteId ?? undefined
-    if (!branchId) throw new HttpError(400, 'ผู้ใช้ไม่ได้ผูกกับสาขา')
+    let branchId: string | undefined = user.role === 'ADMIN' ? (((body.branchId as string) || user.siteId) ?? undefined) : user.siteId ?? undefined
+    if (!branchId && user.role === 'ADMIN') {
+      let defaultBranch = await prisma.site.findFirst({
+        where: { type: 'BRANCH', active: true },
+        orderBy: { code: 'asc' },
+        select: { id: true },
+      }) ?? await prisma.site.findFirst({
+        where: { type: 'BRANCH' },
+        orderBy: { code: 'asc' },
+        select: { id: true },
+      }) ?? await prisma.site.findFirst({
+        orderBy: { code: 'asc' },
+        select: { id: true },
+      })
+      if (!defaultBranch) {
+        defaultBranch = await prisma.site.create({
+          data: {
+            code: 'HQ-001',
+            name: 'สาขาสำนักงานใหญ่ (ระบบสร้างอัตโนมัติ)',
+            nickname: 'HQ',
+            type: 'BRANCH',
+            active: true,
+            province: 'กรุงเทพมหานคร',
+          },
+          select: { id: true },
+        })
+      }
+      branchId = defaultBranch.id
+    }
+    if (!branchId) throw new HttpError(400, 'ผู้ใช้ไม่ได้ผูกกับสาขา และไม่พบสาขาในระบบ')
 
     const routing = await resolveRouting({
       branchId, brandId: brandId ? Number(brandId) : null, sizeCategoryId: Number(sizeCategoryId),

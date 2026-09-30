@@ -51,7 +51,7 @@ async function loadJobData(token: string) {
 }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
-  if (rateLimited(req)) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+  if (await rateLimited(req)) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const { token } = await params
   const data = await loadJobData(token)
@@ -118,7 +118,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
-  if (rateLimited(req)) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+  if (await rateLimited(req)) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const { token } = await params
   const data = await loadJobData(token)

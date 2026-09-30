@@ -77,7 +77,7 @@ async function cycles() {
 // GET /api/reports/vd-payment?from=yyyy-mm-dd&to=yyyy-mm-dd
 export async function GET(req: NextRequest) {
   try {
-    const user = await requireUser(['ADMIN', 'EXECUTIVE'])
+    const user = await requireUser(['ADMIN', 'EXECUTIVE'], req)
     const sp = new URL(req.url).searchParams
     const cyc = await cycles()
     const from = sp.get('from') || cyc.current?.from || new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)

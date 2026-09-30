@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireUser, handleError, HttpError } from '@/lib/api'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     // Keep CS and EXECUTIVE allowed to prevent Bug C9
-    await requireUser(['ADMIN', 'CS', 'EXECUTIVE'])
+    await requireUser(['ADMIN', 'CS', 'EXECUTIVE'], req)
     const [sizes, rates] = await Promise.all([
       prisma.sizeCategory.findMany({ orderBy: { sortOrder: 'asc' } }),
       prisma.feeRate.findMany({
@@ -27,7 +27,7 @@ export async function GET() {
 // PUT [{ sizeCategoryId?, name?, operationFee, shippingFee3pl }]
 export async function PUT(req: NextRequest) {
   try {
-    await requireUser(['ADMIN'])
+    await requireUser(['ADMIN'], req)
     const updates: Array<{
       sizeCategoryId?: number | null
       name?: string

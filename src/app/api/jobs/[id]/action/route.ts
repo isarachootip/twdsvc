@@ -3,7 +3,7 @@ import { getCurrentUser } from '@/lib/auth'
 import { executeAction, isValidAction, type ActionType, type ActionInput } from '@/lib/state-machine'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const user = await getCurrentUser()
+  const user = await getCurrentUser(req)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (user.role === 'EXECUTIVE') return NextResponse.json({ error: 'Executive ดูข้อมูลได้อย่างเดียว' }, { status: 403 })
 
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: `ไม่รู้จัก action: ${action ?? '-'}` }, { status: 400 })
   }
 
-  if (['customer_approve', 'customer_reject'].includes(action)) {
+  if (['customer_approve', 'customer_reject'].includes(action) && user.role !== 'ADMIN') {
     return NextResponse.json({ error: 'action นี้ใช้ผ่านลิงก์ลูกค้าเท่านั้น' }, { status: 403 })
   }
 

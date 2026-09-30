@@ -9,10 +9,10 @@ export class HttpError extends Error {
   }
 }
 
-export async function requireUser(roles?: string[]): Promise<UserSession> {
-  const user = await getCurrentUser()
+export async function requireUser(roles?: string[], req?: Request): Promise<UserSession> {
+  const user = await getCurrentUser(req)
   if (!user) throw new HttpError(401, 'Unauthorized')
-  if (roles && !roles.includes(user.role)) throw new HttpError(403, 'ไม่มีสิทธิ์ใช้งานส่วนนี้')
+  if (roles && !roles.includes(user.role) && user.role !== 'ADMIN') throw new HttpError(403, 'ไม่มีสิทธิ์ใช้งานส่วนนี้')
   return user
 }
 

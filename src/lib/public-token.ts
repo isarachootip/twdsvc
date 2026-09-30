@@ -2,16 +2,43 @@ import crypto from 'crypto'
 import type { TokenType } from '@prisma/client'
 import { prisma } from './db'
 
-// simple in-memory rate limit: 30 req/นาที/IP สำหรับ public endpoints (08 §6)
-const hits = new Map<string, { n: number; t: number }>()
-export function rateLimited(req: Request): boolean {
+// PostgreSQL-persisted rate limit: 30 req/นาที/IP สำหรับ public endpoints (08 §6)
+export async function rateLimited(req: Request): Promise<boolean> {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'local'
   const now = Date.now()
-  const h = hits.get(ip)
-  if (!h || now - h.t > 60_000) { hits.set(ip, { n: 1, t: now }); return false }
-  h.n++
-  if (hits.size > 5000) hits.clear()
-  return h.n > 30
+  const key = `ratelimit:${ip}`
+
+  try {
+    const entry = await prisma.systemSetting.findUnique({ where: { key } })
+    if (!entry) {
+      await prisma.systemSetting.upsert({
+        where: { key },
+        create: { key, value: JSON.stringify({ count: 1, resetAt: now + 60_000 }) },
+        update: { value: JSON.stringify({ count: 1, resetAt: now + 60_000 }) },
+      })
+      return false
+    }
+
+    const data = JSON.parse(entry.value) as { count: number; resetAt: number }
+    if (now > data.resetAt) {
+      await prisma.systemSetting.update({
+        where: { key },
+        data: { value: JSON.stringify({ count: 1, resetAt: now + 60_000 }) },
+      })
+      return false
+    }
+
+    const newCount = data.count + 1
+    await prisma.systemSetting.update({
+      where: { key },
+      data: { value: JSON.stringify({ count: newCount, resetAt: data.resetAt }) },
+    })
+
+    return newCount > 30
+  } catch (err) {
+    console.error('[rateLimited] DB check failed:', err)
+    return false
+  }
 }
 
 export async function findToken(token: string, type: TokenType | TokenType[]) {

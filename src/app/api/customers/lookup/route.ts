@@ -5,7 +5,7 @@ import { requireUser, handleError } from '@/lib/api'
 // GET /api/customers/lookup?phone=08xxxxxxxx → ข้อมูลลูกค้าจากงานล่าสุด (auto-fill)
 export async function GET(req: NextRequest) {
   try {
-    await requireUser(['CS', 'ADMIN'])
+    await requireUser(['CS', 'ADMIN'], req)
     const phone = (new URL(req.url).searchParams.get('phone') ?? '').replace(/\D/g, '')
     if (phone.length < 9) return NextResponse.json(null)
     const job = await prisma.job.findFirst({

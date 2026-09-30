@@ -38,3 +38,10 @@ export async function generateTradeInNo(): Promise<string> {
   const seq = await nextSeq(key)
   return `${key}-${String(seq).padStart(5, '0')}`
 }
+
+export async function generateTrackingNo(prefix = 'TPL'): Promise<string> {
+  const yymm = getYYMM()
+  const key = `${prefix}-${yymm}`
+  const seq = await nextSeq(key)
+  return `${key}-${String(seq).padStart(6, '0')}`
+}

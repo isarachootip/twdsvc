@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireUser, handleError, HttpError } from '@/lib/api'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    await requireUser(['ADMIN'])
+    await requireUser(['ADMIN'], req)
     const routes = await prisma.branchVendorRoute.findMany({
       include: {
         branch: { select: { id: true, code: true, name: true } },
@@ -31,7 +31,7 @@ interface RouteIn {
 // PUT — บันทึกการจับคู่สาขา-VD
 export async function PUT(req: NextRequest) {
   try {
-    await requireUser(['ADMIN'])
+    await requireUser(['ADMIN'], req)
     const list: RouteIn[] = await req.json()
     for (const r of list) {
       if (!r.branchId) throw new HttpError(400, 'กรุณาเลือกสาขา')

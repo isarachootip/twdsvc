@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { TabBar, SlaCell, JobIdCell, EmptyCard } from '@/components/ui/Queue'
@@ -26,12 +26,31 @@ const SORT = {
 export default function CsQueue({ role }: { role: string }) {
   const router = useRouter()
   const [tab, setTab] = useState('pickup')
-  const { data, loading, reload, run, busy } = useQueue('CS')
+  const [branchFilter, setBranchFilter] = useState('')
+  const [siteOptions, setSiteOptions] = useState<Array<{ id: string; name: string }>>([])
+  const { data, loading, reload, run, busy } = useQueue('CS', undefined, branchFilter ? { branchId: branchFilter } : undefined)
   const [sel, setSel] = useState<JobView | null>(null)
   const [openId, setOpenId] = useState<string | null>(null)
   const [pay, setPay] = useState<{ job: JobView; kind: 'intake' | 'repair'; amount: number } | null>(null)
   const readOnly = role !== 'CS' && role !== 'ADMIN'
 
+  useEffect(() => {
+    if (role === 'ADMIN') {
+      fetch('/api/sites')
+        .then(r => r.json())
+        .then(d => {
+          if (Array.isArray(d)) {
+            setSiteOptions(d.filter(s => s.type === 'BRANCH').map(s => ({ id: s.id, name: s.name })))
+          }
+        })
+        .catch(() => {})
+    }
+  }, [role])
+
+  const branches = useMemo(() => {
+    if (siteOptions.length > 0) return siteOptions.map(s => [s.id, s.name] as [string, string])
+    return [...new Map(Object.values(data.tabs).flat().map(j => [j.branch.id, j.branch.name])).entries()]
+  }, [siteOptions, data])
   const list = (k: string) => data.tabs[k] ?? []
   const current = sel ? Object.values(data.tabs).flat().find(j => j.id === sel.id) ?? null : null
   const s1 = useSort(list('pickup'), SORT)
@@ -45,7 +64,13 @@ export default function CsQueue({ role }: { role: string }) {
           <p className="page-title">คิวงาน CS</p>
           <p className="page-sub">ส่งมอบสินค้าให้ลูกค้า · ติดตามการอนุมัติใบเสนอราคา · รับชำระค่าดำเนินการ</p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {role === 'ADMIN' && branches.length > 0 && (
+            <select className="sel" value={branchFilter} onChange={e => { setBranchFilter(e.target.value); setSel(null) }}>
+              <option value="">ทุกสาขา ({branches.length} สาขา)</option>
+              {branches.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+            </select>
+          )}
           <button className="btn" onClick={() => reload()}>↻ รีเฟรช</button>
           {!readOnly && <Link href="/cs/new" className="btn btn-primary">+ เปิดใบแจ้งซ่อม</Link>}
         </div>

@@ -2,6 +2,13 @@ import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
 import { prisma } from './db'
 import crypto from 'crypto'
+import { AsyncLocalStorage } from 'async_hooks'
+
+export const authContextStorage = new AsyncLocalStorage<{ token?: string; user?: UserSession }>()
+
+export function runWithAuthToken<T>(token: string, fn: () => Promise<T>): Promise<T> {
+  return authContextStorage.run({ token }, fn)
+}
 
 if (!process.env.JWT_SECRET && process.env.NODE_ENV === 'production') {
   console.warn('[auth] JWT_SECRET is not set — using development secret. Set JWT_SECRET in production!')
@@ -46,13 +53,40 @@ export async function verifyAccessToken(token: string): Promise<{ sub: string; r
   }
 }
 
-export async function getCurrentUser(): Promise<UserSession | null> {
+export async function getCurrentUser(req?: Request): Promise<UserSession | null> {
   try {
-    const cookieStore = await cookies()
-    const token = cookieStore.get('access_token')?.value
+    let token: string | undefined = authContextStorage.getStore()?.token
+
+    if (!token && req) {
+      const authHeader = req.headers.get('authorization')
+      if (authHeader?.startsWith('Bearer ')) {
+        token = authHeader.substring(7).trim()
+      } else {
+        const cookieHeader = req.headers.get('cookie')
+        if (cookieHeader) {
+          const match = cookieHeader.match(/(?:^|;\s*)access_token=([^;]+)/)
+          if (match) token = match[1]
+        }
+      }
+    }
+
+    if (!token) {
+      try {
+        const cookieStore = await cookies()
+        token = cookieStore.get('access_token')?.value
+      } catch {
+        // Outside Next request context
+      }
+    }
+
     if (!token) return null
     const payload = await verifyAccessToken(token)
     if (!payload) return null
+
+    const storedUser = authContextStorage.getStore()?.user
+    if (storedUser && storedUser.id === payload.sub) {
+      return storedUser
+    }
     const user = await prisma.user.findUnique({
       where: { id: payload.sub, active: true },
       select: {

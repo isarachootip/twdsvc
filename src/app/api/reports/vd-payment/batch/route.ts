@@ -15,7 +15,7 @@ interface Deduction {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireUser(['ADMIN', 'EXECUTIVE'])
+    const user = await requireUser(['ADMIN', 'EXECUTIVE'], req)
     const { jobIds, periodFrom, periodTo, from, to } = await req.json()
 
     if (!Array.isArray(jobIds) || jobIds.length === 0) {

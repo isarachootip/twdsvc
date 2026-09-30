@@ -16,6 +16,7 @@ export async function homeFor(role: string): Promise<string> {
 export async function guardPage(menuKey: string): Promise<UserSession> {
   const user = await getCurrentUser()
   if (!user) redirect('/login')
+  if (user.role === 'ADMIN') return user
   const menus = await menusForRole(user.role)
   if (!menus.includes(menuKey)) redirect(await homeFor(user.role))
   return user

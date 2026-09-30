@@ -16,7 +16,7 @@ function pct(now: number, prior: number) {
 
 export async function GET(req: NextRequest) {
   try {
-    const user = await requireUser(['ADMIN', 'EXECUTIVE'])
+    const user = await requireUser(['ADMIN', 'EXECUTIVE'], req)
     await refreshBreaches(true)
 
     const sp = new URL(req.url).searchParams

@@ -3,9 +3,9 @@ import { prisma } from '@/lib/db'
 import { requireUser, handleError, HttpError } from '@/lib/api'
 import { getJsonSetting, setSetting } from '@/lib/settings'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    await requireUser(['ADMIN'])
+    await requireUser(['ADMIN'], req)
     const [sites, managers] = await Promise.all([
       prisma.site.findMany({
         where: { active: true },
@@ -38,7 +38,7 @@ interface SiteIn {
 
 export async function PUT(req: NextRequest) {
   try {
-    await requireUser(['ADMIN'])
+    await requireUser(['ADMIN'], req)
     const list: SiteIn[] = await req.json()
     const managers: Record<string, string> = {}
 

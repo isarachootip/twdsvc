@@ -4,26 +4,28 @@ import { prisma } from '@/lib/db'
 import { generateTradeInNo } from '@/lib/number-generator'
 
 export async function GET(req: NextRequest) {
-  const user = await getCurrentUser()
+  const user = await getCurrentUser(req)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  // S3: Scope to branch for non-ADMIN/EXECUTIVE
+  const { searchParams } = new URL(req.url)
+  const q = searchParams.get('search')?.trim()
+  const branchId = searchParams.get('branchId')?.trim()
+
+  // S3: Scope to branch for non-ADMIN/EXECUTIVE, or filter by branchId
   let branchWhere: Record<string, unknown> = {}
-  if (user.role !== 'ADMIN' && user.role !== 'EXECUTIVE') {
+  const targetBranchId = branchId || (user.role !== 'ADMIN' && user.role !== 'EXECUTIVE' ? user.siteId : undefined)
+  if (targetBranchId) {
     const branchUsers = await prisma.user.findMany({
-      where: { siteId: user.siteId ?? '__none__' },
+      where: { siteId: targetBranchId },
       select: { username: true },
     })
     branchWhere = {
       OR: [
         { createdBy: { in: branchUsers.map(u => u.username) } },
-        { job: { branchId: user.siteId ?? '__none__' } },
+        { job: { branchId: targetBranchId } },
       ],
     }
   }
-
-  const { searchParams } = new URL(req.url)
-  const q = searchParams.get('search')?.trim()
 
   const items = await prisma.tradeIn.findMany({
     where: {
@@ -47,7 +49,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const user = await getCurrentUser()
+  const user = await getCurrentUser(req)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!['CS', 'ADMIN'].includes(user.role))
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })

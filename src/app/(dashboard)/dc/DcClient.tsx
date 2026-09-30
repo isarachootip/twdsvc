@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { OverdueSummary, KpiGrid, TabBar, SlaCell, JobIdCell, QueueHeader, EmptyCard, DateRange } from '@/components/ui/Queue'
 import PhotoButton from '@/components/ui/PhotoButton'
 import PrintLabel, { type LabelData } from '@/components/ui/PrintLabel'
@@ -30,23 +30,40 @@ const isValidDcLoc = (loc: string) => /^DC-\d{2}-[A-Z]$/i.test(loc.trim())
 export default function DcClient({ role }: { role: string }) {
   const [tab, setTab] = useState('pickup')
   const [range, setRange] = useState({ from: '', to: '' })
-  const { data, loading, reload, run, done, busy } = useQueue('DC', range)
+  const [branchFilter, setBranchFilter] = useState('')
+  const [siteOptions, setSiteOptions] = useState<Array<{ id: string; name: string }>>([])
+  const { data, loading, reload, run, done, busy } = useQueue('DC', range, branchFilter ? { branchId: branchFilter } : undefined)
   const inp = useRowInputs()
   const [openId, setOpenId] = useState<string | null>(null)
-  const [branchFilter, setBranchFilter] = useState('')
   const [driverDoc, setDriverDoc] = useState<{ job: JobView; leg: string; url?: string } | null>(null)
   const [label, setLabel] = useState<LabelData | null>(null)
   const { toast } = useToast()
   const readOnly = role !== 'DC' && role !== 'ADMIN'
+
+  useEffect(() => {
+    if (role === 'ADMIN') {
+      fetch('/api/sites')
+        .then(r => r.json())
+        .then(d => {
+          if (Array.isArray(d)) {
+            setSiteOptions(d.filter(s => s.type === 'BRANCH').map(s => ({ id: s.id, name: s.name })))
+          }
+        })
+        .catch(() => {})
+    }
+  }, [role])
 
   const list = (k: string) => data.tabs[k] ?? []
   const pending = (k: string) => list(k).filter(j => !done[j.id]).length
   const overCount = (k: string) => list(k).filter(j => !done[j.id] && j.sla?.overdue).length
   const rowCls = (j: JobView) => (done[j.id] ? 'done-row' : '')
 
-  const pickupRows = useMemo(() => list('pickup').filter(j => !branchFilter || j.branch.id === branchFilter), [data, branchFilter]) // eslint-disable-line react-hooks/exhaustive-deps
-  const branches = useMemo(() => [...new Map(list('pickup').map(j => [j.branch.id, j.branch.name])).entries()], [data]) // eslint-disable-line react-hooks/exhaustive-deps
-  const s1 = useSort(pickupRows, SORT)
+  const branches = useMemo(() => {
+    if (siteOptions.length > 0) return siteOptions.map(s => [s.id, s.name] as [string, string])
+    return [...new Map(Object.values(data.tabs).flat().map(j => [j.branch.id, j.branch.name])).entries()]
+  }, [siteOptions, data])
+
+  const s1 = useSort(list('pickup'), SORT)
   const s2 = useSort(list('receiveDC'), SORT)
   const s3 = useSort(list('handoffVD'), SORT)
   const s4 = useSort(list('returnFromVD'), SORT)
@@ -92,18 +109,20 @@ export default function DcClient({ role }: { role: string }) {
       <OverdueSummary items={data.overdue.filter(o => !done[o.id])} onGo={t => setTab(t)} />
       <KpiGrid items={TABS.map(t => ({ tab: t.key, label: t.kpi, count: pending(t.key), over: overCount(t.key) }))} active={tab} onPick={setTab} />
       <TabBar tabs={TABS.map(t => ({ key: t.key, label: t.label, count: pending(t.key) }))} active={tab} onPick={setTab} />
+      {branches.length > 0 && (
+        <div className="filter-bar" style={{ marginTop: 12, marginBottom: 12 }}>
+          <select className="sel" value={branchFilter} onChange={e => setBranchFilter(e.target.value)}>
+            <option value="">ทุกสาขา ({branches.length} สาขา)</option>
+            {branches.map(([id, n]) => <option key={id} value={id}>{n}</option>)}
+          </select>
+        </div>
+      )}
       {readOnly && <p className="hint"><span className="badge b-amber">โหมดดูอย่างเดียว</span></p>}
       {loading && <EmptyCard text="กำลังโหลด…" />}
 
       {!loading && tab === 'pickup' && (
         <>
-          <div className="filter-bar">
-            <select className="sel" value={branchFilter} onChange={e => setBranchFilter(e.target.value)}>
-              <option value="">ทุกสาขา</option>
-              {branches.map(([id, n]) => <option key={id} value={id}>{n}</option>)}
-            </select>
-          </div>
-          {pickupRows.length === 0 ? <EmptyCard /> : (
+          {s1.sorted.length === 0 ? <EmptyCard /> : (
             <div className="tcard"><div className="tbl-wrap"><table className="tbl">
               <thead><tr><Th k="id" label="เลขที่ใบแจ้งซ่อม" {...s1} /><Th k="branch" label="สาขา" {...s1} /><Th k="customer" label="ลูกค้า" {...s1} /><Th k="product" label="สินค้า" {...s1} /><Th k="hours" label="รอมาแล้ว" {...s1} /><th>สถานะ / Action</th></tr></thead>
               <tbody>{s1.sorted.map(j => {

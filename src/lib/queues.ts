@@ -68,15 +68,21 @@ export const QUEUES: Record<string, { roles: string[]; tabs: QueueTabDef[] }> = 
 export async function queueHandler(dept: keyof typeof QUEUES, req: Request) {
   try {
     const def = QUEUES[dept]
-    const user = await requireUser(def.roles)
+    const user = await requireUser(def.roles, req)
     await refreshBreaches()
     const scope = await jobScope(user)
     const sp = new URL(req.url).searchParams
     const from = sp.get('from')
     const to = sp.get('to')
+    const branchId = sp.get('branchId')
+    const vendorCenterId = sp.get('vendorCenterId')
     const dateWhere: Prisma.JobWhereInput = {
       ...(from ? { openedAt: { gte: new Date(`${from}T00:00:00+07:00`) } } : {}),
       ...(to ? { AND: [{ openedAt: { lte: new Date(`${to}T23:59:59.999+07:00`) } }] } : {}),
+    }
+    const filterWhere: Prisma.JobWhereInput = {
+      ...(branchId ? { branchId } : {}),
+      ...(vendorCenterId ? { vendorCenterId } : {}),
     }
     const tabs: Record<string, JobView[]> = {}
     const kpis: Record<string, number> = {}
@@ -88,7 +94,7 @@ export async function queueHandler(dept: keyof typeof QUEUES, req: Request) {
         extraScope = { OR: [{ openedAt: { gte: startToday } }, { payments: { some: { status: 'PENDING' } } }, { stage: 'PENDING_VENDOR_ASSIGNMENT' }] }
       }
       const rows = await prisma.job.findMany({
-        where: { AND: [scope, t.where, dateWhere, extraScope] },
+        where: { AND: [scope, t.where, dateWhere, extraScope, filterWhere] },
         include: JOB_LIST_INCLUDE,
         orderBy: { stageEnteredAt: 'asc' },
         take: 500,

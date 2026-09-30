@@ -6,8 +6,8 @@ import { Role } from '@prisma/client'
 const MENU_KEYS = ['exec', 'analytics', 'jobs', 'cs', 'gr', 'dc', 'vd', 'tradein', 's2', 'vd_payment', 'admin']
 const ROLES: Role[] = ['CS', 'GR', 'DC', 'VD', 'S2', 'ADMIN', 'EXECUTIVE']
 
-export async function GET() {
-  const user = await getCurrentUser()
+export async function GET(req: NextRequest) {
+  const user = await getCurrentUser(req)
   if (!user || user.role !== 'ADMIN')
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
@@ -19,7 +19,7 @@ export async function GET() {
 }
 
 export async function PUT(req: NextRequest) {
-  const user = await getCurrentUser()
+  const user = await getCurrentUser(req)
   if (!user || user.role !== 'ADMIN')
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 

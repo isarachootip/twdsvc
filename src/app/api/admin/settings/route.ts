@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireUser, handleError, HttpError } from '@/lib/api'
 import { getSettings, setSetting, SETTING_DEFAULTS } from '@/lib/settings'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    await requireUser(['ADMIN'])
+    await requireUser(['ADMIN'], req)
     return NextResponse.json(await getSettings())
   } catch (e) {
     return handleError(e)
@@ -14,7 +14,7 @@ export async function GET() {
 // PUT { KEY: value, ... }
 export async function PUT(req: NextRequest) {
   try {
-    await requireUser(['ADMIN'])
+    await requireUser(['ADMIN'], req)
     const body: Record<string, unknown> = await req.json()
     for (const [k, v] of Object.entries(body)) {
       if (!(k in SETTING_DEFAULTS)) throw new HttpError(400, `ไม่รู้จักค่าตั้ง ${k}`)

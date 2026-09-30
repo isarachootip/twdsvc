@@ -3,9 +3,9 @@ import { prisma } from '@/lib/db'
 import { requireUser, handleError, HttpError } from '@/lib/api'
 import { getJsonSetting, setSetting } from '@/lib/settings'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    await requireUser(['ADMIN'])
+    await requireUser(['ADMIN'], req)
     const [vendors, sizes] = await Promise.all([
       prisma.vendorParent.findMany({
         where: { active: true },
@@ -61,7 +61,7 @@ const optNum = (v: unknown) => (v === '' || v == null || Number.isNaN(Number(v))
 // PUT — บันทึก Vendor Portal ทั้งหน้า
 export async function PUT(req: NextRequest) {
   try {
-    await requireUser(['ADMIN'])
+    await requireUser(['ADMIN'], req)
     const list: VendorIn[] = await req.json()
     for (const v of list) {
       if (!v.code?.trim() || !v.name?.trim()) {

@@ -6,23 +6,37 @@ import { slaOnEvent } from '@/lib/sla-engine'
 import { JobType, JobStage, Channel } from '@prisma/client'
 
 export async function POST(req: NextRequest) {
-  const user = await getCurrentUser()
+  const user = await getCurrentUser(req)
   if (!user || !['S2', 'ADMIN'].includes(user.role))
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   try {
-    const { vendorCenterId, receiverName, channel, items } = await req.json()
+    const { vendorCenterId, receiverName, channel, items, branchId: bodyBranchId } = await req.json()
 
     if (!vendorCenterId || !receiverName || !items?.length)
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
 
-    let branchId = user.siteId ?? ''
+    let branchId = (user.role === 'ADMIN' && bodyBranchId) ? bodyBranchId : (user.siteId ?? '')
     if (!branchId) {
-      const firstBranch = await prisma.site.findFirst({ where: { type: 'BRANCH' } })
+      let firstBranch = await prisma.site.findFirst({ where: { type: 'BRANCH', active: true }, orderBy: { code: 'asc' } })
+        ?? await prisma.site.findFirst({ where: { type: 'BRANCH' }, orderBy: { code: 'asc' } })
+        ?? await prisma.site.findFirst({ orderBy: { code: 'asc' } })
+      if (!firstBranch && user.role === 'ADMIN') {
+        firstBranch = await prisma.site.create({
+          data: {
+            code: 'HQ-001',
+            name: 'สาขาสำนักงานใหญ่ (ระบบสร้างอัตโนมัติ)',
+            nickname: 'HQ',
+            type: 'BRANCH',
+            active: true,
+            province: 'กรุงเทพมหานคร',
+          },
+        })
+      }
       branchId = firstBranch?.id ?? ''
     }
     if (!branchId)
-      return NextResponse.json({ error: 'ไม่พบข้อมูลสาขา' }, { status: 400 })
+      return NextResponse.json({ error: 'ไม่พบข้อมูลสาขาในระบบ' }, { status: 400 })
 
     const jobNo = await generateJobNo('STOCK')
     const now = new Date()

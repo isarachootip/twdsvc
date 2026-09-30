@@ -11,7 +11,7 @@ const MAX = 10 * 1024 * 1024
 // POST /api/uploads (multipart: file) → { fileUrl, fileName, mimeType, fileSize }
 export async function POST(req: NextRequest) {
   try {
-    await requireUser()
+    await requireUser(undefined, req)
     const form = await req.formData()
     const file = form.get('file')
     if (!(file instanceof File)) throw new HttpError(400, 'ไม่พบไฟล์')

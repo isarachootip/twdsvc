@@ -6,9 +6,9 @@ import { Role } from '@prisma/client'
 
 const ROLES: Role[] = ['CS', 'GR', 'DC', 'VD', 'S2', 'ADMIN', 'EXECUTIVE']
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    await requireUser(['ADMIN'])
+    await requireUser(['ADMIN'], req)
     const users = await prisma.user.findMany({
       orderBy: [{ role: 'asc' }, { fullName: 'asc' }],
       select: {
@@ -34,7 +34,7 @@ export async function GET() {
 
 // POST — สร้างผู้ใช้ / PUT — แก้ไข (password ว่าง = ไม่เปลี่ยน)
 async function save(req: NextRequest, create: boolean) {
-  const me = await requireUser(['ADMIN'])
+  const me = await requireUser(['ADMIN'], req)
   const b = await req.json()
   if (!ROLES.includes(b.role)) throw new HttpError(400, 'Role ไม่ถูกต้อง')
   if (!String(b.fullName ?? '').trim()) throw new HttpError(400, 'กรุณากรอกชื่อ-นามสกุล')

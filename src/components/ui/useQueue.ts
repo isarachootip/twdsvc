@@ -9,7 +9,11 @@ import type { Photo } from './PhotoButton'
 
 export interface QueueData { tabs: Record<string, JobView[]>; overdue: OverdueItem[] }
 
-export function useQueue(dept: string, range?: { from: string; to: string }) {
+export function useQueue(
+  dept: string,
+  range?: { from: string; to: string },
+  filter?: { branchId?: string; vendorCenterId?: string }
+) {
   const [data, setData] = useState<QueueData>({ tabs: {}, overdue: [] })
   const [loading, setLoading] = useState(true)
   const [done, setDone] = useState<Record<string, string>>({}) // jobId → label ที่ทำเสร็จในรอบนี้
@@ -21,6 +25,8 @@ export function useQueue(dept: string, range?: { from: string; to: string }) {
       const qs = new URLSearchParams()
       if (range?.from) qs.set('from', range.from)
       if (range?.to) qs.set('to', range.to)
+      if (filter?.branchId) qs.set('branchId', filter.branchId)
+      if (filter?.vendorCenterId) qs.set('vendorCenterId', filter.vendorCenterId)
       const d = await api<QueueData>(`/api/queues/${dept}${qs.toString() ? `?${qs}` : ''}`)
       setData(d)
       if (!keepDone) setDone({})
@@ -29,7 +35,7 @@ export function useQueue(dept: string, range?: { from: string; to: string }) {
     } finally {
       setLoading(false)
     }
-  }, [dept, range?.from, range?.to, toast])
+  }, [dept, range?.from, range?.to, filter?.branchId, filter?.vendorCenterId, toast])
 
   useEffect(() => { reload() }, [reload])
 

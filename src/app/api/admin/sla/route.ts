@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
-export async function GET() {
-  const user = await getCurrentUser()
+export async function GET(req: NextRequest) {
+  const user = await getCurrentUser(req)
   if (!user || user.role !== 'ADMIN')
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
@@ -16,7 +16,7 @@ export async function GET() {
 }
 
 export async function PUT(req: NextRequest) {
-  const user = await getCurrentUser()
+  const user = await getCurrentUser(req)
   if (!user || user.role !== 'ADMIN')
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 

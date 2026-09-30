@@ -198,7 +198,7 @@ export default function ManualPage() {
                 <p className="text-xs text-gray-500">หน้าจอ: <code className="bg-gray-100 px-1 py-0.5 rounded text-red-600">/cs</code> และ <code className="bg-gray-100 px-1 py-0.5 rounded text-red-600">/cs/new</code></p>
               </div>
             </div>
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">หน้าร้านสาขา</span>
+            <span className="text-xs font-semibold text-amber-800">หน้าร้านสาขา</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
@@ -256,7 +256,7 @@ export default function ManualPage() {
                 <p className="text-xs text-gray-500">หน้าจอ: <code className="bg-gray-100 px-1 py-0.5 rounded text-red-600">/gr</code></p>
               </div>
             </div>
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-100 text-blue-800">คลังสาขา</span>
+            <span className="text-xs font-semibold text-blue-800">คลังสาขา</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
@@ -310,7 +310,7 @@ export default function ManualPage() {
                 <p className="text-xs text-gray-500">หน้าจอ: <code className="bg-gray-100 px-1 py-0.5 rounded text-red-600">/dc</code> หรือคิว DC</p>
               </div>
             </div>
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800">คลังกลาง</span>
+            <span className="text-xs font-semibold text-emerald-800">คลังกลาง</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
@@ -341,7 +341,7 @@ export default function ManualPage() {
                 <p className="text-xs text-gray-500">หน้าจอ: <code className="bg-gray-100 px-1 py-0.5 rounded text-red-600">/jobs</code> และหน้า Action ช่าง</p>
               </div>
             </div>
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-purple-100 text-purple-800">ช่างซ่อม</span>
+            <span className="text-xs font-semibold text-purple-800">ช่างซ่อม</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">

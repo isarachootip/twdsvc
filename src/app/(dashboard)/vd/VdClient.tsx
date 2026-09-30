@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { OverdueSummary, KpiGrid, TabBar, SlaCell, JobIdCell, QueueHeader, EmptyCard, DateRange } from '@/components/ui/Queue'
 import PhotoButton from '@/components/ui/PhotoButton'
@@ -38,7 +38,9 @@ export default function VdClient({ role }: { role: string }) {
   const me = useMe()
   const [tab, setTab] = useState('receive')
   const [range, setRange] = useState({ from: '', to: '' })
-  const { data, loading, reload, run, done, busy } = useQueue('VD', range)
+  const [vendorFilter, setVendorFilter] = useState('')
+  const [centerOptions, setCenterOptions] = useState<Array<{ id: string; label: string }>>([])
+  const { data, loading, reload, run, done, busy } = useQueue('VD', range, vendorFilter ? { vendorCenterId: vendorFilter } : undefined)
   const inp = useRowInputs()
   const [openId, setOpenId] = useState<string | null>(null)
   const [filter, setFilter] = useState('ทั้งหมด')
@@ -50,6 +52,29 @@ export default function VdClient({ role }: { role: string }) {
   const readOnly = role !== 'VD' && role !== 'ADMIN'
   const demo = me?.demoMode ?? false
 
+  useEffect(() => {
+    if (role === 'ADMIN') {
+      fetch('/api/vendor-centers')
+        .then(r => r.json())
+        .then(d => {
+          if (Array.isArray(d)) {
+            setCenterOptions(d.map((c: any) => ({ id: c.id, label: `${c.vendorParent?.name ?? c.code} (${c.code})` })))
+          }
+        })
+        .catch(() => {})
+    }
+  }, [role])
+
+  const vendors = useMemo(() => {
+    if (centerOptions.length > 0) return centerOptions.map(c => [c.id, c.label] as [string, string])
+    const map = new Map<string, string>()
+    Object.values(data.tabs).flat().forEach(j => {
+      if (j.vendor?.centerId && j.vendor?.name) {
+        map.set(j.vendor.centerId, `${j.vendor.name} (${j.vendor.centerCode})`)
+      }
+    })
+    return [...map.entries()]
+  }, [centerOptions, data])
   const list = (k: string) => data.tabs[k] ?? []
   const pending = (k: string) => list(k).filter(j => !done[j.id]).length
   const overCount = (k: string) => list(k).filter(j => !done[j.id] && j.sla?.overdue).length
@@ -132,7 +157,17 @@ export default function VdClient({ role }: { role: string }) {
       <QueueHeader
         title="ส่วนงานช่าง (VD)"
         sub="รับงาน → ประเมิน/เสนอราคา → รอลูกค้าอนุมัติ → กำลังซ่อม → Pack และส่งคืน"
-        right={<DateRange from={range.from} to={range.to} onChange={(from, to) => setRange({ from, to })} onExport={exportAll} />}
+        right={
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            {role === 'ADMIN' && vendors.length > 0 && (
+              <select className="sel" value={vendorFilter} onChange={e => setVendorFilter(e.target.value)}>
+                <option value="">ทุกศูนย์ VD ({vendors.length} ศูนย์)</option>
+                {vendors.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+              </select>
+            )}
+            <DateRange from={range.from} to={range.to} onChange={(from, to) => setRange({ from, to })} onExport={exportAll} />
+          </div>
+        }
       />
       <OverdueSummary items={data.overdue.filter(o => !done[o.id])} onGo={t => setTab(t)} />
       <KpiGrid items={TABS.map(t => ({ tab: t.key, label: t.kpi, count: pending(t.key), over: overCount(t.key) }))} active={tab} onPick={setTab} />

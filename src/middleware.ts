@@ -87,7 +87,7 @@ export async function middleware(req: NextRequest) {
 
   // S6: Route-level RBAC Page Authorization Guard
   const pageRule = PAGE_ROLES.find(r => pathname === r.prefix || pathname.startsWith(r.prefix + '/'))
-  if (pageRule && !pageRule.roles.includes(payload.role)) {
+  if (pageRule && payload.role !== 'ADMIN' && !pageRule.roles.includes(payload.role)) {
     const fallbackHome = ROLE_HOME[payload.role] ?? '/jobs'
     return NextResponse.redirect(new URL(fallbackHome, req.url))
   }

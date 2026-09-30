@@ -5,6 +5,7 @@ import {
   CheckCircle2, Tag, TrendingUp, BarChart2,
   RefreshCcw, ChevronRight, Camera, Search, X, AlertCircle
 } from 'lucide-react'
+import { useMe } from '@/components/ui/useMe'
 
 interface KPIs {
   total: number
@@ -58,6 +59,10 @@ const APPLIANCE_TYPES = [
 ]
 
 export default function TradeInPage() {
+  const me = useMe()
+  const isAdmin = me?.user?.role === 'ADMIN'
+  const [branchFilter, setBranchFilter] = useState('')
+  const [siteOptions, setSiteOptions] = useState<Array<{ id: string; name: string }>>([])
   const [kpis, setKpis] = useState<KPIs>({ total: 0, used: 0, conversion: 0 })
   const [selectedType, setSelectedType] = useState<1 | 2>(1)
   const [sizes, setSizes] = useState<SizeCategory[]>([])
@@ -65,6 +70,19 @@ export default function TradeInPage() {
   const [historyLoading, setHistoryLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [toast, setToast] = useState('')
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetch('/api/sites')
+        .then((r) => r.json())
+        .then((d) => {
+          if (Array.isArray(d)) {
+            setSiteOptions(d.filter((s) => s.type === 'BRANCH').map((s) => ({ id: s.id, name: s.name })))
+          }
+        })
+        .catch(() => {})
+    }
+  }, [isAdmin])
 
   // Type 1 State
   const [t1Name, setT1Name] = useState('')
@@ -125,22 +143,24 @@ export default function TradeInPage() {
 
   // 2. Load KPIs and History
   const loadKpisAndHistory = useCallback(() => {
-    fetch('/api/tradein/kpis')
+    const qs = branchFilter ? `?branchId=${branchFilter}` : ''
+    fetch(`/api/tradein/kpis${qs}`)
       .then((r) => r.json())
       .then(setKpis)
       .catch(() => {})
 
     setHistoryLoading(true)
-    fetch('/api/tradein')
+    fetch(`/api/tradein${qs}`)
       .then((r) => r.json())
       .then((d) => setHistory(Array.isArray(d) ? d : []))
       .catch(() => {})
       .finally(() => setHistoryLoading(false))
-  }, [])
+  }, [branchFilter])
 
   // 3. Load Type 2 Eligible Jobs (rejected customer jobs)
   const loadEligibleJobs = useCallback(() => {
-    fetch('/api/jobs?limit=50')
+    const qs = branchFilter ? `&branchId=${branchFilter}` : ''
+    fetch(`/api/jobs?limit=50${qs}`)
       .then((r) => r.json())
       .then((d) => {
         const jobs: EligibleJob[] = (d.jobs ?? []).filter(
@@ -152,7 +172,7 @@ export default function TradeInPage() {
         setEligibleJobs(jobs)
       })
       .catch(() => {})
-  }, [])
+  }, [branchFilter])
 
   useEffect(() => {
     loadSizes()
@@ -319,18 +339,38 @@ export default function TradeInPage() {
       )}
 
       {/* Header */}
-      <div>
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--text)' }}>
-            Trade-in / คูปอง
-          </h1>
-          <span className="text-xs bg-[#E6F1FB] text-[#185FA5] px-2.5 py-1 rounded-full font-medium">
-            สิทธิ์: CS & Admin
-          </span>
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold" style={{ color: 'var(--text)' }}>
+              Trade-in / คูปอง
+            </h1>
+            <span className="text-xs bg-[#E6F1FB] text-[#185FA5] px-2.5 py-1 rounded-full font-medium">
+              สิทธิ์: CS & Admin
+            </span>
+          </div>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-2)' }}>
+            สร้างคูปองส่วนลดซื้อสินค้าใหม่ให้ลูกค้า — รันเลขที่เอกสารรูปแบบ TI-YYMM-XXXXX
+          </p>
         </div>
-        <p className="text-sm mt-1" style={{ color: 'var(--text-2)' }}>
-          สร้างคูปองส่วนลดซื้อสินค้าใหม่ให้ลูกค้า — รันเลขที่เอกสารรูปแบบ TI-YYMM-XXXXX
-        </p>
+
+        {isAdmin && siteOptions.length > 0 && (
+          <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-[#D2C9B8]">
+            <span className="text-xs font-semibold text-[#6B6459]">สาขา:</span>
+            <select
+              className="text-xs outline-none bg-transparent font-medium text-[#2B2723]"
+              value={branchFilter}
+              onChange={(e) => setBranchFilter(e.target.value)}
+            >
+              <option value="">ทุกสาขา ({siteOptions.length} สาขา)</option>
+              {siteOptions.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* KPI Cards */}
@@ -712,8 +752,8 @@ export default function TradeInPage() {
                   <tr key={item.id} className="border-b border-[#F3EEE6] hover:bg-gray-50 transition-colors">
                     <td className="py-2.5 px-3 font-mono font-bold text-[#2B2723]">{item.tradeInNo}</td>
                     <td className="py-2.5 px-3">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                        item.type === 'TYPE1' ? 'bg-[#E6F1FB] text-[#185FA5]' : 'bg-[#FAEEDA] text-[#BA7517]'
+                      <span className={`text-xs font-semibold ${
+                        item.type === 'TYPE1' ? 'text-[#185FA5]' : 'text-[#BA7517]'
                       }`}>
                         {item.type}
                       </span>
@@ -723,8 +763,8 @@ export default function TradeInPage() {
                     <td className="py-2.5 px-3 text-[#2B2723]">{item.productName}</td>
                     <td className="py-2.5 px-3 font-bold text-[#1D9E75]">{item.discountPct}%</td>
                     <td className="py-2.5 px-3">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                        item.status === 'USED' ? 'bg-[#E1F5EE] text-[#1D9E75]' : 'bg-gray-100 text-[#6B6459]'
+                      <span className={`text-xs font-medium ${
+                        item.status === 'USED' ? 'text-[#1D9E75]' : 'text-[#6B6459]'
                       }`}>
                         {item.status === 'USED' ? 'ใช้แล้ว' : 'ยังไม่ใช้'}
                       </span>

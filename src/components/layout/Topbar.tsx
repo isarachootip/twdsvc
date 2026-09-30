@@ -60,7 +60,7 @@ export default function Topbar({ user, onMenu }: TopbarProps) {
       <h1 className="text-[15px] font-semibold flex-shrink-0" style={{ color: 'var(--text)' }}>
         Service Center — {title}{user.role === 'VD' && user.vendorLabel ? ` (${user.vendorLabel})` : ''}
       </h1>
-      {user.role === 'S2' && <span className="badge b-amber text-xs px-2 py-0.5 rounded">สิทธิ์: S2</span>}
+      {user.role === 'S2' && <span className="badge b-amber text-xs font-semibold">สิทธิ์: S2</span>}
       <div className="flex-1" />
       <form onSubmit={handleSearch} className="relative hidden sm:block">
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--text-mute)' }} />

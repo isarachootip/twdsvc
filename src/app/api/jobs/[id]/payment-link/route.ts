@@ -3,9 +3,9 @@ import { requireUser, assertJobInScope, handleError } from '@/lib/api'
 import { ensurePaymentToken } from '@/lib/public-token'
 
 // POST → { payUrl } ลิงก์ชำระเงินสำหรับลูกค้า (QR PromptPay / บัตร)
-export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = await requireUser(['CS', 'ADMIN'])
+    const user = await requireUser(['CS', 'ADMIN'], req)
     const { id } = await params
     await assertJobInScope(user, id)
     const token = await ensurePaymentToken(id)

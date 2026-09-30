@@ -16,7 +16,7 @@ interface Deduction {
 // POST { vendorParentId, amount, reason, jobNo? }
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireUser(['ADMIN'])
+    const user = await requireUser(['ADMIN'], req)
     const b = await req.json()
     const amount = Math.round(Number(b.amount))
     if (!b.vendorParentId) throw new HttpError(400, 'กรุณาเลือก VD')
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
 // DELETE ?id=
 export async function DELETE(req: NextRequest) {
   try {
-    await requireUser(['ADMIN'])
+    await requireUser(['ADMIN'], req)
     const id = new URL(req.url).searchParams.get('id')
     const list = (await getJsonSetting<Deduction[]>('VENDOR_DEDUCTIONS')) || []
     await setSetting(

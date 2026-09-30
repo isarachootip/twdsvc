@@ -27,7 +27,8 @@ yarn-error.log*
 .env*.local
 
 # agent swarm runs
-.agents/
+.agents/*
+!.agents/skills/
 
 # uploads
 /public/uploads/*

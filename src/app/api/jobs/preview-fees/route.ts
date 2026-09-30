@@ -6,7 +6,7 @@ import { calcIntakeFees } from '@/lib/fees'
 // POST /api/jobs/preview-fees { sizeCategoryId, hasWarranty, shippingMethod }
 export async function POST(req: NextRequest) {
   try {
-    await requireUser()
+    await requireUser(undefined, req)
     const { sizeCategoryId, hasWarranty, shippingMethod } = await req.json()
     if (!sizeCategoryId) return NextResponse.json({ operationFee: 0, shippingFee: 0, total: 0, rates: null })
     const feeRate = await prisma.feeRate.findFirst({

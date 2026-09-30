@@ -7,7 +7,7 @@ import { findToken, rateLimited } from '@/lib/public-token'
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads')
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
-  if (rateLimited(req)) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+  if (await rateLimited(req)) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   const { token } = await params
   const pt = await findToken(token, ['DRIVER', 'TRACKING', 'QUOTE'])
   if (!pt || pt.expiresAt < new Date()) {

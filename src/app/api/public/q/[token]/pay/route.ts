@@ -5,7 +5,7 @@ import { findToken, rateLimited, ensureTrackingToken } from '@/lib/public-token'
 import { JobStage } from '@prisma/client'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
-  if (rateLimited(req)) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+  if (await rateLimited(req)) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const { token } = await params
   const pt = await findToken(token, ['QUOTE', 'PAYMENT'])

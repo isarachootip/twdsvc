@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireUser, handleError, HttpError } from '@/lib/api'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    await requireUser(['ADMIN'])
+    await requireUser(['ADMIN'], req)
     return NextResponse.json(await prisma.promotionConfig.findMany({ orderBy: [{ status: 'asc' }, { startDate: 'desc' }] }))
   } catch (e) {
     return handleError(e)
@@ -26,7 +26,7 @@ interface PromoIn {
 // PUT — บันทึกโปรโมชั่น
 export async function PUT(req: NextRequest) {
   try {
-    await requireUser(['ADMIN'])
+    await requireUser(['ADMIN'], req)
     const list: PromoIn[] = await req.json()
     await prisma.$transaction(async tx => {
       const keep: string[] = []

@@ -6,7 +6,7 @@ import { resolveOwner } from '@/lib/sla-engine'
 import { executeAction } from '@/lib/state-machine'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const user = await getCurrentUser()
+  const user = await getCurrentUser(req)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { id } = await params
@@ -67,7 +67,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 // C8: PATCH /api/jobs/[id] for S2 stock repair closing and general status patching
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const user = await getCurrentUser()
+  const user = await getCurrentUser(req)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { id } = await params

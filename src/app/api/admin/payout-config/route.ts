@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireUser, handleError, HttpError } from '@/lib/api'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    await requireUser(['ADMIN'])
+    await requireUser(['ADMIN'], req)
     const cfg = await prisma.payoutCycleConfig.findFirst({ where: { active: true }, orderBy: { id: 'asc' } })
     return NextResponse.json(cfg ?? { id: null, cycleType: 'BIMONTHLY', dayOfMonth1: 5, dayOfMonth2: 20, active: true })
   } catch (e) {
@@ -14,7 +14,7 @@ export async function GET() {
 
 export async function PUT(req: NextRequest) {
   try {
-    await requireUser(['ADMIN'])
+    await requireUser(['ADMIN'], req)
     const b = await req.json()
     if (!['BIMONTHLY', 'EVERY_15_DAYS', 'WEEKLY', 'MONTHLY'].includes(b.cycleType)) {
       throw new HttpError(400, 'รูปแบบรอบจ่ายไม่ถูกต้อง')

@@ -29,11 +29,27 @@ export default function QuoteForm({ jobId, role }: { jobId: string; role: string
   const [busy, setBusy] = useState(false)
   const [sent, setSent] = useState<any>(null)
   const [lon, setLon] = useState(false)
+  const [vendorCenters, setVendorCenters] = useState<any[]>([])
+  const [selectedCenterId, setSelectedCenterId] = useState<string>('')
   const vat = 0.07
+
+  useEffect(() => {
+    if (role === 'ADMIN') {
+      fetch('/api/vendor-centers')
+        .then(r => r.json())
+        .then(d => {
+          if (Array.isArray(d)) setVendorCenters(d)
+        })
+        .catch(() => {})
+    }
+  }, [role])
 
   useEffect(() => {
     api<any>(`/api/jobs/${jobId}`).then(d => {
       setJob(d)
+      if (d.vendorCenterId) {
+        setSelectedCenterId(d.vendorCenterId)
+      }
       const q = d.quotes?.find((x: any) => x.status === 'SENT') ?? d.quotes?.[0]
       if (revise && q) {
         const ls = q.lines.filter((l: any) => l.type !== 'INSPECTION_FEE').map((l: any) => ({ key: seq++, type: l.type, description: l.description, unitPrice: String(l.unitPrice * l.quantity), partWaitDays: l.partWaitDays ? String(l.partWaitDays) : '', partWarrantyDays: l.partWarrantyDays ? String(l.partWarrantyDays) : '' }))
@@ -44,7 +60,17 @@ export default function QuoteForm({ jobId, role }: { jobId: string; role: string
     }).catch(e => toast(e.message, 'error'))
   }, [jobId, revise, toast])
 
-  const openFee = job?.vendor?.inspectionFee ?? (job?.vendorCenter?.vendorParent ? (job.hasWarranty ? job.vendorCenter.vendorParent.inspectionFeeCovered : job.vendorCenter.vendorParent.inspectionFeeNotCovered) : 0)
+  // Current active vendor center (either from selectedCenterId or job)
+  const currentCenter = useMemo(() => {
+    if (selectedCenterId && vendorCenters.length > 0) {
+      return vendorCenters.find(c => c.id === selectedCenterId) ?? job?.vendorCenter
+    }
+    return job?.vendorCenter
+  }, [selectedCenterId, vendorCenters, job])
+
+  const openFee = job?.vendor?.inspectionFee ?? (currentCenter?.vendorParent ? (job?.hasWarranty ? currentCenter.vendorParent.inspectionFeeCovered : currentCenter.vendorParent.inspectionFeeNotCovered) : 0)
+  const warrantyDays = currentCenter?.vendorParent?.repairWarrantyDays ?? job?.vendor?.repairWarrantyDays ?? job?.vendorCenter?.vendorParent?.repairWarrantyDays ?? '-'
+
   const totals = useMemo(() => {
     const parts = lines.reduce((s, l) => s + (Number(l.unitPrice) || 0), 0)
     const subtotal = openFee + parts
@@ -59,15 +85,18 @@ export default function QuoteForm({ jobId, role }: { jobId: string; role: string
     if (lines.some(l => Number(l.unitPrice) < 0)) { toast('ราคาต้องไม่ติดลบ', 'error'); return }
     setBusy(true)
     try {
-      const r = await api<any>(`/api/jobs/${jobId}/action`, {
-        body: {
-          action: revise ? 'vd_revise_quote' : 'vd_submit_quote',
-          version: job.version,
-          repairDays: Number(repairDays),
-          vendorNote: note,
-          lines: lines.filter(l => l.description.trim() || Number(l.unitPrice) > 0).map(l => ({ type: l.type, description: l.description, unitPrice: Number(l.unitPrice) || 0, quantity: 1, partWaitDays: Number(l.partWaitDays) || 0, partWarrantyDays: Number(l.partWarrantyDays) || 0 })),
-        },
-      })
+      const payload: Record<string, any> = {
+        action: revise ? 'vd_revise_quote' : 'vd_submit_quote',
+        version: job.version,
+        repairDays: Number(repairDays),
+        vendorNote: note,
+        lines: lines.filter(l => l.description.trim() || Number(l.unitPrice) > 0).map(l => ({ type: l.type, description: l.description, unitPrice: Number(l.unitPrice) || 0, quantity: 1, partWaitDays: Number(l.partWaitDays) || 0, partWarrantyDays: Number(l.partWarrantyDays) || 0 })),
+      }
+      if (role === 'ADMIN' && (selectedCenterId || job.vendorCenterId)) {
+        payload.vendorCenterId = selectedCenterId || job.vendorCenterId
+      }
+
+      const r = await api<any>(`/api/jobs/${jobId}/action`, { body: payload })
       const d = await api<any>(`/api/jobs/${jobId}`)
       setJob(d)
       setSent({ ...r.extra, quote: d.quotes?.[0] })
@@ -96,6 +125,26 @@ export default function QuoteForm({ jobId, role }: { jobId: string; role: string
 
       <div style={{ maxWidth: 960, margin: '20px auto', padding: '0 20px', display: 'grid', gridTemplateColumns: 'minmax(0,1.6fr) minmax(0,1fr)', gap: 20, alignItems: 'start' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {role === 'ADMIN' && (
+            <div className="pcard" style={{ marginBottom: 0 }}>
+              <div className="field">
+                <label style={{ fontWeight: 600 }}>ศูนย์ซ่อม (Vendor Center) — Admin สามารถกำหนดหรือสลับศูนย์ซ่อมได้</label>
+                <select
+                  className="sel"
+                  value={selectedCenterId || job.vendorCenterId || ''}
+                  onChange={e => setSelectedCenterId(e.target.value)}
+                >
+                  <option value="">-- เลือกศูนย์ซ่อม / ค่าเริ่มต้น --</option>
+                  {vendorCenters.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.code} — {c.vendorParent?.name ?? c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
           <div className="pcard" style={{ marginBottom: 0 }}>
             <div className="grid2">
               <div className="field"><label>สถานะประกัน (จากข้อมูลเปิดงาน)</label><input className="inp" readOnly value={job.hasWarranty ? 'มีประกัน' : 'ไม่มีประกัน'} /></div>
@@ -110,7 +159,7 @@ export default function QuoteForm({ jobId, role }: { jobId: string; role: string
             </div>
             {lines.map(l => (
               <div key={l.key} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 24px', gap: 8, marginTop: 6 }}>
-                <input className="inp" placeholder={l.type === 'LABOR' ? 'ค่าแรงช่าง' : 'รายการอะไหล่'} value={l.description} onChange={e => upd(l.key, { description: e.target.value })} />
+                <input className="inp" placeholder={l.type === 'LABOR' ? 'ค่าแรงช่าง' : l.type === 'OTHER' ? 'ค่าบริการอื่นๆ' : 'รายการอะไหล่'} value={l.description} onChange={e => upd(l.key, { description: e.target.value })} />
                 <input className="inp" type="number" min={0} placeholder="ราคา" value={l.unitPrice} onChange={e => upd(l.key, { unitPrice: e.target.value })} />
                 <input className="inp" type="number" min={0} placeholder={l.type === 'LABOR' ? '-' : 'วัน'} disabled={l.type === 'LABOR'} value={l.partWaitDays} onChange={e => upd(l.key, { partWaitDays: e.target.value })} />
                 <input className="inp" type="number" min={0} placeholder={l.type === 'LABOR' ? '-' : 'วัน'} disabled={l.type === 'LABOR'} value={l.partWarrantyDays} onChange={e => upd(l.key, { partWarrantyDays: e.target.value })} />
@@ -120,13 +169,14 @@ export default function QuoteForm({ jobId, role }: { jobId: string; role: string
             <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
               <button className="btn" onClick={() => setLines(ls => [...ls, blank('PART')])}>+ เพิ่มบรรทัดอะไหล่</button>
               <button className="btn" onClick={() => setLines(ls => [...ls, blank('LABOR')])}>+ เพิ่มค่าแรง</button>
+              <button className="btn" onClick={() => setLines(ls => [...ls, blank('OTHER')])}>+ เพิ่มรายการอื่น</button>
             </div>
           </div>
 
           <div className="pcard" style={{ marginBottom: 0 }}>
             <div className="grid2">
               <div className="field"><label>ระยะเวลาซ่อมรวมโดยประมาณ (วัน) — ช่างกรอก <span style={{ color: 'var(--red)' }}>*</span></label><input className="inp" type="number" min={1} placeholder="เช่น 3" value={repairDays} onChange={e => setRepairDays(e.target.value)} /></div>
-              <div className="field"><label>รับประกันงานซ่อม (วัน) — ตามที่ลงทะเบียนไว้</label><input className="inp" readOnly value={job.vendor?.repairWarrantyDays ?? job.vendorCenter?.vendorParent?.repairWarrantyDays ?? '-'} /></div>
+              <div className="field"><label>รับประกันงานซ่อม (วัน) — ตามที่ลงทะเบียนไว้</label><input className="inp" readOnly value={warrantyDays} /></div>
             </div>
             <div className="field" style={{ marginTop: 12 }}><label>หมายเหตุถึงลูกค้า</label><textarea className="inp" placeholder="เช่น ตรวจพบสายไฟชำรุดเพิ่มเติม" value={note} onChange={e => setNote(e.target.value)} /></div>
           </div>

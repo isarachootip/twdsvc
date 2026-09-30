@@ -36,43 +36,55 @@ html, body {
   color: var(--text);
 }
 
-/* ─── Badge color semantics ─────────────────────────────────────────── */
-.b-gray   { @apply bg-gray-100 text-gray-700 border border-gray-300; }
-.b-blue   { background-color: var(--blue-tint); color: var(--blue); @apply border; border-color: var(--blue); }
-.b-amber  { background-color: var(--amber-tint); color: var(--amber); @apply border; border-color: var(--amber); }
-.b-green  { background-color: var(--green-tint); color: var(--green); @apply border; border-color: var(--green); }
-.b-coral  { background-color: var(--coral-tint); color: var(--coral); @apply border; border-color: var(--coral); }
-.b-red    { background-color: var(--red-tint); color: var(--red-dark); @apply border; border-color: var(--red); }
-.b-navy   { background-color: var(--navy); color: white; @apply border border-transparent; }
+/* ─── Status text color semantics (No colored borders/frames per design rule) ─ */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 1.3;
+  border: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+  white-space: nowrap;
+}
+.b-gray   { color: var(--text-2) !important; border: none !important; background: transparent !important; }
+.b-blue   { color: var(--blue) !important; border: none !important; background: transparent !important; }
+.b-amber  { color: #B45309 !important; border: none !important; background: transparent !important; }
+.b-green  { color: #0D7A57 !important; border: none !important; background: transparent !important; }
+.b-coral  { color: var(--coral) !important; border: none !important; background: transparent !important; }
+.b-red    { color: #DC2626 !important; font-weight: 600; border: none !important; background: transparent !important; }
+.b-navy   { color: var(--navy) !important; border: none !important; background: transparent !important; }
+.b-teal   { color: #0D9488 !important; border: none !important; background: transparent !important; }
 
-/* ─── Stage badge map (used in StageBadge component) ────────────────── */
-/* gray = waiting */
-.stage-PENDING_VENDOR_ASSIGNMENT { @apply b-amber; }
-.stage-CS_OPENED                 { @apply b-gray; }
-.stage-GR_RECEIVED               { @apply b-gray; }
-.stage-GR_PACKED                 { @apply b-gray; }
-/* blue = in transit/processing */
-.stage-OUTBOUND_TO_DC            { @apply b-blue; }
-.stage-AT_DC_OUTBOUND            { @apply b-blue; }
-.stage-OUTBOUND_TO_VD            { @apply b-blue; }
-.stage-VD_INSPECTING             { @apply b-blue; }
-/* amber = needs attention */
-.stage-WAITING_APPROVAL          { @apply b-amber; }
-/* blue = in progress */
-.stage-REPAIRING                 { @apply b-blue; }
-.stage-RETURN_PACKING            { @apply b-blue; }
-.stage-INBOUND_TO_DC             { @apply b-blue; }
-.stage-AT_DC_INBOUND             { @apply b-blue; }
-.stage-INBOUND_TO_BRANCH         { @apply b-blue; }
-/* amber = needs attention */
-.stage-GR_RETURN_RECEIVED        { @apply b-amber; }
-.stage-READY_FOR_PICKUP          { @apply b-amber; }
+
+/* ─── Stage status text colors (used in StageBadge component) ────────── */
+/* amber = needs attention / waiting */
+.stage-PENDING_VENDOR_ASSIGNMENT { color: #BA7517; }
+.stage-WAITING_APPROVAL          { color: #BA7517; }
+.stage-GR_RETURN_RECEIVED        { color: #BA7517; }
+.stage-READY_FOR_PICKUP          { color: #BA7517; }
+/* gray = waiting / intake */
+.stage-CS_OPENED                 { color: var(--text-2); }
+.stage-GR_RECEIVED               { color: var(--text-2); }
+.stage-GR_PACKED                 { color: var(--text-2); }
+/* blue = in transit/processing/repair */
+.stage-OUTBOUND_TO_DC            { color: var(--blue); }
+.stage-AT_DC_OUTBOUND            { color: var(--blue); }
+.stage-OUTBOUND_TO_VD            { color: var(--blue); }
+.stage-VD_INSPECTING             { color: var(--blue); }
+.stage-REPAIRING                 { color: var(--blue); }
+.stage-RETURN_PACKING            { color: var(--blue); }
+.stage-INBOUND_TO_DC             { color: var(--blue); }
+.stage-AT_DC_INBOUND             { color: var(--blue); }
+.stage-INBOUND_TO_BRANCH         { color: var(--blue); }
 /* green = done */
-.stage-CLOSED_REPAIRED           { @apply b-green; }
+.stage-CLOSED_REPAIRED           { color: #0D7A57; }
 /* coral = rejected */
-.stage-CLOSED_NOT_REPAIRED       { @apply b-coral; }
+.stage-CLOSED_NOT_REPAIRED       { color: #C2410C; }
 /* gray = cancelled */
-.stage-CANCELLED                 { @apply b-gray; }
+.stage-CANCELLED                 { color: var(--text-mute); }
 
 /* ─── RadioCard (CS form) ────────────────────────────────────────────── */
 .radio-card {

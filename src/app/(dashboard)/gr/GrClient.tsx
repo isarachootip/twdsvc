@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { OverdueSummary, KpiGrid, TabBar, SlaCell, JobIdCell, QueueHeader, EmptyCard } from '@/components/ui/Queue'
 import PhotoButton from '@/components/ui/PhotoButton'
 import PrintLabel, { type LabelData } from '@/components/ui/PrintLabel'
@@ -36,7 +36,9 @@ function truckStatus(j: JobView) {
 
 export default function GrClient({ role }: { role: string }) {
   const [tab, setTab] = useState('receive')
-  const { data, loading, reload, run, done, busy } = useQueue('GR')
+  const [branchFilter, setBranchFilter] = useState('')
+  const [siteOptions, setSiteOptions] = useState<Array<{ id: string; name: string }>>([])
+  const { data, loading, reload, run, done, busy } = useQueue('GR', undefined, branchFilter ? { branchId: branchFilter } : undefined)
   const inp = useRowInputs()
   const [label, setLabel] = useState<LabelData | null>(null)
   const [openId, setOpenId] = useState<string | null>(null)
@@ -46,6 +48,23 @@ export default function GrClient({ role }: { role: string }) {
   const { toast } = useToast()
   const readOnly = role !== 'GR' && role !== 'ADMIN'
 
+  useEffect(() => {
+    if (role === 'ADMIN') {
+      fetch('/api/sites')
+        .then(r => r.json())
+        .then(d => {
+          if (Array.isArray(d)) {
+            setSiteOptions(d.filter(s => s.type === 'BRANCH').map(s => ({ id: s.id, name: s.name })))
+          }
+        })
+        .catch(() => {})
+    }
+  }, [role])
+
+  const branches = useMemo(() => {
+    if (siteOptions.length > 0) return siteOptions.map(s => [s.id, s.name] as [string, string])
+    return [...new Map(Object.values(data.tabs).flat().map(j => [j.branch.id, j.branch.name])).entries()]
+  }, [siteOptions, data])
   const list = (k: string) => data.tabs[k] ?? []
   const pending = (k: string) => list(k).filter(j => !done[j.id]).length
   const overCount = (k: string) => list(k).filter(j => !done[j.id] && j.sla?.overdue).length
@@ -92,7 +111,17 @@ export default function GrClient({ role }: { role: string }) {
       <QueueHeader
         title="ส่วนงาน GR"
         sub="รับสินค้าจาก CS → Pack และพิมพ์ใบปะหน้า → ส่งมอบขนส่ง → รับของซ่อมคืน → ส่งมอบ CS"
-        right={<button className="btn" onClick={() => reload()}>↻ รีเฟรช</button>}
+        right={
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {role === 'ADMIN' && branches.length > 0 && (
+              <select className="sel" value={branchFilter} onChange={e => setBranchFilter(e.target.value)}>
+                <option value="">ทุกสาขา ({branches.length} สาขา)</option>
+                {branches.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+              </select>
+            )}
+            <button className="btn" onClick={() => reload()}>↻ รีเฟรช</button>
+          </div>
+        }
       />
       <OverdueSummary items={data.overdue.filter(o => !done[o.id])} onGo={(t, id) => { setTab(t); setHighlight(id) }} />
       <KpiGrid items={TABS.map(t => ({ tab: t.key, label: t.kpi, count: pending(t.key), over: overCount(t.key) }))} active={tab} onPick={setTab} />

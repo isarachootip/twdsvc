@@ -14,7 +14,7 @@ function pct(now: number, prior: number) {
 
 export async function GET(req: NextRequest) {
   try {
-    const user = await requireUser(['ADMIN', 'EXECUTIVE'])
+    const user = await requireUser(['ADMIN', 'EXECUTIVE'], req)
     const period = new URL(req.url).searchParams.get('period') ?? 'month'
     const { cur, prior, buckets } = executiveRange(period)
     const vat = await vatRate()
