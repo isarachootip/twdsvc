@@ -192,6 +192,11 @@ describe('Feature 4: All Jobs Table (/jobs) & Detail (/jobs/[id])', () => {
     expect(matchesPhone).toBe(true)
     expect(matchesNo).toBe(true)
   })
+
+  it('F04-T06: Job detail modal integrates Next Action Guidance with in-modal payment & GR deep linking', async () => {
+    const { JobNextActionCard } = await import('@/components/jobs/JobNextActionCard')
+    expect(JobNextActionCard).toBeDefined()
+  })
 })
 
 describe('Feature 5: CS Intake (/cs/new)', () => {

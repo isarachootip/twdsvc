@@ -6,6 +6,8 @@ import Modal from '@/components/ui/Modal'
 import StageBadge from '@/components/ui/StageBadge'
 import { useToast } from '@/components/ui/Toast'
 import QuoteDoc from './QuoteDoc'
+import PaymentModal from './PaymentModal'
+import { JobNextActionCard } from './JobNextActionCard'
 import { api, absUrl } from '@/lib/client'
 import { CHANNEL_LABELS, OWNER_LABELS, fmtBaht, fmtDate, fmtDateTime, fmtPhone } from '@/lib/constants'
 
@@ -37,6 +39,7 @@ export default function JobDetailModal({
   const [err, setErr] = useState<string | null>(null)
   const [showQuote, setShowQuote] = useState(false)
   const [assign, setAssign] = useState<{ centers: any[]; centerId: string; channel: string } | null>(null)
+  const [payOpen, setPayOpen] = useState(false)
   const { toast, prompt } = useToast()
 
   const load = useCallback(async () => {
@@ -49,7 +52,7 @@ export default function JobDetailModal({
     }
   }, [jobId])
 
-  useEffect(() => { setD(null); setShowQuote(false); setAssign(null); load() }, [load])
+  useEffect(() => { setD(null); setShowQuote(false); setAssign(null); setPayOpen(false); load() }, [load])
 
   if (!jobId) return null
 
@@ -159,6 +162,11 @@ export default function JobDetailModal({
             </div>
 
             <div>
+              <JobNextActionCard
+                job={d}
+                role={role}
+                onPayClick={() => setPayOpen(true)}
+              />
               <h3 style={{ fontSize: 14, margin: '0 0 8px' }}>รายละเอียดใบแจ้งซ่อม</h3>
               {d.type === 'CUSTOMER' ? (
                 <>
@@ -272,6 +280,20 @@ export default function JobDetailModal({
               </>
             )}
           </Modal>
+
+          {payOpen && d && (
+            <PaymentModal
+              job={{ id: d.id, jobNo: d.jobNo, version: d.version }}
+              kind="intake"
+              amount={m?.intakeBalance ?? 0}
+              onClose={() => setPayOpen(false)}
+              onPaid={() => {
+                setPayOpen(false)
+                load()
+                onChanged?.()
+              }}
+            />
+          )}
         </>
       )}
     </>

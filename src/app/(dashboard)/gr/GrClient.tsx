@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { OverdueSummary, KpiGrid, TabBar, SlaCell, JobIdCell, QueueHeader, EmptyCard } from '@/components/ui/Queue'
 import PhotoButton from '@/components/ui/PhotoButton'
 import PrintLabel, { type LabelData } from '@/components/ui/PrintLabel'
@@ -35,7 +36,10 @@ function truckStatus(j: JobView) {
 }
 
 export default function GrClient({ role }: { role: string }) {
-  const [tab, setTab] = useState('receive')
+  const searchParams = useSearchParams()
+  const searchQuery = searchParams.get('search') ?? searchParams.get('jobNo')
+  const initialTab = searchParams.get('tab')
+  const [tab, setTab] = useState(initialTab && TABS.some(t => t.key === initialTab) ? initialTab : 'receive')
   const [branchFilter, setBranchFilter] = useState('')
   const [siteOptions, setSiteOptions] = useState<Array<{ id: string; name: string }>>([])
   const { data, loading, reload, run, done, busy } = useQueue('GR', undefined, branchFilter ? { branchId: branchFilter } : undefined)
@@ -68,6 +72,20 @@ export default function GrClient({ role }: { role: string }) {
   const list = (k: string) => data.tabs[k] ?? []
   const pending = (k: string) => list(k).filter(j => !done[j.id]).length
   const overCount = (k: string) => list(k).filter(j => !done[j.id] && j.sla?.overdue).length
+
+  useEffect(() => {
+    if (!searchQuery) return
+    const q = searchQuery.trim().toLowerCase()
+    for (const t of TABS) {
+      const j = list(t.key).find(x => x.jobNo.toLowerCase() === q)
+      if (j) {
+        setTab(t.key)
+        setHighlight(j.id)
+        setTimeout(() => document.getElementById(`row-${j.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100)
+        return
+      }
+    }
+  }, [searchQuery, data]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const onScan = (e: React.FormEvent) => {
     e.preventDefault()
