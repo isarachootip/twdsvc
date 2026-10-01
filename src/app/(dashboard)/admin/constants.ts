@@ -13,6 +13,28 @@ export const ADMIN_SECTION_IDS = [
   'pending',
 ] as const
 
+export interface AdminNavItem {
+  id: string
+  name: string
+  title: string
+  sub: string
+}
+
+export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
+  { id: 'vendor', name: 'Vendor Portal', title: 'Vendor Portal', sub: 'VD หลัก, ศูนย์บริการย่อย, แบรนด์/ขนาดที่รับผิดชอบ, โซน' },
+  { id: 'fee', name: 'ค่าดำเนินการ / ค่าขนส่ง', title: 'ตั้งค่าค่าดำเนินการและค่าขนส่ง 3PL', sub: 'กำหนดค่าธรรมเนียมแยกตามประเภทสินค้า' },
+  { id: 'branch', name: 'สาขาไทวัสดุ', title: 'Maintain รายชื่อสาขา', sub: 'ผูกชื่อสาขากับผู้จัดการเขต (District Manager)' },
+  { id: 'zone', name: 'จับคู่สาขา - VD', title: 'จับคู่สาขากับศูนย์บริการ VD', sub: 'ใช้กำหนดว่า Book 3PL / ส่งซ่อมให้ไปศูนย์ VD ใด' },
+  { id: 'sla', name: 'SLA', title: 'ตั้งค่า SLA การทำงาน', sub: 'กำหนดระยะเวลามาตรฐานของแต่ละขั้นตอน ตั้งแต่เปิดงานถึงปิดงาน' },
+  { id: 'role', name: 'สิทธิ์ผู้ใช้งาน', title: 'กำหนดสิทธิ์ผู้ใช้งาน (Role)', sub: 'Admin, Executive, CS, GR, DC, VD, S2' },
+  { id: 'sku', name: 'SKU ค่าซ่อม', title: 'ตั้งค่า SKU ค่าซ่อม', sub: 'SKU กลางที่ใช้ร่วมกันทุก VD' },
+  { id: 'payout', name: 'รอบจ่ายเงิน Vendor', title: 'ตั้งค่ารอบจ่ายเงิน Vendor', sub: 'กำหนดรอบบิลและเงื่อนไขหักเงิน' },
+  { id: 'tradein', name: 'Trade-in / คูปอง', title: 'ตั้งค่า Trade-in และโปรโมชั่นคูปอง', sub: 'กำหนด % ส่วนลด แยกประเภทและช่วงเวลาโปรโมชั่น' },
+  { id: 'dashboard', name: 'Dashboard', title: 'ตั้งค่าการแสดงผล Dashboard', sub: 'เลือกรายการสรุปที่แสดง และสิทธิ์เห็นข้อมูลต้นทุน' },
+  { id: 'general', name: 'ตั้งค่าทั่วไป', title: 'ตั้งค่าทั่วไป', sub: 'VAT, อายุลิงก์ใบเสนอราคา, ค่า 3PL ขากลับ, อายุคูปอง, เกณฑ์ SLA VD' },
+  { id: 'pending', name: 'รอกำหนดศูนย์ซ่อม', title: 'รอกำหนดศูนย์ซ่อม', sub: 'คิวงานที่ระบบหาศูนย์ซ่อมไม่ได้ (PENDING_VENDOR_ASSIGNMENT)' },
+]
+
 export const SECTION_ALIAS: Record<string, string> = {
   '1': 'vendor',
   '2': 'fee',
