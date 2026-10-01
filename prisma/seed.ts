@@ -1,3 +1,5 @@
+import fs from 'fs'
+import path from 'path'
 import { PrismaClient, Role, SiteType, Channel, JobStage, JobType, QuoteDecision, QuoteStatus } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 
@@ -20,16 +22,36 @@ async function main() {
   console.log('  ✓ System settings')
 
   // ─── Sites ─────────────────────────────────────────────────────────────────
-  const bn = await prisma.site.upsert({
-    where: { code: 'BN' },
-    update: {},
-    create: { code: 'BN', name: 'สาขาบางนา', nickname: 'BN', type: SiteType.BRANCH, province: 'กรุงเทพมหานคร' },
-  })
-  const sk = await prisma.site.upsert({
-    where: { code: 'SK' },
-    update: {},
-    create: { code: 'SK', name: 'สาขาสุขาภิบาล 3', nickname: 'SK', type: SiteType.BRANCH, province: 'กรุงเทพมหานคร' },
-  })
+  // 1. Migrate legacy BN & SK if present
+  const oldBn = await prisma.site.findUnique({ where: { code: 'BN' } })
+  if (oldBn) {
+    await prisma.site.update({ where: { id: oldBn.id }, data: { code: '60920', nickname: '60920' } })
+  }
+  const oldSk = await prisma.site.findUnique({ where: { code: 'SK' } })
+  if (oldSk) {
+    await prisma.site.update({ where: { id: oldSk.id }, data: { code: '60919', nickname: '60919' } })
+  }
+
+  // 2. Load and upsert stores from stores.json if available
+  const storesPath = path.join(__dirname, 'stores.json')
+  if (fs.existsSync(storesPath)) {
+    const raw = fs.readFileSync(storesPath, 'utf-8')
+    const storesList: Array<{ code: string; name: string; nickname: string; type: SiteType; province: string; address?: string | null; phone?: string | null }> = JSON.parse(raw)
+    for (const s of storesList) {
+      await prisma.site.upsert({
+        where: { code: s.code },
+        update: { name: s.name, nickname: s.nickname, province: s.province, address: s.address, phone: s.phone, active: true },
+        create: { code: s.code, name: s.name, nickname: s.nickname, type: s.type, province: s.province, address: s.address, phone: s.phone, active: true },
+      })
+    }
+  }
+
+  const bn = (await prisma.site.findFirst({ where: { code: { in: ['60920', 'BN'] } } })) || (await prisma.site.create({
+    data: { code: '60920', name: 'สาขาบางนา', nickname: '60920', type: SiteType.BRANCH, province: 'สมุทรปราการ' },
+  }))
+  const sk = (await prisma.site.findFirst({ where: { code: { in: ['60919', 'SK'] } } })) || (await prisma.site.create({
+    data: { code: '60919', name: 'สาขาสุขาภิบาล 3', nickname: '60919', type: SiteType.BRANCH, province: 'กรุงเทพมหานคร' },
+  }))
   const dc1 = await prisma.site.upsert({
     where: { code: 'DC01' },
     update: {},

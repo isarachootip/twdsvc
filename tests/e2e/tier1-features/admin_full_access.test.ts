@@ -425,7 +425,7 @@ describe('Admin Full Access & Operational Flow Integration (R1, R2, R3)', () => 
   it('API-T03: Creating a job (POST /api/jobs) with selected branchId persists the exact branchId', async () => {
     const token = await getAdminToken()
     await runWithAuthToken(token, async () => {
-      const branch = await prisma.site.findFirstOrThrow({ where: { code: 'SK' } })
+      const branch = await prisma.site.findFirstOrThrow({ where: { code: { in: ['60919', 'SK'] } } })
       const brand = await prisma.brand.findFirstOrThrow()
       const size = await prisma.sizeCategory.findFirstOrThrow()
 
@@ -492,7 +492,7 @@ describe('Admin Full Access & Operational Flow Integration (R1, R2, R3)', () => 
   it('API-T05: Creating an S2 stock job (POST /api/jobs/stock) as ADMIN when multiple branches exist persists selected branchId', async () => {
     const token = await getAdminToken()
     await runWithAuthToken(token, async () => {
-      const skBranch = await prisma.site.findFirstOrThrow({ where: { code: 'SK' } })
+      const skBranch = await prisma.site.findFirstOrThrow({ where: { code: { in: ['60919', 'SK'] } } })
       const vc = await prisma.vendorCenter.findFirstOrThrow()
 
       const req = new NextRequest('http://localhost:3000/api/jobs/stock', {
@@ -524,7 +524,7 @@ describe('Admin Full Access & Operational Flow Integration (R1, R2, R3)', () => 
   it('API-T06: ADMIN seamlessly executes end-to-end repair lifecycle and approves quotation on customer behalf via POST /api/jobs/[id]/action', async () => {
     const token = await getAdminToken()
     await runWithAuthToken(token, async () => {
-      const branch = await prisma.site.findFirstOrThrow({ where: { code: 'BN' } })
+      const branch = await prisma.site.findFirstOrThrow({ where: { code: { in: ['60920', 'BN'] } } })
       const brand = await prisma.brand.findFirstOrThrow()
       const size = await prisma.sizeCategory.findFirstOrThrow()
 
@@ -644,7 +644,7 @@ describe('Admin Full Access & Operational Flow Integration (R1, R2, R3)', () => 
   it('API-T08: ADMIN can reject quotation via POST /api/jobs/[id]/action (customer_reject)', async () => {
     const token = await getAdminToken()
     await runWithAuthToken(token, async () => {
-      const branch = await prisma.site.findFirstOrThrow({ where: { code: 'BN' } })
+      const branch = await prisma.site.findFirstOrThrow({ where: { code: { in: ['60920', 'BN'] } } })
       const brand = await prisma.brand.findFirstOrThrow()
       const size = await prisma.sizeCategory.findFirstOrThrow()
 
@@ -704,7 +704,7 @@ describe('Admin Full Access & Operational Flow Integration (R1, R2, R3)', () => 
   it('API-T09: S2 Stock repair workflow execution via POST /api/jobs/[id]/action by ADMIN (cs_close directly without payment)', async () => {
     const token = await getAdminToken()
     await runWithAuthToken(token, async () => {
-      const skBranch = await prisma.site.findFirstOrThrow({ where: { code: 'SK' } })
+      const skBranch = await prisma.site.findFirstOrThrow({ where: { code: { in: ['60919', 'SK'] } } })
       const vc = await prisma.vendorCenter.findFirstOrThrow()
 
       const stockReq = new NextRequest('http://localhost:3000/api/jobs/stock', {
@@ -902,7 +902,7 @@ describe('Admin Full Access & Operational Flow Integration (R1, R2, R3)', () => 
 
   it('API-T15: ADMIN submits quotation via POST /api/jobs/[id]/quote with Bearer token authentication and line items', async () => {
     const token = await getAdminToken()
-    const branch = await prisma.site.findFirstOrThrow({ where: { code: 'BN' } })
+    const branch = await prisma.site.findFirstOrThrow({ where: { code: { in: ['60920', 'BN'] } } })
     const brand = await prisma.brand.findFirstOrThrow()
     const size = await prisma.sizeCategory.findFirstOrThrow()
     const vc = await prisma.vendorCenter.findFirstOrThrow()
@@ -976,7 +976,7 @@ describe('Admin Full Access & Operational Flow Integration (R1, R2, R3)', () => 
 
   it('API-T17: ADMIN revises quotation via POST /api/jobs/[id]/quote creating a version 2 quotation', async () => {
     const token = await getAdminToken()
-    const branch = await prisma.site.findFirstOrThrow({ where: { code: 'BN' } })
+    const branch = await prisma.site.findFirstOrThrow({ where: { code: { in: ['60920', 'BN'] } } })
     const brand = await prisma.brand.findFirstOrThrow()
     const size = await prisma.sizeCategory.findFirstOrThrow()
     const vc = await prisma.vendorCenter.findFirstOrThrow()
@@ -1045,7 +1045,7 @@ describe('Admin Full Access & Operational Flow Integration (R1, R2, R3)', () => 
 
   it('API-T18: ADMIN submits quotation with explicit vendorCenterId override linking the job to specified center', async () => {
     const token = await getAdminToken()
-    const branch = await prisma.site.findFirstOrThrow({ where: { code: 'BN' } })
+    const branch = await prisma.site.findFirstOrThrow({ where: { code: { in: ['60920', 'BN'] } } })
     const brand = await prisma.brand.findFirstOrThrow()
     const size = await prisma.sizeCategory.findFirstOrThrow()
     const centers = await prisma.vendorCenter.findMany({ include: { vendorParent: true } })
@@ -1094,7 +1094,7 @@ describe('Admin Full Access & Operational Flow Integration (R1, R2, R3)', () => 
 
   it('API-T19: Robustness - ADMIN quotation submission on job with null vendorCenterId falls back automatically without error', async () => {
     const token = await getAdminToken()
-    const branch = await prisma.site.findFirstOrThrow({ where: { code: 'BN' } })
+    const branch = await prisma.site.findFirstOrThrow({ where: { code: { in: ['60920', 'BN'] } } })
     const brand = await prisma.brand.findFirstOrThrow()
     const size = await prisma.sizeCategory.findFirstOrThrow()
 
