@@ -277,4 +277,15 @@ describe('Feature 5: CS Intake (/cs/new)', () => {
       expect(slot.tips.length).toBeGreaterThan(0)
     })
   })
+
+  it('F05-T07: fmtBaht properly formats 15000 satang as ฿150 and 8000 satang as ฿80', async () => {
+    const { fmtBaht } = await import('@/lib/constants')
+    expect(fmtBaht(15000)).toBe('฿150')
+    expect(fmtBaht(8000)).toBe('฿80')
+    expect(fmtBaht(23000)).toBe('฿230')
+    expect(fmtBaht(30000)).toBe('฿300')
+    expect(fmtBaht(0)).toBe('฿0')
+    expect(fmtBaht(150)).toBe('฿150')
+    expect(fmtBaht(-15000)).toBe('-฿150')
+  })
 })

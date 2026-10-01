@@ -98,8 +98,13 @@ export function useCsNewForm({
 
   useEffect(() => {
     if (!sizeId) return
-    api<typeof fees>('/api/jobs/preview-fees', { body: { sizeCategoryId: sizeId, hasWarranty: warranty === 'yes', shippingMethod: method } })
-      .then(f => setFees({ operationFee: f.operationFee, shippingFee: f.shippingFee, total: f.total })).catch(() => {})
+    api<{ operationFee: number; shippingFee: number; total: number; operationFeeBaht?: number; shippingFeeBaht?: number; totalBaht?: number }>('/api/jobs/preview-fees', { body: { sizeCategoryId: sizeId, hasWarranty: warranty === 'yes', shippingMethod: method } })
+      .then(f => {
+        const op = f.operationFeeBaht ?? (f.operationFee >= 1000 && f.operationFee % 100 === 0 ? f.operationFee / 100 : f.operationFee)
+        const sh = f.shippingFeeBaht ?? (f.shippingFee >= 1000 && f.shippingFee % 100 === 0 ? f.shippingFee / 100 : f.shippingFee)
+        const tot = f.totalBaht ?? (f.total >= 1000 && f.total % 100 === 0 ? f.total / 100 : f.total)
+        setFees({ operationFee: op, shippingFee: sh, total: tot })
+      }).catch(() => {})
   }, [sizeId, warranty, method])
 
   useEffect(() => {
@@ -156,6 +161,7 @@ export function useCsNewForm({
           customerName: fullName, customerPhone: phone, customerAddress: formatAddress(addr) || null, customerZip: addr.zip || null,
           ...(tax && !taxSame ? { taxInvoiceName: tax.name, taxInvoiceId: tax.id, taxInvoiceAddr: formatAddress(tax.addr) } : {}),
           sku: sku.trim() || null, productName: product.trim(), brandId: Number(brandId), brandName: brand?.name ?? '',
+          symptom: symptom.trim(), hasWarranty: warranty === 'yes', allowNonAuth: allowOutside,
           sizeCategoryId: sizeId, shippingMethod: method,
           photos: photos.filter((p): p is Photo => Boolean(p && p.fileUrl)),
           defectNote: defect.trim() || null,
