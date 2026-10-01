@@ -42,21 +42,31 @@ model RefreshToken {
 }
 
 model Site {
-  id            String              @id @default(cuid())
-  code          String              @unique
-  name          String
-  nickname      String
-  type          SiteType            @default(BRANCH)
-  province      String              @default("กรุงเทพมหานคร")
-  address       String?
-  phone         String?
-  active        Boolean             @default(true)
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
-  primaryRoutes BranchVendorRoute[] @relation("PrimaryBranch")
-  dcCoverage    BranchVendorRoute[] @relation("DCCoverage")
-  jobs          Job[]
-  users         User[]
+  id                String              @id @default(cuid())
+  code              String              @unique
+  name              String
+  nickname          String
+  type              SiteType            @default(BRANCH)
+  province          String              @default("กรุงเทพมหานคร")
+  district          String?
+  subdistrict       String?
+  postalCode        String?
+  address           String?
+  googleMapsUrl     String?
+  phone             String?
+  storeManagerName  String?
+  storeManagerPhone String?
+  storeEmail        String?
+  openingHours      String?
+  region            String?
+  districtManager   String?
+  active            Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  primaryRoutes     BranchVendorRoute[] @relation("PrimaryBranch")
+  dcCoverage        BranchVendorRoute[] @relation("DCCoverage")
+  jobs              Job[]
+  users             User[]
 
   @@map("sites")
 }

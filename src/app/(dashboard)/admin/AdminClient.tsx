@@ -36,13 +36,6 @@ export default function AdminClient({ section }: { section: string }) {
 
   return (
     <div className="w-full max-w-7xl mx-auto">
-      <div className="flex items-center gap-2 text-xs text-slate-500 mb-3">
-        <Link href="/admin/vendor" className="hover:text-red-600 transition-colors">
-          ตั้งค่าระบบหลังบ้าน
-        </Link>
-        <span>›</span>
-        <span className="font-semibold text-slate-800">{active.title}</span>
-      </div>
       <div>
         <p className="page-title">{active.title}</p>
         <p className="page-sub" style={{ marginBottom: 16 }}>{active.sub}</p>
