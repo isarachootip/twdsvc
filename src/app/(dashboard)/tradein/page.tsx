@@ -6,6 +6,8 @@ import {
   RefreshCcw, ChevronRight, Camera, Search, X, AlertCircle
 } from 'lucide-react'
 import { useMe } from '@/components/ui/useMe'
+import PhoneInput from '@/components/ui/PhoneInput'
+import { formatPhone } from '@/lib/phone-utils'
 
 interface KPIs {
   total: number
@@ -85,8 +87,10 @@ export default function TradeInPage() {
   }, [isAdmin])
 
   // Type 1 State
-  const [t1Name, setT1Name] = useState('')
+  const [t1FirstName, setT1FirstName] = useState('')
+  const [t1LastName, setT1LastName] = useState('')
   const [t1Phone, setT1Phone] = useState('')
+  const [foundCustomer, setFoundCustomer] = useState<{ customerName: string; jobCount: number } | null>(null)
   const [t1Sku, setT1Sku] = useState('')
   const [t1Product, setT1Product] = useState('')
   const [t1Brand, setT1Brand] = useState('')
@@ -180,6 +184,35 @@ export default function TradeInPage() {
     loadEligibleJobs()
   }, [loadSizes, loadKpisAndHistory, loadEligibleJobs])
 
+  // Auto-lookup existing customer when 10 digits entered
+  useEffect(() => {
+    if (t1Phone.length === 10) {
+      const timer = setTimeout(() => {
+        fetch(`/api/customers/lookup?phone=${t1Phone}`)
+          .then((r) => (r.ok ? r.json() : null))
+          .then((data) => {
+            if (data?.customerName) {
+              setFoundCustomer(data)
+            } else {
+              setFoundCustomer(null)
+            }
+          })
+          .catch(() => setFoundCustomer(null))
+      }, 300)
+      return () => clearTimeout(timer)
+    } else {
+      setFoundCustomer(null)
+    }
+  }, [t1Phone])
+
+  const handleUseFoundCustomer = () => {
+    if (!foundCustomer) return
+    const parts = (foundCustomer.customerName || '').trim().split(/\s+/)
+    setT1FirstName(parts[0] || '')
+    setT1LastName(parts.slice(1).join(' ') || '')
+    setFoundCustomer(null)
+  }
+
   // Update promotion preview based on type and size
   const currentSizeId = selectedType === 1 ? t1SizeId : selectedJob?.sizeCategoryId ?? sizes[0]?.id
   useEffect(() => {
@@ -246,14 +279,15 @@ export default function TradeInPage() {
       let payload: Record<string, unknown> = {}
 
       if (selectedType === 1) {
-        if (!t1Name.trim() || !t1Phone.trim() || !t1Product.trim()) {
+        if (!t1FirstName.trim() || !t1Phone.trim() || !t1Product.trim()) {
           alert('กรุณากรอกชื่อลูกค้า เบอร์โทรศัพท์ และชื่อสินค้า')
           setSubmitting(false)
           return
         }
+        const fullName = [t1FirstName.trim(), t1LastName.trim()].filter(Boolean).join(' ')
         payload = {
           type: 'TYPE1',
-          customerName: t1Name,
+          customerName: fullName,
           customerPhone: t1Phone,
           productName: t1Product,
           brandName: t1Brand || '-',
@@ -296,8 +330,10 @@ export default function TradeInPage() {
 
       // Reset form
       if (selectedType === 1) {
-        setT1Name('')
+        setT1FirstName('')
+        setT1LastName('')
         setT1Phone('')
+        setFoundCustomer(null)
         setT1Product('')
         setT1Brand('')
         setT1Sku('')
@@ -467,32 +503,59 @@ export default function TradeInPage() {
                 <p className="text-xs text-[#6B6459]">กรอกข้อมูลลูกค้า สินค้า และการประเมินเพื่อสร้างคูปอง</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-[#2B2723] mb-1">
                     ชื่อลูกค้า <span className="text-red-500">*</span>
                   </label>
                   <input
-                    value={t1Name}
-                    onChange={(e) => setT1Name(e.target.value)}
-                    placeholder="เช่น สมชาย ใจดี"
+                    value={t1FirstName}
+                    onChange={(e) => setT1FirstName(e.target.value)}
+                    placeholder="ชื่อ"
                     className="w-full px-3 py-2 border border-[#D2C9B8] rounded-xl text-sm outline-none focus:border-[#C8102E]"
                     required
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-[#2B2723] mb-1">
-                    เบอร์โทรศัพท์ (08x-xxx-xxxx) <span className="text-red-500">*</span>
+                    นามสกุล <span className="text-red-500">*</span>
                   </label>
                   <input
+                    value={t1LastName}
+                    onChange={(e) => setT1LastName(e.target.value)}
+                    placeholder="นามสกุล"
+                    className="w-full px-3 py-2 border border-[#D2C9B8] rounded-xl text-sm outline-none focus:border-[#C8102E]"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-[#2B2723] mb-1">
+                    เบอร์โทรศัพท์ <span className="text-red-500">*</span>
+                  </label>
+                  <PhoneInput
                     value={t1Phone}
-                    onChange={(e) => setT1Phone(e.target.value)}
-                    placeholder="0812345678"
+                    onChange={setT1Phone}
+                    placeholder="08xxxxxxxx"
                     className="w-full px-3 py-2 border border-[#D2C9B8] rounded-xl text-sm outline-none focus:border-[#C8102E]"
                     required
                   />
                 </div>
               </div>
+
+              {foundCustomer && (
+                <div className="flex items-center justify-between p-3 rounded-xl bg-[#E6F1FB] border border-[#B5D4F4] text-xs text-[#185FA5]">
+                  <span>
+                    พบลูกค้าเดิม: <b>{foundCustomer.customerName}</b> ({foundCustomer.jobCount} งาน)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleUseFoundCustomer}
+                    className="px-3 py-1 bg-[#185FA5] text-white rounded-lg hover:bg-[#124b82] transition-colors font-medium cursor-pointer"
+                  >
+                    ใช้ข้อมูลนี้
+                  </button>
+                </div>
+              )}
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
@@ -653,7 +716,7 @@ export default function TradeInPage() {
                           <div>
                             <div className="font-mono font-bold text-xs text-[#2B2723]">{job.jobNo}</div>
                             <div className="text-xs text-[#6B6459]">
-                              {job.customerName ?? 'ลูกค้า'} ({job.customerPhone ?? '-'}) — {job.productName} ({job.brandName})
+                              {job.customerName ?? 'ลูกค้า'} ({formatPhone(job.customerPhone)}) — {job.productName} ({job.brandName})
                             </div>
                           </div>
                           {isSelected && <CheckCircle2 size={18} className="text-[#C8102E]" />}
@@ -759,7 +822,7 @@ export default function TradeInPage() {
                       </span>
                     </td>
                     <td className="py-2.5 px-3 text-[#2B2723]">{item.customerName}</td>
-                    <td className="py-2.5 px-3 font-mono text-[#6B6459]">{item.customerPhone}</td>
+                    <td className="py-2.5 px-3 font-mono text-[#6B6459]">{formatPhone(item.customerPhone)}</td>
                     <td className="py-2.5 px-3 text-[#2B2723]">{item.productName}</td>
                     <td className="py-2.5 px-3 font-bold text-[#1D9E75]">{item.discountPct}%</td>
                     <td className="py-2.5 px-3">

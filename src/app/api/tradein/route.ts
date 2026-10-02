@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { generateTradeInNo } from '@/lib/number-generator'
+import { sanitizePhone } from '@/lib/phone-utils'
 
 export async function GET(req: NextRequest) {
   const user = await getCurrentUser(req)
@@ -86,8 +87,8 @@ export async function POST(req: NextRequest) {
         tradeInNo,
         type,
         jobId: jobId ?? null,
-        customerName,
-        customerPhone,
+        customerName: customerName.trim(),
+        customerPhone: sanitizePhone(customerPhone) || customerPhone,
         productName,
         brandName: brandName ?? '-',
         sizeCategoryId: sizeCategoryId ? Number(sizeCategoryId) : null,

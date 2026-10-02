@@ -1,6 +1,7 @@
 'use client'
 
 import AddressFields, { formatAddress, type Address } from '@/components/ui/AddressFields'
+import PhoneInput from '@/components/ui/PhoneInput'
 import { type TaxInfo } from './TaxInvoiceModal'
 
 export interface BranchOption {
@@ -105,17 +106,12 @@ export function CustomerSection({
         </div>
         <div className="field">
           <label>เบอร์โทรศัพท์ <span style={{ color: 'var(--red)' }}>*</span></label>
-          <input
+          <PhoneInput
             className="inp"
-            type="tel"
-            inputMode="numeric"
-            maxLength={10}
             placeholder="08xxxxxxxx"
             value={phone}
-            onChange={e => {
-              const onlyNums = e.target.value.replace(/\D/g, '').slice(0, 10)
-              setPhone(onlyNums)
-            }}
+            onChange={setPhone}
+            required
           />
         </div>
       </div>

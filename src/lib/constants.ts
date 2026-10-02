@@ -1,6 +1,8 @@
 // Shared constants — stage labels, badges, pipeline groups (04_workflow_state_machine.md §1)
 // ใช้ได้ทั้งฝั่ง server และ client (ห้าม import prisma ในไฟล์นี้)
 
+import { formatPhone } from './phone-utils'
+
 export type Stage =
   | 'PENDING_VENDOR_ASSIGNMENT' | 'CS_OPENED' | 'GR_RECEIVED' | 'GR_PACKED'
   | 'OUTBOUND_TO_DC' | 'AT_DC_OUTBOUND' | 'OUTBOUND_TO_VD' | 'VD_INSPECTING'
@@ -152,13 +154,7 @@ export function isoDateBkk(d: Date = new Date()): string {
   return new Date(d.getTime() + 7 * 3600 * 1000).toISOString().slice(0, 10)
 }
 
-export function fmtPhone(p: string | null | undefined): string {
-  if (!p) return '-'
-  const d = p.replace(/\D/g, '')
-  if (d.length === 10) return `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}`
-  if (d.length === 9) return `${d.slice(0, 2)}-${d.slice(2, 5)}-${d.slice(5)}`
-  return p
-}
+export const fmtPhone = formatPhone
 
 export function fmtOverage(hours: number): string {
   const h = Math.max(0, Math.round(hours))
