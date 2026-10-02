@@ -16,6 +16,7 @@ import type {
   FeesState,
 } from './index'
 import { validateCsForm } from './formValidation'
+import { useSerialExtractor } from './useSerialExtractor'
 
 export interface SavedJob {
   id: string
@@ -34,10 +35,11 @@ export interface UseCsNewFormProps {
   branches?: BranchOption[]
   initialPhone?: string
   initialProduct?: string
+  initialSerialNo?: string
 }
 
 export function useCsNewForm({
-  role, branchName, userBranchId = '', branches = [], initialPhone = '', initialProduct = '',
+  role, branchName, userBranchId = '', branches = [], initialPhone = '', initialProduct = '', initialSerialNo = '',
 }: UseCsNewFormProps) {
   const [branchList, setBranchList] = useState<BranchOption[]>(branches)
   const defaultBranchId = userBranchId || branches.find(b => b.code === 'BN' || b.name.includes('บางนา'))?.id || branches[0]?.id || ''
@@ -61,12 +63,14 @@ export function useCsNewForm({
   const [product, setProduct] = useState(initialProduct)
   const [brandId, setBrandId] = useState('')
   const [symptom, setSymptom] = useState('')
+  const [serialNo, setSerialNo] = useState(initialSerialNo || '')
   const [warranty, setWarranty] = useState<'yes' | 'no'>('yes')
   const [allowOutside, setAllowOutside] = useState(false)
   const [sizeId, setSizeId] = useState<number | null>(null)
   const [method, setMethod] = useState<'STANDARD' | 'EXPRESS'>('STANDARD')
   const [photos, setPhotos] = useState<Photo[]>([])
   const [defect, setDefect] = useState('')
+  const { extractSerialFromPhoto, extracting: extractingSerial } = useSerialExtractor(photos, setSerialNo)
 
   const [fees, setFees] = useState<FeesState>({ operationFee: 0, shippingFee: 0, total: 0 })
   const [pay, setPay] = useState<'PROMPTPAY_QR' | 'CARD_LINK' | 'POS_RECEIPT'>('PROMPTPAY_QR')
@@ -100,12 +104,11 @@ export function useCsNewForm({
   useEffect(() => {
     if (!sizeId) return
     api<{ operationFee: number; shippingFee: number; total: number; operationFeeBaht?: number; shippingFeeBaht?: number; totalBaht?: number }>('/api/jobs/preview-fees', { body: { sizeCategoryId: sizeId, hasWarranty: warranty === 'yes', shippingMethod: method } })
-      .then(f => {
-        const op = f.operationFeeBaht ?? (f.operationFee >= 1000 && f.operationFee % 100 === 0 ? f.operationFee / 100 : f.operationFee)
-        const sh = f.shippingFeeBaht ?? (f.shippingFee >= 1000 && f.shippingFee % 100 === 0 ? f.shippingFee / 100 : f.shippingFee)
-        const tot = f.totalBaht ?? (f.total >= 1000 && f.total % 100 === 0 ? f.total / 100 : f.total)
-        setFees({ operationFee: op, shippingFee: sh, total: tot })
-      }).catch(() => {})
+      .then(f => setFees({
+        operationFee: f.operationFeeBaht ?? (f.operationFee >= 1000 && f.operationFee % 100 === 0 ? f.operationFee / 100 : f.operationFee),
+        shippingFee: f.shippingFeeBaht ?? (f.shippingFee >= 1000 && f.shippingFee % 100 === 0 ? f.shippingFee / 100 : f.shippingFee),
+        total: f.totalBaht ?? (f.total >= 1000 && f.total % 100 === 0 ? f.total / 100 : f.total),
+      })).catch(() => {})
   }, [sizeId, warranty, method])
 
   useEffect(() => {
@@ -135,8 +138,7 @@ export function useCsNewForm({
     if (checked) { setTaxSame(true); setTax(null); return }
     const fullName = [firstName.trim(), lastName.trim()].filter(Boolean).join(' ')
     setTaxDraft(tax ?? { name: fullName, id: '', addr: emptyAddress })
-    setTaxSame(false)
-    setTaxModal(true)
+    setTaxSame(false); setTaxModal(true)
   }
 
   const closeTax = (doSave: boolean) => {
@@ -162,7 +164,7 @@ export function useCsNewForm({
           customerName: fullName, customerPhone: phone, customerAddress: formatAddress(addr) || null, customerZip: addr.zip || null,
           ...(tax && !taxSame ? { taxInvoiceName: tax.name, taxInvoiceId: tax.id, taxInvoiceAddr: formatAddress(tax.addr) } : {}),
           sku: sku.trim() || null, productName: product.trim(), brandId: Number(brandId), brandName: brand?.name ?? '',
-          symptom: symptom.trim(), hasWarranty: warranty === 'yes', allowNonAuth: allowOutside,
+          symptom: symptom.trim(), serialNo: serialNo.trim() || null, hasWarranty: warranty === 'yes', allowNonAuth: allowOutside,
           sizeCategoryId: sizeId, shippingMethod: method,
           photos: photos.filter((p): p is Photo => Boolean(p && p.fileUrl)),
           defectNote: defect.trim() || null,
@@ -177,17 +179,17 @@ export function useCsNewForm({
       toast(e instanceof Error ? e.message : 'บันทึกไม่สำเร็จ', 'error')
       return null
     } finally { setSaving(false) }
-  }, [saved, firstName, lastName, phone, addr, tax, taxSame, sku, product, brandId, brands, symptom, warranty, allowOutside, sizeId, method, photos, defect, fees.total, pay, pos, selectedBranchId, role, toast]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [saved, firstName, lastName, phone, addr, tax, taxSame, sku, product, brandId, brands, symptom, serialNo, warranty, allowOutside, sizeId, method, photos, defect, fees.total, pay, pos, selectedBranchId, role, toast]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return {
     branchList, selectedBranchId, setSelectedBranchId, brands, sizes,
     firstName, setFirstName, lastName, setLastName, phone, setPhone, addr, setAddr,
     taxSame, tax, setTax, taxModal, setTaxModal, taxDraft, setTaxDraft, found, setFound,
     sku, skuResults, setSkuResults, product, setProduct, brandId, setBrandId,
-    symptom, setSymptom, warranty, setWarranty, allowOutside, setAllowOutside,
-    sizeId, setSizeId, method, setMethod, photos, setPhotos, defect, setDefect,
-    fees, pay, setPay, pos, setPos, saving, saved, payOpen, setPayOpen, paid, setPaid,
-    lon, setLon, printDoc, setPrintDoc, onSku, pickSku, onTaxCheckbox, closeTax, save,
+    symptom, setSymptom, serialNo, setSerialNo, extractSerialFromPhoto, extractingSerial,
+    warranty, setWarranty, allowOutside, setAllowOutside, sizeId, setSizeId, method, setMethod,
+    photos, setPhotos, defect, setDefect, fees, pay, setPay, pos, setPos, saving, saved,
+    payOpen, setPayOpen, paid, setPaid, lon, setLon, printDoc, setPrintDoc, onSku, pickSku, onTaxCheckbox, closeTax, save,
     readOnly: role !== 'CS' && role !== 'ADMIN',
     brandName: brands.find(b => String(b.id) === brandId)?.name ?? '',
     sizeName: sizes.find(s => s.id === sizeId)?.name ?? '',

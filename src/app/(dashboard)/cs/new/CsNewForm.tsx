@@ -22,6 +22,7 @@ export default function CsNewForm({
   branches = [],
   initialPhone = '',
   initialProduct = '',
+  initialSerialNo = '',
 }: {
   role: string
   branchName: string
@@ -29,9 +30,10 @@ export default function CsNewForm({
   branches?: BranchOption[]
   initialPhone?: string
   initialProduct?: string
+  initialSerialNo?: string
 }) {
   const router = useRouter()
-  const form = useCsNewForm({ role, branchName, userBranchId, branches, initialPhone, initialProduct })
+  const form = useCsNewForm({ role, branchName, userBranchId, branches, initialPhone, initialProduct, initialSerialNo })
 
   const handleShowPayment = async () => {
     const r = await form.save()
@@ -88,6 +90,9 @@ export default function CsNewForm({
               product={form.product} setProduct={form.setProduct}
               brandId={form.brandId} setBrandId={form.setBrandId}
               brands={form.brands} symptom={form.symptom} setSymptom={form.setSymptom}
+              serialNo={form.serialNo} setSerialNo={form.setSerialNo}
+              onExtractSerial={form.extractSerialFromPhoto}
+              extractingSerial={form.extractingSerial}
               warranty={form.warranty} setWarranty={form.setWarranty}
               allowOutside={form.allowOutside} setAllowOutside={form.setAllowOutside}
               sizeId={form.sizeId} setSizeId={form.setSizeId}

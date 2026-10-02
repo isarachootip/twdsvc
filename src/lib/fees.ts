@@ -33,12 +33,10 @@ export function calcIntakeFees(input: FeeInput): FeeResult {
   const opFee = normalizeSatang(input.feeRate.operationFee)
   const shipFee = normalizeSatang(input.feeRate.shippingFee3pl)
 
-  if (input.shippingMethod === 'EXPRESS') {
-    return { operationFee: opFee, shippingFee: shipFee, total: opFee + shipFee }
-  }
-  // STANDARD
   const operationFee = input.hasWarranty ? 0 : opFee
-  return { operationFee, shippingFee: 0, total: operationFee }
+  const shippingFee = input.shippingMethod === 'EXPRESS' ? shipFee : 0
+
+  return { operationFee, shippingFee, total: operationFee + shippingFee }
 }
 
 // Quote calculation — pure functions (05_business_rules.md §2)

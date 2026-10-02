@@ -1,5 +1,7 @@
 'use client'
 
+import { SkuSearchInput } from './SkuSearchInput'
+
 export interface Brand {
   id: number
   name: string
@@ -31,6 +33,10 @@ interface ProductSectionProps {
   brands: Brand[]
   symptom: string
   setSymptom: (val: string) => void
+  serialNo: string
+  setSerialNo: (val: string) => void
+  onExtractSerial?: () => void
+  extractingSerial?: boolean
   warranty: 'yes' | 'no'
   setWarranty: (val: 'yes' | 'no') => void
   allowOutside: boolean
@@ -55,6 +61,10 @@ export function ProductSection({
   brands,
   symptom,
   setSymptom,
+  serialNo,
+  setSerialNo,
+  onExtractSerial,
+  extractingSerial,
   warranty,
   setWarranty,
   allowOutside,
@@ -69,53 +79,13 @@ export function ProductSection({
     <div className="pcard">
       <h3>ข้อมูลสินค้าและการรับประกัน</h3>
       <div className="grid3" style={{ marginTop: 10 }}>
-        <div className="field" style={{ position: 'relative' }}>
-          <label>SKU (ถ้ามี)</label>
-          <input
-            className="inp"
-            placeholder="ไม่บังคับ"
-            value={sku}
-            onChange={e => onSkuChange(e.target.value)}
-            onBlur={() => setTimeout(onClearSkuResults, 200)}
-          />
-          {skuResults.length > 0 && (
-            <div
-              style={{
-                position: 'absolute',
-                zIndex: 20,
-                left: 0,
-                right: 0,
-                background: 'var(--surface)',
-                border: '1px solid var(--border-strong)',
-                borderRadius: 8,
-                marginTop: 2,
-                maxHeight: 220,
-                overflowY: 'auto',
-              }}
-            >
-              {skuResults.map(c => (
-                <button
-                  type="button"
-                  key={c.id}
-                  onMouseDown={() => onPickSku(c)}
-                  style={{
-                    display: 'block',
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '7px 10px',
-                    fontSize: 12.5,
-                    border: 'none',
-                    background: 'none',
-                    cursor: 'pointer',
-                    fontFamily: 'inherit',
-                  }}
-                >
-                  <b>{c.sku}</b> — {c.name} <span className="sub-mute">{c.brand}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <SkuSearchInput
+          sku={sku}
+          onSkuChange={onSkuChange}
+          skuResults={skuResults}
+          onPickSku={onPickSku}
+          onClearSkuResults={onClearSkuResults}
+        />
         <div className="field">
           <label>ชื่อสินค้า <span style={{ color: 'var(--red)' }}>*</span></label>
           <input className="inp" placeholder="เช่น สว่านไฟฟ้า" value={product} onChange={e => setProduct(e.target.value)} />
@@ -130,9 +100,40 @@ export function ProductSection({
           </select>
         </div>
       </div>
-      <div className="field" style={{ marginTop: 12 }}>
-        <label>อาการเสีย <span style={{ color: 'var(--red)' }}>*</span></label>
-        <input className="inp" placeholder="อธิบายอาการเสีย" value={symptom} onChange={e => setSymptom(e.target.value)} />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
+        <div className="field">
+          <label>อาการเสีย <span style={{ color: 'var(--red)' }}>*</span></label>
+          <input className="inp" placeholder="อธิบายอาการเสีย" value={symptom} onChange={e => setSymptom(e.target.value)} />
+        </div>
+        <div className="field">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <label>Serial No. (ถ้ามี)</label>
+            {onExtractSerial && (
+              <button
+                type="button"
+                onClick={onExtractSerial}
+                disabled={extractingSerial}
+                style={{
+                  fontSize: 11.5,
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--brand, #b91c1c)',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  padding: 0,
+                }}
+              >
+                {extractingSerial ? 'กำลังอ่าน…' : '📷 ดึงค่าจากรูปที่ 5'}
+              </button>
+            )}
+          </div>
+          <input
+            className="inp"
+            placeholder="Key-in หรือดึงจากรูปที่ 5"
+            value={serialNo}
+            onChange={e => setSerialNo(e.target.value)}
+          />
+        </div>
       </div>
       <div className="divider" />
       <p className="hint" style={{ marginBottom: 6 }}>สถานะการรับประกัน</p>
@@ -166,7 +167,7 @@ export function ProductSection({
       <p className="hint" style={{ margin: '14px 0 6px' }}>วิธีจัดส่ง</p>
       <div className="radio-row">
         <button type="button" className={`radio-opt ${method === 'STANDARD' ? 'checked' : ''}`} onClick={() => setMethod('STANDARD')}>
-          มาตรฐาน (รอ VD/DC เข้ารับตามรอบ)
+          มาตรฐาน
         </button>
         <button type="button" className={`radio-opt ${method === 'EXPRESS' ? 'checked' : ''}`} onClick={() => setMethod('EXPRESS')}>
           ส่งด่วน (3PL)

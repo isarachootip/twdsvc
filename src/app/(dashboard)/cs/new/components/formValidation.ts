@@ -17,8 +17,8 @@ export function validateCsForm(input: ValidateCsFormInput): string | null {
   if (input.role === 'ADMIN' && !input.selectedBranchId) return 'กรุณาเลือกสาขาที่เปิดงาน'
   if (!input.firstName.trim()) return 'กรุณากรอกชื่อลูกค้า'
   if (!input.lastName.trim()) return 'กรุณากรอกนามสกุลลูกค้า'
-  if (!/^0\d{8,9}$/.test(input.phone.replace(/\D/g, '')))
-    return 'กรุณากรอกเบอร์โทรให้ถูกต้อง (เช่น 0812345678)'
+  if (!/^0\d{9}$/.test(input.phone.replace(/\D/g, '')))
+    return 'กรุณากรอกเบอร์โทรศัพท์ 10 หลักให้ถูกต้อง (เช่น 0812345678)'
   if (!input.product.trim()) return 'กรุณากรอกชื่อสินค้า'
   if (!input.brandId) return 'กรุณาเลือกแบรนด์'
   if (!input.symptom.trim()) return 'กรุณากรอกอาการเสีย'

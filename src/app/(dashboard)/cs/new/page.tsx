@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 export default async function CsNewPage({
   searchParams,
 }: {
-  searchParams: Promise<{ phone?: string; productName?: string }>
+  searchParams: Promise<{ phone?: string; productName?: string; serialNo?: string }>
 }) {
   const user = await guardPage('cs')
   const resolvedParams = await searchParams
@@ -24,6 +24,7 @@ export default async function CsNewPage({
       branches={branches}
       initialPhone={resolvedParams.phone ?? ''}
       initialProduct={resolvedParams.productName ?? ''}
+      initialSerialNo={resolvedParams.serialNo ?? ''}
     />
   )
 }

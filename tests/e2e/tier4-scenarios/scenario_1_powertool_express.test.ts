@@ -12,17 +12,17 @@ setTier('Tier 4')
 describe('Tier 4: Scenario 1 - High-Value Power Tool Warranty Repair with Express 3PL Courier', () => {
   it('SCN-01-A: Customer brings in high-end Bosch Demolition Hammer (฿45,000 value) under valid warranty requesting Express 3PL courier', () => {
     // Under warranty + Express courier:
-    // Operation fee is charged (฿150 / 15,000 satang) + 3PL Express shipping fee (฿80 / 8,000 satang)
-    // Total intake due = ฿230.00 (23,000 satang)
+    // Operation fee is waived under warranty (฿0 / 0 satang) + 3PL Express shipping fee (฿80 / 8,000 satang)
+    // Total intake due = ฿80.00 (8,000 satang)
     const fees = SPEC_ORACLE.calcIntakeFees({
       jobType: 'CUSTOMER',
       hasWarranty: true,
       shippingMethod: 'EXPRESS',
       size: 'SMALL',
     })
-    expect(fees.operationFeeSatang).toBe(15000)
+    expect(fees.operationFeeSatang).toBe(0)
     expect(fees.shippingFeeSatang).toBe(8000)
-    expect(fees.totalSatang).toBe(23000)
+    expect(fees.totalSatang).toBe(8000)
 
     const job = createMockJob({
       productName: 'Bosch GSH 11 E Demolition Hammer 1500W',
@@ -31,26 +31,24 @@ describe('Tier 4: Scenario 1 - High-Value Power Tool Warranty Repair with Expres
       shippingMethod: 'EXPRESS',
       channel: 'TPL',
       charges: [
-        { type: 'OPERATION_FEE', amountSatang: 15000 },
         { type: 'SHIPPING_FEE', amountSatang: 8000 },
       ],
     })
     expect(job.channel).toBe('TPL')
   })
 
-  it('SCN-01-B: Customer settles ฿230 intake fee via PromptPay QR at CS counter', () => {
+  it('SCN-01-B: Customer settles ฿80 intake fee via PromptPay QR at CS counter', () => {
     const csUser = createMockUser({ role: 'CS', siteId: 'BKK-01' })
     const job = createMockJob({
       stage: 'CS_OPENED',
       branchId: 'BKK-01',
       charges: [
-        { type: 'OPERATION_FEE', amountSatang: 15000 },
         { type: 'SHIPPING_FEE', amountSatang: 8000 },
       ],
       payments: [],
     })
     const payRes = simulateAction(job, 'record_intake_payment', csUser, {
-      amountSatang: 23000,
+      amountSatang: 8000,
       paymentMethod: 'PROMPTPAY_QR',
     })
     expect(payRes.success).toBe(true)

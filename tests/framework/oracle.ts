@@ -59,21 +59,12 @@ export const SPEC_ORACLE = {
     }
     const opFee = params.size === 'SMALL' ? 15000 : 30000 // 150.00 THB or 300.00 THB in satang
     const shipFee = params.shippingMethod === 'EXPRESS' ? (params.size === 'SMALL' ? 8000 : 25000) : 0
-
-    if (params.shippingMethod === 'EXPRESS') {
-      return {
-        operationFeeSatang: opFee,
-        shippingFeeSatang: shipFee,
-        totalSatang: opFee + shipFee,
-      }
-    }
-
-    // STANDARD
     const finalOpFee = params.hasWarranty ? 0 : opFee
+
     return {
       operationFeeSatang: finalOpFee,
-      shippingFeeSatang: 0,
-      totalSatang: finalOpFee,
+      shippingFeeSatang: shipFee,
+      totalSatang: finalOpFee + shipFee,
     }
   },
 

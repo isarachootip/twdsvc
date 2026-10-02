@@ -241,9 +241,9 @@ describe('Feature 5: CS Intake (/cs/new)', () => {
       shippingMethod: 'EXPRESS',
       size: 'SMALL',
     })
-    expect(smallExpress.operationFeeSatang).toBe(15000)
+    expect(smallExpress.operationFeeSatang).toBe(0)
     expect(smallExpress.shippingFeeSatang).toBe(8000)
-    expect(smallExpress.totalSatang).toBe(23000)
+    expect(smallExpress.totalSatang).toBe(8000)
 
     const largeExpress = SPEC_ORACLE.calcIntakeFees({
       jobType: 'CUSTOMER',
