@@ -5,14 +5,14 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   ChartBar, BarChart3, ClipboardList, UserPlus, Package, Warehouse, Wrench, RefreshCcw, Truck,
-  CreditCard, Settings, LogOut, BookOpen, X, ChevronDown, ChevronRight,
+  CreditCard, Settings, LogOut, BookOpen, X, ChevronDown, ChevronRight, Users,
 } from 'lucide-react'
 import { MENU_DEFS, ROLE_LABELS } from '@/lib/constants'
 import { ADMIN_NAV_ITEMS } from '@/app/(dashboard)/admin/constants'
 
 const ICONS: Record<string, React.ReactNode> = {
   exec: <ChartBar size={18} />, analytics: <BarChart3 size={18} />, jobs: <ClipboardList size={18} />, cs: <UserPlus size={18} />,
-  gr: <Package size={18} />, dc: <Warehouse size={18} />, vd: <Wrench size={18} />, tradein: <RefreshCcw size={18} />,
+  customers: <Users size={18} />, gr: <Package size={18} />, dc: <Warehouse size={18} />, vd: <Wrench size={18} />, tradein: <RefreshCcw size={18} />,
   s2: <Truck size={18} />, vd_payment: <CreditCard size={18} />, admin: <Settings size={18} />, manual: <BookOpen size={18} />,
 }
 

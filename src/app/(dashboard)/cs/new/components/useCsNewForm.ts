@@ -27,17 +27,18 @@ export interface SavedJob {
   payUrl?: string
 }
 
-export function useCsNewForm({
-  role,
-  branchName,
-  userBranchId = '',
-  branches = [],
-}: {
+export interface UseCsNewFormProps {
   role: string
   branchName: string
   userBranchId?: string
   branches?: BranchOption[]
-}) {
+  initialPhone?: string
+  initialProduct?: string
+}
+
+export function useCsNewForm({
+  role, branchName, userBranchId = '', branches = [], initialPhone = '', initialProduct = '',
+}: UseCsNewFormProps) {
   const [branchList, setBranchList] = useState<BranchOption[]>(branches)
   const defaultBranchId = userBranchId || branches.find(b => b.code === 'BN' || b.name.includes('บางนา'))?.id || branches[0]?.id || ''
   const [selectedBranchId, setSelectedBranchId] = useState(defaultBranchId)
@@ -47,7 +48,7 @@ export function useCsNewForm({
 
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
-  const [phone, setPhone] = useState('')
+  const [phone, setPhone] = useState(initialPhone)
   const [addr, setAddr] = useState<Address>(emptyAddress)
   const [taxSame, setTaxSame] = useState(true)
   const [tax, setTax] = useState<TaxInfo | null>(null)
@@ -57,7 +58,7 @@ export function useCsNewForm({
 
   const [sku, setSku] = useState('')
   const [skuResults, setSkuResults] = useState<Commodity[]>([])
-  const [product, setProduct] = useState('')
+  const [product, setProduct] = useState(initialProduct)
   const [brandId, setBrandId] = useState('')
   const [symptom, setSymptom] = useState('')
   const [warranty, setWarranty] = useState<'yes' | 'no'>('yes')

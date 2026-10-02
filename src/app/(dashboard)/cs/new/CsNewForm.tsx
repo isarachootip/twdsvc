@@ -20,14 +20,18 @@ export default function CsNewForm({
   branchName,
   userBranchId = '',
   branches = [],
+  initialPhone = '',
+  initialProduct = '',
 }: {
   role: string
   branchName: string
   userBranchId?: string
   branches?: BranchOption[]
+  initialPhone?: string
+  initialProduct?: string
 }) {
   const router = useRouter()
-  const form = useCsNewForm({ role, branchName, userBranchId, branches })
+  const form = useCsNewForm({ role, branchName, userBranchId, branches, initialPhone, initialProduct })
 
   const handleShowPayment = async () => {
     const r = await form.save()
