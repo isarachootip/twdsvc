@@ -98,12 +98,12 @@ export const ROLE_HOME: Record<string, string> = {
 export const MENU_DEFS: Array<{ key: string; label: string; href: string }> = [
   { key: 'exec', label: 'Executive Dashboard', href: '/exec' },
   { key: 'analytics', label: 'Dashboard Overview', href: '/analytics' },
+  { key: 'tradein', label: 'Trade-in / คูปอง', href: '/tradein' },
   { key: 'jobs', label: 'งานซ่อมทั้งหมด', href: '/jobs' },
   { key: 'cs', label: 'เปิดใบแจ้งซ่อม / คิว CS', href: '/cs' },
   { key: 'gr', label: 'GR', href: '/gr' },
   { key: 'dc', label: 'DC', href: '/dc' },
   { key: 'vd', label: 'ช่าง (VD)', href: '/vd' },
-  { key: 'tradein', label: 'Trade-in / คูปอง', href: '/tradein' },
   { key: 's2', label: 'สต็อกสาขา (S2)', href: '/s2' },
   { key: 'vd_payment', label: 'รายงานจ่ายเงิน VD', href: '/reports/vd-payment' },
   { key: 'admin', label: 'ตั้งค่าระบบหลังบ้าน', href: '/admin' },
@@ -111,9 +111,9 @@ export const MENU_DEFS: Array<{ key: string; label: string; href: string }> = [
 
 // Default menu matrix (08_rbac.md §2) — ใช้เมื่อ DB ยังไม่มีข้อมูล
 export const DEFAULT_MENU_MATRIX: Record<string, string[]> = {
-  ADMIN: ['exec', 'analytics', 'jobs', 'cs', 'gr', 'dc', 'vd', 'tradein', 's2', 'vd_payment', 'admin'],
+  ADMIN: ['exec', 'analytics', 'tradein', 'jobs', 'cs', 'gr', 'dc', 'vd', 's2', 'vd_payment', 'admin'],
   EXECUTIVE: ['exec', 'analytics', 'jobs', 'vd_payment'],
-  CS: ['jobs', 'cs', 'tradein'],
+  CS: ['tradein', 'jobs', 'cs'],
   GR: ['jobs', 'gr'],
   DC: ['jobs', 'dc'],
   VD: ['jobs', 'vd'],

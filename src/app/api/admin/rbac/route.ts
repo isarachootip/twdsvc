@@ -3,7 +3,7 @@ import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { Role } from '@prisma/client'
 
-const MENU_KEYS = ['exec', 'analytics', 'jobs', 'cs', 'gr', 'dc', 'vd', 'tradein', 's2', 'vd_payment', 'admin']
+const MENU_KEYS = ['exec', 'analytics', 'tradein', 'jobs', 'cs', 'gr', 'dc', 'vd', 's2', 'vd_payment', 'admin']
 const ROLES: Role[] = ['CS', 'GR', 'DC', 'VD', 'S2', 'ADMIN', 'EXECUTIVE']
 
 export async function GET(req: NextRequest) {

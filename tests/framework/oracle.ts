@@ -130,9 +130,9 @@ export const SPEC_ORACLE = {
 
   // RBAC Permission Matrix (08_rbac.md §2)
   RBAC_MENU_MATRIX: {
-    ADMIN: ['exec', 'analytics', 'jobs', 'cs', 'gr', 'dc', 'vd', 'tradein', 's2', 'vd_payment', 'admin'],
+    ADMIN: ['exec', 'analytics', 'tradein', 'jobs', 'cs', 'gr', 'dc', 'vd', 's2', 'vd_payment', 'admin'],
     EXECUTIVE: ['exec', 'analytics', 'jobs', 'vd_payment'],
-    CS: ['cs', 'jobs', 'tradein'],
+    CS: ['tradein', 'cs', 'jobs'],
     GR: ['gr', 'jobs'],
     DC: ['dc', 'jobs'],
     VD: ['vd', 'jobs'],
