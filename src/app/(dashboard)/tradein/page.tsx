@@ -453,7 +453,7 @@ export default function TradeInPage() {
         <label className="text-sm font-semibold" style={{ color: 'var(--text)' }}>
           เลือกประเภท Trade-in
         </label>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <button
             type="button"
             onClick={() => setSelectedType(1)}
@@ -469,24 +469,6 @@ export default function TradeInPage() {
             </div>
             <p className="text-xs text-[#6B6459] leading-relaxed">
               ลูกค้าถือสินค้ามา ประเมินแล้วซ่อมไม่คุ้ม แนะนำซื้อใหม่ทันที ไม่ต้องเปิดใบแจ้งซ่อม
-            </p>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setSelectedType(2)}
-            className={`text-left p-4 rounded-2xl border-2 transition-all ${
-              selectedType === 2
-                ? 'border-[#C8102E] bg-[#FBE7E9]'
-                : 'border-[#E4DED2] bg-white hover:border-[#D2C9B8]'
-            }`}
-          >
-            <div className="flex items-center justify-between mb-1">
-              <h3 className="font-bold text-sm text-[#2B2723]">ประเภท 2 — หลังบ้าน (Post-Rejection)</h3>
-              {selectedType === 2 && <CheckCircle2 size={18} className="text-[#C8102E]" />}
-            </div>
-            <p className="text-xs text-[#6B6459] leading-relaxed">
-              ลูกค้ามารับสินค้าที่ส่งซ่อมแล้วไม่อนุมัติซ่อม ขอเปลี่ยนเป็นส่วนลดซื้อใหม่แทน
             </p>
           </button>
         </div>
