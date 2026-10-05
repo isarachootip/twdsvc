@@ -59,8 +59,10 @@ export function BranchTable({ sites, onSelectSite, onEditSite, onDeleteSite }: B
                   <div className="font-semibold text-slate-900 group-hover:text-red-600 transition-colors">
                     {s.name}
                   </div>
-                  {s.address && (
-                    <div className="text-[11px] text-slate-400 truncate max-w-xs">{s.address}</div>
+                  {s.nickname && (
+                    <div className="text-[11px] text-slate-400 font-mono">
+                      ชื่อย่อ: <span className="font-medium text-slate-600">{s.nickname}</span>
+                    </div>
                   )}
                 </td>
                 <td className="py-3 px-3">

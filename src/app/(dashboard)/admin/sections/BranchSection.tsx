@@ -66,11 +66,12 @@ export function BranchSection() {
         const q = filter.search.toLowerCase().trim()
         const matchCode = s.code.toLowerCase().includes(q)
         const matchName = s.name.toLowerCase().includes(q)
+        const matchNickname = (s.nickname || '').toLowerCase().includes(q)
         const matchProvince = s.province.toLowerCase().includes(q)
         const matchDm = (s.manager || s.districtManager || '').toLowerCase().includes(q)
         const matchManager = (s.storeManagerName || '').toLowerCase().includes(q)
         const matchPhone = (s.phone || '').includes(q)
-        if (!matchCode && !matchName && !matchProvince && !matchDm && !matchManager && !matchPhone) {
+        if (!matchCode && !matchName && !matchNickname && !matchProvince && !matchDm && !matchManager && !matchPhone) {
           return false
         }
       }

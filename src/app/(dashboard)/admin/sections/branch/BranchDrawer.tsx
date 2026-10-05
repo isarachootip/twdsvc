@@ -137,6 +137,14 @@ export function BranchDrawer({ site, onClose, onEdit }: BranchDrawerProps) {
                     <span className="font-medium text-slate-800 text-sm">{site.openingHours || 'ทุกวัน 08:00 - 19:00 น.'}</span>
                   </div>
                 </div>
+
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-start gap-3">
+                  <MapPin className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+                  <div>
+                    <span className="text-slate-400 block text-[11px]">ที่อยู่</span>
+                    <p className="font-medium text-slate-800 text-sm mt-0.5 leading-relaxed">{site.address || 'ไม่ได้ระบุที่อยู่'}</p>
+                  </div>
+                </div>
               </div>
             )}
 
