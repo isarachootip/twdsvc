@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireUser, handleError, HttpError } from '@/lib/api'
 import { getJsonSetting, setSetting } from '@/lib/settings'
-import { siteInputSchema } from '@/lib/validations/site-schema'
+import { siteInputSchema, toSitePrismaData } from '@/lib/validations/site-schema'
 
 const TERMINAL_STAGES = ['CLOSED_REPAIRED', 'CLOSED_NOT_REPAIRED', 'CANCELLED'] as const
 
@@ -53,33 +53,14 @@ export async function POST(req: NextRequest) {
     const raw = await req.json()
     const parsed = siteInputSchema.parse(raw)
 
-    const code = parsed.code.trim().toUpperCase()
-    const existing = await prisma.site.findUnique({ where: { code } })
+    const siteData = toSitePrismaData(parsed)
+    const existing = await prisma.site.findUnique({ where: { code: siteData.code } })
     if (existing) {
-      throw new HttpError(400, `รหัสสาขา/คลัง ${code} มีอยู่ในระบบแล้ว`)
+      throw new HttpError(400, `รหัสสาขา/คลัง ${siteData.code} มีอยู่ในระบบแล้ว`)
     }
 
     const created = await prisma.site.create({
-      data: {
-        code,
-        name: parsed.name.trim(),
-        nickname: parsed.nickname?.trim() || code,
-        type: parsed.type,
-        province: parsed.province || 'กรุงเทพมหานคร',
-        district: parsed.district || null,
-        subdistrict: parsed.subdistrict || null,
-        postalCode: parsed.postalCode || null,
-        address: parsed.address || null,
-        googleMapsUrl: parsed.googleMapsUrl || null,
-        phone: parsed.phone || null,
-        storeManagerName: parsed.storeManagerName || null,
-        storeManagerPhone: parsed.storeManagerPhone || null,
-        storeEmail: parsed.storeEmail || null,
-        openingHours: parsed.openingHours || null,
-        region: parsed.region || null,
-        districtManager: parsed.districtManager || null,
-        active: parsed.active ?? true,
-      },
+      data: siteData,
     })
 
     if (parsed.districtManager) {
@@ -158,26 +139,7 @@ export async function PUT(req: NextRequest) {
 
     const updated = await prisma.site.update({
       where: { id: parsed.id },
-      data: {
-        code: parsed.code.trim().toUpperCase(),
-        name: parsed.name.trim(),
-        nickname: parsed.nickname?.trim() || parsed.code.trim().toUpperCase(),
-        type: parsed.type,
-        province: parsed.province || 'กรุงเทพมหานคร',
-        district: parsed.district || null,
-        subdistrict: parsed.subdistrict || null,
-        postalCode: parsed.postalCode || null,
-        address: parsed.address || null,
-        googleMapsUrl: parsed.googleMapsUrl || null,
-        phone: parsed.phone || null,
-        storeManagerName: parsed.storeManagerName || null,
-        storeManagerPhone: parsed.storeManagerPhone || null,
-        storeEmail: parsed.storeEmail || null,
-        openingHours: parsed.openingHours || null,
-        region: parsed.region || null,
-        districtManager: parsed.districtManager || null,
-        active: parsed.active ?? true,
-      },
+      data: toSitePrismaData(parsed),
     })
 
     if (parsed.districtManager !== undefined) {

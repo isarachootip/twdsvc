@@ -36,12 +36,60 @@ async function main() {
   const storesPath = path.join(__dirname, 'stores.json')
   if (fs.existsSync(storesPath)) {
     const raw = fs.readFileSync(storesPath, 'utf-8')
-    const storesList: Array<{ code: string; name: string; nickname: string; type: SiteType; province: string; address?: string | null; phone?: string | null }> = JSON.parse(raw)
+    const storesList: Array<{
+      code: string
+      stCode?: string | null
+      name: string
+      nameEn?: string | null
+      nickname: string
+      legalName?: string | null
+      type: SiteType
+      province: string
+      district?: string | null
+      subdistrict?: string | null
+      postalCode?: string | null
+      address?: string | null
+      latitude?: number | null
+      longitude?: number | null
+      googleMapsUrl?: string | null
+      phone?: string | null
+      openingHours?: string | null
+      rcvOpeningHours?: string | null
+      storeGroup?: string | null
+      rom?: string | null
+      districtManager?: string | null
+      groupEmail?: string | null
+      active?: boolean
+    }> = JSON.parse(raw)
     for (const s of storesList) {
+      const siteData = {
+        stCode: s.stCode || null,
+        name: s.name,
+        nameEn: s.nameEn || null,
+        nickname: s.nickname || s.code,
+        legalName: s.legalName || null,
+        type: s.type || SiteType.BRANCH,
+        province: s.province || 'กรุงเทพมหานคร',
+        district: s.district || null,
+        subdistrict: s.subdistrict || null,
+        postalCode: s.postalCode || null,
+        address: s.address || null,
+        latitude: s.latitude || null,
+        longitude: s.longitude || null,
+        googleMapsUrl: s.googleMapsUrl || null,
+        phone: s.phone || null,
+        openingHours: s.openingHours || null,
+        rcvOpeningHours: s.rcvOpeningHours || null,
+        storeGroup: s.storeGroup || null,
+        rom: s.rom || null,
+        districtManager: s.districtManager || null,
+        groupEmail: s.groupEmail || null,
+        active: s.active ?? true,
+      }
       await prisma.site.upsert({
         where: { code: s.code },
-        update: { name: s.name, nickname: s.nickname, province: s.province, address: s.address, phone: s.phone, active: true },
-        create: { code: s.code, name: s.name, nickname: s.nickname, type: s.type, province: s.province, address: s.address, phone: s.phone, active: true },
+        update: siteData,
+        create: { code: s.code, ...siteData },
       })
     }
   }

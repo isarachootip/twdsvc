@@ -25,7 +25,7 @@ const SORT = {
   branch: (j: JobView) => j.branch.name, hours: (j: JobView) => j.sla?.hoursInStep ?? 0, channel: (j: JobView) => j.channel ?? '',
 }
 
-const isValidGrLoc = (loc: string) => /^[A-Z]-\d{2}-\d{2}$/i.test(loc.trim())
+const isValidGrLoc = (loc: string) => loc.trim().length > 0
 
 function truckStatus(j: JobView) {
   const s = j.outboundShipment
@@ -156,20 +156,20 @@ export default function GrClient({ role }: { role: string }) {
         <div className="tcard"><div className="tbl-wrap"><table className="tbl">
           <thead><tr>
             <Th k="id" label="เลขที่ใบแจ้งซ่อม" {...receive} /><Th k="customer" label="ลูกค้า" {...receive} /><Th k="product" label="สินค้า" {...receive} />
-            <Th k="branch" label="สาขา" {...receive} /><Th k="hours" label="รอมาแล้ว" {...receive} /><th>ถ่ายภาพ</th><th>เลขที่ Location (A-00-00)</th><th>สถานะ</th>
+            <Th k="branch" label="สาขา" {...receive} /><Th k="hours" label="รอมาแล้ว" {...receive} /><th>ถ่ายภาพ</th><th>เลขที่ Location</th><th>สถานะ</th>
           </tr></thead>
           <tbody>{receive.sorted.map(j => {
             const locVal = inp.loc(j.id)
             const validLoc = isValidGrLoc(locVal)
             const hasPhoto = inp.photos(j.id).length > 0
             const canSubmit = hasPhoto && validLoc
-            const reason = !hasPhoto ? 'ต้องถ่ายภาพก่อน' : !validLoc ? 'Location ต้องเป็นรูปแบบ A-00-00 (เช่น A-05-02)' : undefined
+            const reason = !hasPhoto ? 'ต้องถ่ายภาพก่อน' : !validLoc ? 'กรุณากรอกเลขที่ Location' : undefined
             return (
               <tr key={j.id} id={`row-${j.id}`} className={rowCls(j)}>
                 <td><JobIdCell job={j} onOpen={() => setOpenId(j.id)} /></td><td>{j.customerName ?? (j.type === 'STOCK' ? 'สต็อกสาขา' : '-')}</td><td>{j.productName}</td><td>{j.branch.name}</td>
                 <td><SlaCell job={j} /></td>
                 <td>{done[j.id] ? '✓' : <PhotoButton photos={inp.photos(j.id)} onChange={p => inp.setPhotos(j.id, p)} disabled={readOnly} />}</td>
-                <td>{done[j.id] ? locVal : <input className="inp inp-sm" style={{ width: 120 }} value={locVal} placeholder="เช่น A-05-02" onChange={e => inp.setLoc(j.id, e.target.value)} disabled={readOnly} />}</td>
+                <td>{done[j.id] ? locVal : <input className="inp inp-sm" style={{ width: 140 }} value={locVal} placeholder="ระบุ Location" onChange={e => inp.setLoc(j.id, e.target.value)} disabled={readOnly} />}</td>
                 <td>{j.intakeUnpaid && !done[j.id] ? <span className="badge b-amber">รอชำระค่าดำเนินการ</span> : actBtn(j, 'ยืนยันรับสินค้า', !canSubmit, () => run(j, 'gr_receive', { photos: inp.photos(j.id), location: locVal.trim().toUpperCase() }, 'รับแล้ว'), reason)}</td>
               </tr>
             )
@@ -181,21 +181,21 @@ export default function GrClient({ role }: { role: string }) {
         <div className="tcard"><div className="tbl-wrap"><table className="tbl">
           <thead><tr>
             <Th k="id" label="เลขที่ใบแจ้งซ่อม" {...pack} /><Th k="customer" label="ลูกค้า" {...pack} /><Th k="product" label="สินค้า" {...pack} />
-            <Th k="channel" label="ช่องทาง" {...pack} /><Th k="hours" label="เวลาที่ค้าง" {...pack} /><th>Location เดิม</th><th>Location ใหม่ (A-00-00)</th><th>ถ่ายภาพ</th><th>สถานะ</th>
+            <Th k="channel" label="ช่องทาง" {...pack} /><Th k="hours" label="เวลาที่ค้าง" {...pack} /><th>Location เดิม</th><th>Location ใหม่</th><th>ถ่ายภาพ</th><th>สถานะ</th>
           </tr></thead>
           <tbody>{pack.sorted.map(j => {
             const locVal = inp.loc(j.id)
             const validLoc = isValidGrLoc(locVal)
             const hasPhoto = inp.photos(j.id).length > 0
             const canSubmit = hasPhoto && validLoc
-            const reason = !hasPhoto ? 'ต้องถ่ายภาพก่อน' : !validLoc ? 'Location ใหม่ต้องเป็นรูปแบบ A-00-00 (เช่น B-01-04)' : undefined
+            const reason = !hasPhoto ? 'ต้องถ่ายภาพก่อน' : !validLoc ? 'กรุณากรอก Location ใหม่' : undefined
             return (
               <tr key={j.id} id={`row-${j.id}`} className={rowCls(j)}>
                 <td><JobIdCell job={j} onOpen={() => setOpenId(j.id)} /></td><td>{j.customerName ?? (j.type === 'STOCK' ? 'สต็อกสาขา' : '-')}</td><td>{j.productName}</td>
                 <td><span className="badge b-blue">{j.channel ? CHANNEL_LABELS[j.channel] : '-'}</span></td>
                 <td><SlaCell job={j} /></td>
                 <td>{j.location ?? '-'}</td>
-                <td>{done[j.id] ? locVal : <input className="inp inp-sm" style={{ width: 120 }} value={locVal} placeholder="เช่น B-01-04" onChange={e => inp.setLoc(j.id, e.target.value)} disabled={readOnly} />}</td>
+                <td>{done[j.id] ? locVal : <input className="inp inp-sm" style={{ width: 140 }} value={locVal} placeholder="ระบุ Location ใหม่" onChange={e => inp.setLoc(j.id, e.target.value)} disabled={readOnly} />}</td>
                 <td>{done[j.id] ? '✓' : <PhotoButton photos={inp.photos(j.id)} onChange={p => inp.setPhotos(j.id, p)} disabled={readOnly} />}</td>
                 <td>{actBtn(j, 'Pack เสร็จ + พิมพ์ใบปะหน้า', !canSubmit, async () => {
                   const r = await run(j, 'gr_pack', { photos: inp.photos(j.id), location: locVal.trim().toUpperCase() }, 'Pack แล้ว')
@@ -222,21 +222,21 @@ export default function GrClient({ role }: { role: string }) {
         <div className="tcard"><div className="tbl-wrap"><table className="tbl">
           <thead><tr>
             <Th k="id" label="เลขที่ใบแจ้งซ่อม" {...ret} /><Th k="customer" label="ลูกค้า" {...ret} /><Th k="product" label="สินค้า" {...ret} />
-            <Th k="channel" label="ช่องทางที่ส่งคืนมา" {...ret} /><Th k="hours" label="เวลาที่ค้าง" {...ret} /><th>ถ่ายภาพ</th><th>เลขที่ Location (A-00-00)</th><th>สถานะ</th>
+            <Th k="channel" label="ช่องทางที่ส่งคืนมา" {...ret} /><Th k="hours" label="เวลาที่ค้าง" {...ret} /><th>ถ่ายภาพ</th><th>เลขที่ Location</th><th>สถานะ</th>
           </tr></thead>
           <tbody>{ret.sorted.map(j => {
             const locVal = inp.loc(j.id)
             const validLoc = isValidGrLoc(locVal)
             const hasPhoto = inp.photos(j.id).length > 0
             const canSubmit = hasPhoto && validLoc
-            const reason = !hasPhoto ? 'ต้องถ่ายภาพก่อน' : !validLoc ? 'Location ต้องเป็นรูปแบบ A-00-00 (เช่น C-02-05)' : undefined
+            const reason = !hasPhoto ? 'ต้องถ่ายภาพก่อน' : !validLoc ? 'กรุณากรอกเลขที่ Location' : undefined
             return (
               <tr key={j.id} id={`row-${j.id}`} className={rowCls(j)}>
                 <td><JobIdCell job={j} onOpen={() => setOpenId(j.id)} /></td><td>{j.customerName ?? (j.type === 'STOCK' ? 'สต็อกสาขา' : '-')}</td><td>{j.productName}</td>
                 <td><span className="badge b-blue">{j.channel ? CHANNEL_LABELS[j.channel] : '-'}</span>{j.inboundShipment?.trackingNo && <div className="sub-mute">#{j.inboundShipment.trackingNo}</div>}</td>
                 <td><SlaCell job={j} /></td>
                 <td>{done[j.id] ? '✓' : <PhotoButton photos={inp.photos(j.id)} onChange={p => inp.setPhotos(j.id, p)} disabled={readOnly} />}</td>
-                <td>{done[j.id] ? locVal : <input className="inp inp-sm" style={{ width: 120 }} value={locVal} placeholder="เช่น C-02-05" onChange={e => inp.setLoc(j.id, e.target.value)} disabled={readOnly} />}</td>
+                <td>{done[j.id] ? locVal : <input className="inp inp-sm" style={{ width: 140 }} value={locVal} placeholder="ระบุ Location" onChange={e => inp.setLoc(j.id, e.target.value)} disabled={readOnly} />}</td>
                 <td>{actBtn(j, 'ยืนยันรับคืน', !canSubmit, () => run(j, 'gr_receive_return', { photos: inp.photos(j.id), location: locVal.trim().toUpperCase() }, 'รับคืนแล้ว'), reason)}</td>
               </tr>
             )

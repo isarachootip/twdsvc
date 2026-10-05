@@ -44,20 +44,29 @@ model RefreshToken {
 model Site {
   id                String              @id @default(cuid())
   code              String              @unique
+  stCode            String?
   name              String
+  nameEn            String?
   nickname          String
+  legalName         String?
   type              SiteType            @default(BRANCH)
   province          String              @default("กรุงเทพมหานคร")
   district          String?
   subdistrict       String?
   postalCode        String?
   address           String?
+  latitude          Float?
+  longitude         Float?
   googleMapsUrl     String?
   phone             String?
   storeManagerName  String?
   storeManagerPhone String?
   storeEmail        String?
+  groupEmail        String?
   openingHours      String?
+  rcvOpeningHours   String?
+  storeGroup        String?
+  rom               String?
   region            String?
   districtManager   String?
   active            Boolean             @default(true)

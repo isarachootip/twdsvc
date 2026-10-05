@@ -3,7 +3,6 @@ import { ActionDef, ActionInput, Actor, Ctx, JobFull } from './types'
 import { ActionError } from './errors'
 import { getSetting } from './helpers'
 
-const LOCATION_REGEX = /^(?:[A-Z]-\d{2}-\d{2}|(?:DC-)?[A-Z0-9]{1,4}-\d{2}-[A-Z0-9]{1,4}|DC-\d{2}-[A-Z]|S-RET-\d{2})$/i
 
 export function validateRolePermission(actor: Actor, def: ActionDef): { isAdminOverride: boolean } {
   const isAdminOverride = actor.role === 'ADMIN' && !def.roles.includes('ADMIN')
@@ -52,8 +51,5 @@ export async function validatePhotosAndLocation(c: Ctx, def: ActionDef) {
 
   if (c.input.location) {
     c.input.location = c.input.location.trim().toUpperCase()
-    if (def.location && !LOCATION_REGEX.test(c.input.location)) {
-      throw new ActionError('รูปแบบ Location ไม่ถูกต้อง (ตัวอย่าง: A-01-02 หรือ DC-01-A)', 400)
-    }
   }
 }
