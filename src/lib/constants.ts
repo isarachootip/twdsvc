@@ -128,7 +128,7 @@ export const OWNER_LABELS: Record<string, string> = {
 }
 
 export function fmtBaht(n: number | null | undefined): string {
-  if (n === null || n === undefined) return '฿0'
+  if (n === null || n === undefined || isNaN(Number(n))) return '฿0'
   let v = Number(n)
   if (Math.abs(v) >= 1000 && v % 100 === 0) {
     v = v / 100
