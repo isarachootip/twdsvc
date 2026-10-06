@@ -1,155 +1,55 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import Link from 'next/link'
-import { api } from '@/lib/client'
-import { useToast } from '@/components/ui/Toast'
-import { useSave, SaveButton, Row, Loading, useSites } from './admin-helpers'
-import { VendorParentCard, type VendorParentRow, type NamedOption } from './VendorParentCard'
-import type { VendorCenterRow } from './VendorCenterTable'
+import { VendorSetupWizard } from '@/components/vendor-setup/VendorSetupWizard'
+import { VendorDirectoryList } from './VendorDirectoryList'
+import { Settings, Users, FileCheck } from 'lucide-react'
 
 export function VendorSection() {
-  const [list, setList] = useState<VendorParentRow[] | null>(null)
-  const [brands, setBrands] = useState<NamedOption[]>([])
-  const [sizes, setSizes] = useState<NamedOption[]>([])
-  const sites = useSites()
-  const { saving, save, justSaved } = useSave()
-  const { confirm } = useToast()
-
-  const load = useCallback(
-    () =>
-      api<VendorParentRow[]>('/api/admin/vendors').then(v =>
-        setList(v.map(p => ({ ...p, centers: p.centers.map(c => ({ ...c })) })))
-      ),
-    []
-  )
-
-  useEffect(() => {
-    load()
-    api<NamedOption[]>('/api/brands').then(setBrands).catch(() => {})
-    api<NamedOption[]>('/api/size-categories').then(setSizes).catch(() => {})
-  }, [load])
-
-  if (!list) return <Loading />
-
-  const upd = (pi: number, patch: Partial<VendorParentRow>) =>
-    setList(l => l!.map((p, i) => (i === pi ? { ...p, ...patch } : p)))
-
-  const updC = (pi: number, ci: number, patch: Partial<VendorCenterRow>) =>
-    setList(l =>
-      l!.map((p, i) =>
-        i === pi
-          ? {
-              ...p,
-              centers: p.centers.map((c, j) => (j === ci ? { ...c, ...patch } : c)),
-            }
-          : p
-      )
-    )
-
-  const handleAddCenter = (pi: number) => {
-    const p = list[pi]
-    upd(pi, {
-      centers: [
-        ...p.centers,
-        {
-          code: `${p.code}-${p.centers.length + 1}`,
-          zoneSiteId: sites[0]?.id ?? '',
-          address: '',
-          phone: '',
-          deliveryMethod: 'DSD',
-          gpPctOverride: '',
-          repairSlaDaysOverride: '',
-        },
-      ],
-    })
-  }
-
-  const handleRemoveParent = async (pi: number) => {
-    const p = list[pi]
-    if (
-      await confirm({
-        message: `ลบ VD หลัก ${p.code}? (ระบบจะปิดใช้งาน ข้อมูลงานเดิมยังอยู่)`,
-        danger: true,
-      })
-    ) {
-      setList(l => l!.filter((_, i) => i !== pi))
-    }
-  }
+  const [tab, setTab] = useState<'setup' | 'directory'>('setup')
 
   return (
-    <div className="pcard">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-3 pb-2 border-b" style={{ borderColor: 'var(--border)' }}>
-        <div>
-          <h3 className="m-0">VD หลัก (ระดับบริษัท)</h3>
-          <p className="hint m-0">
-            ข้อมูลสัญญา/เงื่อนไขทางธุรกิจ ใช้ร่วมกันในทุกศูนย์บริการย่อยของ VD นี้
-          </p>
+    <div className="space-y-4">
+      {/* Tab Switcher & Quick Navigation */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-2xl bg-white border" style={{ borderColor: 'var(--border)' }}>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setTab('setup')}
+            className={`btn text-xs flex items-center gap-1.5 transition-all ${
+              tab === 'setup' ? 'btn-primary' : 'btn-secondary'
+            }`}
+          >
+            <Settings className="w-3.5 h-3.5" /> ตั้งค่าคู่ค้า (Vendor Setup Wizard)
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab('directory')}
+            className={`btn text-xs flex items-center gap-1.5 transition-all ${
+              tab === 'directory' ? 'btn-primary' : 'btn-secondary'
+            }`}
+          >
+            <Users className="w-3.5 h-3.5" /> รายชื่อคู่ค้าเดิม (Directory)
+          </button>
         </div>
-        <div className="flex gap-2">
-          <Link href="/admin/vendors/applications" className="btn btn-secondary text-xs">
-            ตรวจสอบใบสมัครใหม่
-          </Link>
-          <Link href="/vendor/register" target="_blank" className="btn btn-primary text-xs">
-            + เปิดตัวช่วยลงทะเบียน (Wizard)
-          </Link>
-        </div>
-      </div>
-      {list.map((p, pi) => (
-        <VendorParentCard
-          key={p.id ?? `new-${pi}`}
-          parent={p}
-          parentIndex={pi}
-          brands={brands}
-          sizes={sizes}
-          sites={sites}
-          onUpdate={upd}
-          onUpdateCenter={updC}
-          onAddCenter={handleAddCenter}
-          onRemoveCenter={(parentIdx, centerIdx) =>
-            upd(parentIdx, {
-              centers: p.centers.filter((_, j) => j !== centerIdx),
-            })
-          }
-          onRemoveParent={handleRemoveParent}
-        />
-      ))}
-      <Row between>
-        <button
-          className="btn"
-          onClick={() =>
-            setList(l => [
-              ...l!,
-              {
-                code: '',
-                name: '',
-                defaultGpPct: 18,
-                defaultRepairSlaDays: 7,
-                repairWarrantyDays: 30,
-                inspectionFeeCovered: 0,
-                inspectionFeeNotCovered: 300,
-                isBrandAuthorized: false,
-                brandIds: [],
-                sizeIds: [],
-                centers: [],
-              },
-            ])
-          }
+
+        <Link
+          href="/admin/vendors/applications"
+          className="btn btn-secondary text-xs flex items-center gap-1.5"
         >
-          + เพิ่ม VD หลัก
-        </button>
-        <SaveButton
-          label="บันทึก Vendor Portal"
-          saving={saving}
-          justSaved={justSaved}
-          onClick={() =>
-            save(async () => {
-              await api('/api/admin/vendors', { method: 'PUT', body: list })
-              await load()
-            })
-          }
-        />
-      </Row>
+          <FileCheck className="w-3.5 h-3.5 text-emerald-600" /> ตรวจสอบใบสมัครคู่ค้าใหม่
+        </Link>
+      </div>
+
+      {/* Main Content Area */}
+      {tab === 'setup' ? (
+        <div className="pt-2">
+          <VendorSetupWizard />
+        </div>
+      ) : (
+        <VendorDirectoryList onOpenWizard={() => setTab('setup')} />
+      )}
     </div>
   )
 }
