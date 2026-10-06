@@ -27,7 +27,7 @@ import { GET as getVdQueueRoute } from '../../../src/app/api/queues/VD/route'
 import { GET as getAdminQueueRoute } from '../../../src/app/api/queues/ADMIN/route'
 import { GET as getTradeInRoute, POST as createTradeInRoute } from '../../../src/app/api/tradein/route'
 import { GET as getTradeInKpisRoute } from '../../../src/app/api/tradein/kpis/route'
-import { GET as getAdminFeesRoute } from '../../../src/app/api/admin/fees/route'
+import { GET as getAdminFeesRoute, PUT as putAdminFeesRoute } from '../../../src/app/api/admin/fees/route'
 import { GET as getAdminPayoutRoute } from '../../../src/app/api/admin/payout-config/route'
 import { GET as getAdminPromotionsRoute } from '../../../src/app/api/admin/promotions/route'
 import { GET as getAdminRbacRoute } from '../../../src/app/api/admin/rbac/route'
@@ -860,6 +860,40 @@ describe('Admin Full Access & Operational Flow Integration (R1, R2, R3)', () => 
     expect(slaRes.status).toBe(200)
     expect(usersRes.status).toBe(200)
     expect(vendorsRes.status).toBe(200)
+  })
+
+  it('API-T13B: Admin fee settings PUT and GET with Satang/Baht integrity', async () => {
+    const token = await getAdminToken()
+    const headers = {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    }
+
+    const small = await prisma.sizeCategory.findFirstOrThrow({ where: { code: 'SMALL' } })
+    const large = await prisma.sizeCategory.findFirstOrThrow({ where: { code: 'LARGE' } })
+
+    const putRes = await putAdminFeesRoute(
+      new NextRequest('http://localhost:3000/api/admin/fees', {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify([
+          { sizeCategoryId: small.id, name: 'ขนาดเล็ก', operationFee: 150, shippingFee3pl: 200 },
+          { sizeCategoryId: large.id, name: 'ขนาดใหญ่', operationFee: 300, shippingFee3pl: 300 },
+        ]),
+      })
+    )
+    expect(putRes.status).toBe(200)
+
+    const getRes = await getAdminFeesRoute(new NextRequest('http://localhost:3000/api/admin/fees', { headers }))
+    expect(getRes.status).toBe(200)
+    const data = await getRes.json()
+    const s = data.find((x: { sizeCategory: { id: number } }) => x.sizeCategory.id === small.id)
+    const l = data.find((x: { sizeCategory: { id: number } }) => x.sizeCategory.id === large.id)
+
+    expect(s.rate.operationFee).toBe(150)
+    expect(s.rate.shippingFee3pl).toBe(200)
+    expect(l.rate.operationFee).toBe(300)
+    expect(l.rate.shippingFee3pl).toBe(300)
   })
 
   it('API-T14: Robustness - ADMIN job creation without branchId automatically resolves valid branch fallback', async () => {

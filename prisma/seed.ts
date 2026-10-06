@@ -133,8 +133,8 @@ async function main() {
   // ─── Fee Rates (Values in Satang integers: 150 THB = 15000 satang) ───────
   await prisma.feeRate.createMany({
     data: [
-      { sizeCategoryId: small.id, operationFee: 15000, shippingFee3pl: 8000 },
-      { sizeCategoryId: large.id, operationFee: 30000, shippingFee3pl: 25000 },
+      { sizeCategoryId: small.id, operationFee: 15000, shippingFee3pl: 20000 },
+      { sizeCategoryId: large.id, operationFee: 30000, shippingFee3pl: 30000 },
     ],
     skipDuplicates: true,
   })

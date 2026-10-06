@@ -2,6 +2,26 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireUser, handleError, HttpError } from '@/lib/api'
 
+import { z } from 'zod'
+
+const feeUpdateSchema = z.array(
+  z.object({
+    sizeCategoryId: z.number().nullable().optional(),
+    name: z.string().optional(),
+    operationFee: z.coerce.number().min(0, 'ค่าธรรมเนียมต้องเป็นตัวเลข ≥ 0'),
+    shippingFee3pl: z.coerce.number().min(0, 'ค่าขนส่งต้องเป็นตัวเลข ≥ 0'),
+  })
+)
+
+function toBaht(val: number): number {
+  return val >= 1000 ? Math.round(val / 100) : val
+}
+
+function toSatang(val: number): number {
+  if (val >= 1000) return Math.round(val)
+  return Math.round(val * 100)
+}
+
 export async function GET(req: NextRequest) {
   try {
     // Keep CS and EXECUTIVE allowed to prevent Bug C9
@@ -14,10 +34,19 @@ export async function GET(req: NextRequest) {
       }),
     ])
     return NextResponse.json(
-      sizes.map(sz => ({
-        sizeCategory: sz,
-        rate: rates.find(r => r.sizeCategoryId === sz.id) ?? null,
-      }))
+      sizes.map(sz => {
+        const r = rates.find(rate => rate.sizeCategoryId === sz.id)
+        return {
+          sizeCategory: sz,
+          rate: r
+            ? {
+                ...r,
+                operationFee: toBaht(r.operationFee),
+                shippingFee3pl: toBaht(r.shippingFee3pl),
+              }
+            : null,
+        }
+      })
     )
   } catch (e) {
     return handleError(e)
@@ -28,12 +57,12 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     await requireUser(['ADMIN'], req)
-    const updates: Array<{
-      sizeCategoryId?: number | null
-      name?: string
-      operationFee: number
-      shippingFee3pl: number
-    }> = await req.json()
+    const rawBody = await req.json()
+    const parsed = feeUpdateSchema.safeParse(rawBody)
+    if (!parsed.success) {
+      throw new HttpError(400, parsed.error.issues[0]?.message ?? 'ข้อมูลไม่ถูกต้อง')
+    }
+    const updates = parsed.data
 
     const current = await prisma.feeRate.findMany({
       orderBy: [{ effectiveFrom: 'desc' }, { id: 'desc' }],
@@ -41,11 +70,8 @@ export async function PUT(req: NextRequest) {
 
     await prisma.$transaction(async tx => {
       for (const u of updates) {
-        const op = Math.round(Number(u.operationFee))
-        const sh = Math.round(Number(u.shippingFee3pl))
-        if (!(op >= 0) || !(sh >= 0)) {
-          throw new HttpError(400, 'ค่าธรรมเนียมต้องเป็นตัวเลข ≥ 0')
-        }
+        const opSatang = toSatang(u.operationFee)
+        const shSatang = toSatang(u.shippingFee3pl)
 
         let sizeId = u.sizeCategoryId
         if (!sizeId) {
@@ -69,12 +95,15 @@ export async function PUT(req: NextRequest) {
         }
 
         const latest = current.find(r => r.sizeCategoryId === sizeId)
-        if (!latest || latest.operationFee !== op || latest.shippingFee3pl !== sh) {
+        const latestOp = latest ? toSatang(latest.operationFee) : null
+        const latestSh = latest ? toSatang(latest.shippingFee3pl) : null
+
+        if (!latest || latestOp !== opSatang || latestSh !== shSatang) {
           await tx.feeRate.create({
             data: {
               sizeCategoryId: sizeId,
-              operationFee: op,
-              shippingFee3pl: sh,
+              operationFee: opSatang,
+              shippingFee3pl: shSatang,
               effectiveFrom: new Date(),
             },
           })

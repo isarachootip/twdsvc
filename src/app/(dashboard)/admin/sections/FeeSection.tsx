@@ -7,8 +7,8 @@ import { useSave, SaveButton, Row, Loading } from './admin-helpers'
 interface FeeRow {
   sizeCategoryId: number | null
   name: string
-  operationFee: number
-  shippingFee3pl: number
+  operationFee: number | string
+  shippingFee3pl: number | string
 }
 
 interface FeeApiItem {
@@ -16,9 +16,16 @@ interface FeeApiItem {
   rate?: { operationFee: number; shippingFee3pl: number }
 }
 
+function parseFeeInput(val: string): number | string {
+  if (val === '') return ''
+  const parsed = parseInt(val, 10)
+  return isNaN(parsed) ? '' : Math.max(0, parsed)
+}
+
 export function FeeSection() {
   const [rows, setRows] = useState<FeeRow[] | null>(null)
-  const { saving, save, justSaved } = useSave()
+  const saveOp = useSave()
+  const saveShip = useSave()
 
   const load = useCallback(
     () =>
@@ -44,18 +51,20 @@ export function FeeSection() {
   const upd = (i: number, p: Partial<FeeRow>) =>
     setRows(r => r!.map((x, j) => (j === i ? { ...x, ...p } : x)))
 
-  const doSave = () =>
-    save(async () => {
-      await api('/api/admin/fees', {
-        method: 'PUT',
-        body: rows.map(r => ({
-          ...r,
-          operationFee: Number(r.operationFee),
-          shippingFee3pl: Number(r.shippingFee3pl),
-        })),
-      })
-      await load()
+  const persist = async () => {
+    await api('/api/admin/fees', {
+      method: 'PUT',
+      body: rows.map(r => ({
+        ...r,
+        operationFee: Number(r.operationFee) || 0,
+        shippingFee3pl: Number(r.shippingFee3pl) || 0,
+      })),
     })
+    await load()
+  }
+
+  const doSaveOp = () => saveOp.save(persist)
+  const doSaveShip = () => saveShip.save(persist)
 
   const addType = () =>
     setRows(r => [...r!, { sizeCategoryId: null, name: '', operationFee: 0, shippingFee3pl: 0 }])
@@ -91,7 +100,7 @@ export function FeeSection() {
                     type="number"
                     min={0}
                     value={r.operationFee}
-                    onChange={e => upd(i, { operationFee: Number(e.target.value) })}
+                    onChange={e => upd(i, { operationFee: parseFeeInput(e.target.value) })}
                   />
                 </td>
               </tr>
@@ -100,7 +109,7 @@ export function FeeSection() {
         </table>
         <Row between>
           <button className="btn" onClick={addType}>+ เพิ่มประเภท</button>
-          <SaveButton label="บันทึกค่าดำเนินการ" saving={saving} justSaved={justSaved} onClick={doSave} />
+          <SaveButton label="บันทึกค่าดำเนินการ" saving={saveOp.saving} justSaved={saveOp.justSaved} onClick={doSaveOp} />
         </Row>
       </div>
       <div className="pcard">
@@ -116,14 +125,25 @@ export function FeeSection() {
           <tbody>
             {rows.map((r, i) => (
               <tr key={i}>
-                <td>{r.name || <span className="sub-mute">(ประเภทใหม่)</span>}</td>
+                <td>
+                  {r.sizeCategoryId ? (
+                    r.name
+                  ) : (
+                    <input
+                      className="inp inp-sm"
+                      value={r.name}
+                      placeholder="ชื่อประเภทสินค้าใหม่"
+                      onChange={e => upd(i, { name: e.target.value })}
+                    />
+                  )}
+                </td>
                 <td>
                   <input
                     className="inp inp-sm"
                     type="number"
                     min={0}
                     value={r.shippingFee3pl}
-                    onChange={e => upd(i, { shippingFee3pl: Number(e.target.value) })}
+                    onChange={e => upd(i, { shippingFee3pl: parseFeeInput(e.target.value) })}
                   />
                 </td>
               </tr>
@@ -132,7 +152,7 @@ export function FeeSection() {
         </table>
         <Row between>
           <button className="btn" onClick={addType}>+ เพิ่มประเภท</button>
-          <SaveButton label="บันทึกค่าขนส่ง" saving={saving} justSaved={justSaved} onClick={doSave} />
+          <SaveButton label="บันทึกค่าขนส่ง" saving={saveShip.saving} justSaved={saveShip.justSaved} onClick={doSaveShip} />
         </Row>
       </div>
     </>

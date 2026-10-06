@@ -7,12 +7,13 @@ import { api } from '@/lib/client'
 export function useSave() {
   const { toast } = useToast()
   const [saving, setSaving] = useState(false)
-  const [savedAt, setSavedAt] = useState(0)
+  const [justSaved, setJustSaved] = useState(false)
   const save = async (fn: () => Promise<unknown>) => {
     setSaving(true)
     try {
       await fn()
-      setSavedAt(Date.now())
+      setJustSaved(true)
+      setTimeout(() => setJustSaved(false), 2000)
       toast('บันทึกแล้ว ✓', 'success')
       return true
     } catch (e) {
@@ -22,7 +23,7 @@ export function useSave() {
       setSaving(false)
     }
   }
-  return { saving, save, justSaved: Date.now() - savedAt < 1500 }
+  return { saving, save, justSaved }
 }
 
 export function SaveButton({
