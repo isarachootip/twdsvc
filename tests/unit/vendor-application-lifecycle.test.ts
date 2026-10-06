@@ -102,9 +102,24 @@ async function runLifecycleTest() {
   }
   console.log('✔ 2. Admin successfully found pending application in list')
 
-  // 3. Approve Application
+  // 3. Approve Application — with an existing route on the covered branch, the new route must be appended (backup)
+  const site = await prisma.site.findFirst({ where: { OR: [{ code: 'BAP' }, { nickname: 'BAP' }] } })
+  const fixtureRoute = site ? await prisma.branchVendorRoute.create({ data: { branchId: site.id, priority: 1 } }) : null
+  const maxBefore = site
+    ? (await prisma.branchVendorRoute.aggregate({ where: { branchId: site.id }, _max: { priority: true } }))._max.priority ?? 0
+    : 0
+
   const approvedApp = await approveVendorApplication(app.id, 'admin-tester')
   console.log('✔ 3. Application approved, approvedParentId:', approvedApp.approvedParentId)
+
+  if (site && fixtureRoute) {
+    const centers = await prisma.vendorCenter.findMany({ where: { vendorParentId: approvedApp.approvedParentId! } })
+    const newRoute = await prisma.branchVendorRoute.findFirst({ where: { branchId: site.id, primaryCenterId: { in: centers.map(c => c.id) } } })
+    await prisma.branchVendorRoute.delete({ where: { id: fixtureRoute.id } })
+    if (!newRoute) throw new Error('Expected a route for the covered branch')
+    if (newRoute.priority !== maxBefore + 1) throw new Error(`Expected appended priority ${maxBefore + 1}, got ${newRoute.priority}`)
+    console.log(`✔ 3b. New vendor route appended as backup (priority ${newRoute.priority})`)
+  }
 
   if (approvedApp.status !== VendorApplicationStatus.APPROVED) {
     throw new Error(`Expected APPROVED, got ${approvedApp.status}`)

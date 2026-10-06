@@ -2,29 +2,31 @@ import crypto from 'crypto'
 import type { TokenType } from '@prisma/client'
 import { prisma } from './db'
 
-// PostgreSQL-persisted rate limit: 30 req/นาที/IP สำหรับ public endpoints (08 §6)
-export async function rateLimited(req: Request): Promise<boolean> {
+export interface RateLimitOptions {
+  /** Separate counter namespace (e.g. 'vendor-apply'); default shares the legacy public bucket. */
+  bucket?: string
+  limit?: number
+  windowMs?: number
+}
+
+// PostgreSQL-persisted rate limit: default 30 req/นาที/IP สำหรับ public endpoints (08 §6)
+export async function rateLimited(req: Request, opts: RateLimitOptions = {}): Promise<boolean> {
+  const { bucket, limit = 30, windowMs = 60_000 } = opts
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'local'
   const now = Date.now()
-  const key = `ratelimit:${ip}`
+  const key = bucket ? `ratelimit:${bucket}:${ip}` : `ratelimit:${ip}`
+  const fresh = JSON.stringify({ count: 1, resetAt: now + windowMs })
 
   try {
     const entry = await prisma.systemSetting.findUnique({ where: { key } })
     if (!entry) {
-      await prisma.systemSetting.upsert({
-        where: { key },
-        create: { key, value: JSON.stringify({ count: 1, resetAt: now + 60_000 }) },
-        update: { value: JSON.stringify({ count: 1, resetAt: now + 60_000 }) },
-      })
+      await prisma.systemSetting.upsert({ where: { key }, create: { key, value: fresh }, update: { value: fresh } })
       return false
     }
 
     const data = JSON.parse(entry.value) as { count: number; resetAt: number }
     if (now > data.resetAt) {
-      await prisma.systemSetting.update({
-        where: { key },
-        data: { value: JSON.stringify({ count: 1, resetAt: now + 60_000 }) },
-      })
+      await prisma.systemSetting.update({ where: { key }, data: { value: fresh } })
       return false
     }
 
@@ -34,7 +36,7 @@ export async function rateLimited(req: Request): Promise<boolean> {
       data: { value: JSON.stringify({ count: newCount, resetAt: data.resetAt }) },
     })
 
-    return newCount > 30
+    return newCount > limit
   } catch (err) {
     console.error('[rateLimited] DB check failed:', err)
     return false

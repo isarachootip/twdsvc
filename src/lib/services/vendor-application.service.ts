@@ -152,12 +152,14 @@ export async function approveVendorApplication(id: string, adminUserId: string) 
       for (const site of sites) {
         const routeConfig = coverage[site.code] || coverage[site.nickname]
         const channel = routeConfig?.transport === 'tpl' ? 'TPL' : routeConfig?.transport === 'pickup' ? 'DSD' : 'DC'
+        // Policy: never displace incumbent vendors — append as next backup; admin can re-order on the Routes page
+        const { _max } = await tx.branchVendorRoute.aggregate({ where: { branchId: site.id }, _max: { priority: true } })
         await tx.branchVendorRoute.create({
           data: {
             branchId: site.id,
             primaryCenterId,
             standardChannel: channel,
-            priority: 1,
+            priority: (_max.priority ?? 0) + 1,
           },
         })
       }

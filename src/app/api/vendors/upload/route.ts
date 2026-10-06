@@ -2,6 +2,7 @@ import crypto from 'crypto'
 import path from 'path'
 import { promises as fs } from 'fs'
 import { NextRequest, NextResponse } from 'next/server'
+import { rateLimited } from '@/lib/public-token'
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads')
 const MAX = 10 * 1024 * 1024
@@ -13,6 +14,9 @@ const EXT_BY_MIME: Record<string, string> = {
 
 // POST /api/vendors/upload — สำหรับอัปโหลดเอกสารประกอบการสมัครของร้านค้า (public)
 export async function POST(req: NextRequest) {
+  if (await rateLimited(req, { bucket: 'vendor-upload', limit: 20, windowMs: 10 * 60_000 })) {
+    return NextResponse.json({ error: 'อัปโหลดถี่เกินไป กรุณารอสักครู่แล้วลองใหม่' }, { status: 429 })
+  }
   try {
     const form = await req.formData()
     const file = form.get('file')

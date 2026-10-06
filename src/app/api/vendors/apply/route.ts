@@ -4,6 +4,7 @@ import { promises as fs } from 'fs'
 import { NextRequest, NextResponse } from 'next/server'
 import { fullVendorApplicationSchema } from '@/lib/validations/vendor-setup.schema'
 import { createVendorApplication } from '@/lib/services/vendor-application.service'
+import { rateLimited } from '@/lib/public-token'
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads')
 
@@ -20,6 +21,9 @@ async function saveSignature(dataUrl: string): Promise<string> {
 
 // POST /api/vendors/apply — public vendor self-registration
 export async function POST(req: NextRequest) {
+  if (await rateLimited(req, { bucket: 'vendor-apply', limit: 5, windowMs: 60 * 60_000 })) {
+    return NextResponse.json({ error: 'ส่งใบสมัครถี่เกินไป กรุณาลองใหม่ภายหลัง' }, { status: 429 })
+  }
   let body: unknown
   try {
     body = await req.json()
