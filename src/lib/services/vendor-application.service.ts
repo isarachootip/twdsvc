@@ -1,5 +1,7 @@
+import crypto from 'crypto'
 import { prisma } from '@/lib/db'
-import { VendorApplicationStatus } from '@prisma/client'
+import { HttpError } from '@/lib/api'
+import { Prisma, VendorApplicationStatus } from '@prisma/client'
 import { calculateVendorScoreAndTier } from './vendor-tier.service'
 import type { FullVendorApplicationInput, BranchItem, RouteCoverageItem } from '../validations/vendor-setup.schema'
 
@@ -23,36 +25,40 @@ export async function createVendorApplication(input: FullVendorApplicationInput)
     isBrandAuthorized: input.expertise.isBrandAuthorized,
   })
 
-  const year = new Date().getFullYear()
-  const rand = Math.floor(1000 + Math.random() * 9000)
-  const applicationNo = `VDA-${year}-${rand}`
-
-  return prisma.vendorApplication.create({
-    data: {
-      applicationNo,
-      status: VendorApplicationStatus.PENDING_APPROVAL,
-      storeName: input.store.name.trim(),
-      businessType: input.store.type,
-      taxId: input.store.taxId.trim(),
-      phone: input.store.phone.trim(),
-      lineId: input.store.lineId?.trim() || null,
-      branches: input.store.branches as unknown as object,
-      appliances: input.expertise.appliances as unknown as object,
-      isBrandAuthorized: input.expertise.isBrandAuthorized,
-      coverage: input.coverage.coverage as unknown as object,
-      documents: input.finance.documents as unknown as object,
-      bank: {
-        bank: input.finance.bank,
-        accNo: input.finance.accNo,
-        accName: input.finance.accName,
-      },
-      agreements: input.agreements.agreements as unknown as object,
-      signatureUrl: input.agreements.signatureUrl,
-      estimatedTier: tierResult.tier,
-      estimatedCases: tierResult.estimatedCases,
-      score: tierResult.score,
+  const data = {
+    status: VendorApplicationStatus.PENDING_APPROVAL,
+    storeName: input.store.name.trim(),
+    businessType: input.store.type,
+    taxId: input.store.taxId.trim(),
+    phone: input.store.phone.trim(),
+    lineId: input.store.lineId?.trim() || null,
+    branches: input.store.branches as unknown as object,
+    appliances: input.expertise.appliances as unknown as object,
+    isBrandAuthorized: input.expertise.isBrandAuthorized,
+    coverage: input.coverage.coverage as unknown as object,
+    documents: input.finance.documents as unknown as object,
+    bank: {
+      bank: input.finance.bank,
+      accNo: input.finance.accNo,
+      accName: input.finance.accName,
     },
-  })
+    agreements: input.agreements.agreements as unknown as object,
+    signatureUrl: input.agreements.signatureUrl,
+    estimatedTier: tierResult.tier,
+    estimatedCases: tierResult.estimatedCases,
+    score: tierResult.score,
+  }
+
+  // applicationNo is @unique — retry on the (rare) random collision instead of failing with a 500
+  for (let attempt = 0; ; attempt++) {
+    const applicationNo = `VDA-${new Date().getFullYear()}-${crypto.randomInt(100000, 1000000)}`
+    try {
+      return await prisma.vendorApplication.create({ data: { ...data, applicationNo } })
+    } catch (e) {
+      const isDup = e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002'
+      if (!isDup || attempt >= 4) throw e
+    }
+  }
 }
 
 export async function listVendorApplications(status?: VendorApplicationStatus) {
@@ -68,15 +74,28 @@ export async function getVendorApplication(id: string) {
   })
 }
 
+/** Atomically moves a PENDING application to `status`; throws 409 if it was already decided. */
+async function claimPending(tx: Prisma.TransactionClient, id: string, status: VendorApplicationStatus, adminUserId: string) {
+  const { count } = await tx.vendorApplication.updateMany({
+    where: { id, status: VendorApplicationStatus.PENDING_APPROVAL },
+    data: { status, reviewedBy: adminUserId, reviewedAt: new Date() },
+  })
+  if (count === 0) {
+    const exists = await tx.vendorApplication.findUnique({ where: { id }, select: { status: true } })
+    if (!exists) throw new HttpError(404, 'ไม่พบใบสมัคร')
+    throw new HttpError(409, `ใบสมัครนี้ถูกพิจารณาไปแล้ว (${exists.status})`)
+  }
+}
+
 export async function approveVendorApplication(id: string, adminUserId: string) {
-  const app = await prisma.vendorApplication.findUniqueOrThrow({ where: { id } })
-  const branches = (app.branches as unknown as BranchItem[]) || []
-  const coverage = (app.coverage as unknown as Record<string, RouteCoverageItem>) || {}
-
-  // Derive vendor parent code: VD-XXXX
-  const parentCode = `VD-${app.applicationNo.replace('VDA-', '')}`
-
   return prisma.$transaction(async tx => {
+    await claimPending(tx, id, VendorApplicationStatus.APPROVED, adminUserId)
+    const app = await tx.vendorApplication.findUniqueOrThrow({ where: { id } })
+    const branches = (app.branches as unknown as BranchItem[]) || []
+    const coverage = (app.coverage as unknown as Record<string, RouteCoverageItem>) || {}
+
+    // Derive vendor parent code: VD-XXXX
+    const parentCode = `VD-${app.applicationNo.replace('VDA-', '')}`
     const parent = await tx.vendorParent.upsert({
       where: { code: parentCode },
       update: {
@@ -146,24 +165,14 @@ export async function approveVendorApplication(id: string, adminUserId: string) 
 
     return tx.vendorApplication.update({
       where: { id },
-      data: {
-        status: VendorApplicationStatus.APPROVED,
-        approvedParentId: parent.id,
-        reviewedBy: adminUserId,
-        reviewedAt: new Date(),
-      },
+      data: { approvedParentId: parent.id },
     })
   })
 }
 
 export async function rejectVendorApplication(id: string, reason: string, adminUserId: string) {
-  return prisma.vendorApplication.update({
-    where: { id },
-    data: {
-      status: VendorApplicationStatus.REJECTED,
-      adminNotes: reason,
-      reviewedBy: adminUserId,
-      reviewedAt: new Date(),
-    },
+  return prisma.$transaction(async tx => {
+    await claimPending(tx, id, VendorApplicationStatus.REJECTED, adminUserId)
+    return tx.vendorApplication.update({ where: { id }, data: { adminNotes: reason } })
   })
 }

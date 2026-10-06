@@ -15,6 +15,8 @@ const PUBLIC_PREFIXES = [
   '/api/public/',
   '/api/webhooks/',
   '/api/files/',
+  '/vendor/',        // public vendor onboarding portal (/vendor/register)
+  '/api/vendors/',   // public onboarding APIs: apply, upload, public-sites
   '/_next/',
   '/favicon',
   '/logo.png',

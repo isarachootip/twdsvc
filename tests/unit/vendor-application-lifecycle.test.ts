@@ -3,6 +3,7 @@ import {
   createVendorApplication,
   listVendorApplications,
   approveVendorApplication,
+  rejectVendorApplication,
 } from '../../src/lib/services/vendor-application.service'
 import { VendorApplicationStatus } from '@prisma/client'
 
@@ -12,7 +13,12 @@ async function runLifecycleTest() {
   const testTaxId = '9999999999999'
   const storeName = 'ร้านเทสต์คู่ค้า แอร์แอนด์เซอร์วิส'
 
-  // Clean up any previous test leftovers
+  // Clean up any previous test leftovers (including vendor entities from failed runs)
+  const staleParents = await prisma.vendorParent.findMany({ where: { name: storeName }, include: { centers: true } })
+  const staleCenterIds = staleParents.flatMap(p => p.centers.map(c => c.id))
+  await prisma.branchVendorRoute.deleteMany({ where: { primaryCenterId: { in: staleCenterIds } } })
+  await prisma.vendorCenter.deleteMany({ where: { id: { in: staleCenterIds } } })
+  await prisma.vendorParent.deleteMany({ where: { id: { in: staleParents.map(p => p.id) } } })
   await prisma.vendorApplication.deleteMany({ where: { taxId: testTaxId } })
 
   // 1. Submit Application
@@ -119,6 +125,18 @@ async function runLifecycleTest() {
     throw new Error('VendorCenter was not created for the branch')
   }
   console.log('✔ 4. Verified VendorParent and VendorCenter successfully created:', parent.code, 'centers:', parent.centers.length)
+
+  // 4b. Decision is final: re-approve and reject-after-approve must both fail, without duplicating routes
+  const routesBefore = await prisma.branchVendorRoute.count({ where: { primaryCenterId: { in: parent.centers.map(c => c.id) } } })
+  let reApproveFailed = false
+  try { await approveVendorApplication(app.id, 'admin-tester') } catch { reApproveFailed = true }
+  if (!reApproveFailed) throw new Error('Expected re-approval of an APPROVED application to fail')
+  let rejectFailed = false
+  try { await rejectVendorApplication(app.id, 'late reject', 'admin-tester') } catch { rejectFailed = true }
+  if (!rejectFailed) throw new Error('Expected reject of an APPROVED application to fail')
+  const routesAfter = await prisma.branchVendorRoute.count({ where: { primaryCenterId: { in: parent.centers.map(c => c.id) } } })
+  if (routesAfter !== routesBefore) throw new Error(`Route rows duplicated: ${routesBefore} → ${routesAfter}`)
+  console.log('✔ 4b. Double decision correctly blocked, no duplicate routes')
 
   // 5. Cleanup test data
   await prisma.branchVendorRoute.deleteMany({ where: { primaryCenterId: { in: parent.centers.map(c => c.id) } } })

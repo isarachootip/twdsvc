@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { requireUser, handleError, HttpError } from '@/lib/api'
 import {
   getVendorApplication,
@@ -7,6 +8,11 @@ import {
 } from '@/lib/services/vendor-application.service'
 
 export const dynamic = 'force-dynamic'
+
+const decisionSchema = z.discriminatedUnion('action', [
+  z.object({ action: z.literal('APPROVE') }),
+  z.object({ action: z.literal('REJECT'), reason: z.string().trim().min(1, 'กรุณาระบุเหตุผลการปฏิเสธ').max(1000) }),
+])
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -24,21 +30,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   try {
     const user = await requireUser(['ADMIN'], req)
     const { id } = await params
-    const body = await req.json()
-    const { action, reason } = body
-
-    if (action === 'APPROVE') {
-      const result = await approveVendorApplication(id, user.id)
-      return NextResponse.json({ ok: true, result })
+    const parsed = decisionSchema.safeParse(await req.json().catch(() => null))
+    if (!parsed.success) {
+      throw new HttpError(400, parsed.error.issues[0]?.message ?? 'การกระทำไม่ถูกต้อง (ต้องเป็น APPROVE หรือ REJECT)')
     }
 
-    if (action === 'REJECT') {
-      if (!reason?.trim()) throw new HttpError(400, 'กรุณาระบุเหตุผลการปฏิเสธ')
-      const result = await rejectVendorApplication(id, reason.trim(), user.id)
-      return NextResponse.json({ ok: true, result })
-    }
-
-    throw new HttpError(400, 'การกระทำไม่ถูกต้อง (ต้องเป็น APPROVE หรือ REJECT)')
+    const result = parsed.data.action === 'APPROVE'
+      ? await approveVendorApplication(id, user.id)
+      : await rejectVendorApplication(id, parsed.data.reason, user.id)
+    return NextResponse.json({ ok: true, result })
   } catch (error) {
     return handleError(error)
   }

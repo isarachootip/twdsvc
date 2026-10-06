@@ -1,5 +1,18 @@
 import { z } from 'zod'
 
+/** Same-origin relative path only (e.g. /api/files/vd-abc.pdf) — blocks javascript:, http(s):, //host. */
+const SAFE_PATH = /^\/(?!\/)[A-Za-z0-9/_.-]+$/
+export const safeFileUrl = z.string().regex(SAFE_PATH, 'ลิงก์ไฟล์ไม่ถูกต้อง')
+const optionalFileUrl = z.union([z.literal(''), safeFileUrl]).optional().default('')
+
+/** Signature: uploaded file path, or PNG/JPEG base64 data URL (≤ ~1 MB). */
+export const MAX_SIGNATURE_CHARS = 1_400_000
+const signatureSchema = z
+  .string()
+  .min(1, 'กรุณาลงลายเซ็นดิจิทัล')
+  .max(MAX_SIGNATURE_CHARS, 'ไฟล์ลายเซ็นใหญ่เกินไป')
+  .refine(s => SAFE_PATH.test(s) || /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(s), 'รูปแบบลายเซ็นไม่ถูกต้อง')
+
 export const branchItemSchema = z.object({
   id: z.string(),
   branchName: z.string().min(1, 'กรุณาระบุชื่อสาขา'),
@@ -7,7 +20,7 @@ export const branchItemSchema = z.object({
   province: z.string().min(1, 'กรุณาระบุจังหวัด'),
   amphoe: z.string().optional().default(''),
   phone: z.string().min(9, 'กรุณาระบุเบอร์โทรศัพท์ที่ถูกต้อง'),
-  photo: z.string().nullable().optional(),
+  photo: safeFileUrl.nullable().optional(),
   radius: z.number().min(5).max(200).default(30),
   vip: z.boolean().default(false),
   express: z.boolean().default(false),
@@ -59,10 +72,10 @@ export const step4FinanceSchema = z.object({
     errorMap: () => ({ message: 'กรุณายินยอมเงื่อนไขการหักค่าอะไหล่และภาษี 3%' }),
   }),
   documents: z.object({
-    idcard: z.string().min(1, 'กรุณาอัปโหลดสำเนาบัตรประชาชน / หนังสือรับรอง'),
-    company: z.string().optional().default(''),
-    license: z.string().optional().default(''),
-    portfolio: z.array(z.string()).optional().default([]),
+    idcard: z.string().min(1, 'กรุณาอัปโหลดสำเนาบัตรประชาชน / หนังสือรับรอง').regex(SAFE_PATH, 'ลิงก์ไฟล์ไม่ถูกต้อง'),
+    company: optionalFileUrl,
+    license: optionalFileUrl,
+    portfolio: z.array(safeFileUrl).max(20).optional().default([]),
   }),
 })
 
@@ -74,7 +87,7 @@ export const step5AgreementsSchema = z.object({
     transportDamage: z.literal(true, { errorMap: () => ({ message: 'กรุณายอมรับความรับผิดชอบการขนส่ง' }) }),
     warrantyRepeat: z.literal(true, { errorMap: () => ({ message: 'กรุณายอมรับการรับประกันงานซ่อมซ้ำ 90 วัน' }) }),
   }),
-  signatureUrl: z.string().min(1, 'กรุณาลงลายเซ็นดิจิทัล'),
+  signatureUrl: signatureSchema,
 })
 
 export const fullVendorApplicationSchema = z.object({
