@@ -186,13 +186,43 @@ model ProductType {
 }
 
 model Commodity {
-  id          Int     @id @default(autoincrement())
-  sku         String  @unique
-  barcode     String?
-  name        String
-  brand       String
-  productType String
-  active      Boolean @default(true)
+  id               Int      @id @default(autoincrement())
+  sku              String   @unique
+  barcode          String?
+  name             String
+  brand            String
+  productType      String
+  active           Boolean  @default(true)
+  // ─── Full MASTER_SKU columns (1:1 with Excel header) ───
+  ibc              String?
+  sbc              String?
+  barcode2         String?
+  barcode3         String?
+  barcode4         String?
+  barcode5         String?
+  skuCondition     String?
+  skuConditionName String?
+  brandCode        String?  // Excel: brand_id
+  model            String?
+  vendorNo         String?
+  vendorName       String?
+  deptNo           String?
+  deptName         String?
+  sdeptNo          String?
+  sdeptName        String?
+  classNo          String?
+  className        String?
+  sclassNo         String?
+  sclassName       String?
+  unitCode         String?
+  unitName         String?
+  skuStatusCode    String?
+  skuStatusName    String?
+  skuPrice         Decimal? @db.Decimal(14, 2)
+  skuCost          Decimal? @db.Decimal(14, 2)
+  distrmcode       String?
+  norprice         Decimal? @db.Decimal(14, 2)
+  posprice         Decimal? @db.Decimal(14, 2)
 
   @@map("commodities")
 }
