@@ -1,61 +1,8 @@
 import { useState, useMemo } from 'react'
 import type { VendorSetupFormData, BranchItemUI, RouteCoverageUI } from './types'
 import { calculateVendorScoreAndTier } from '@/lib/services/vendor-tier.service'
-
-const INITIAL_FORM: VendorSetupFormData = {
-  store: {
-    name: '',
-    type: '',
-    taxId: '',
-    phone: '',
-    lineId: '',
-    branches: [
-      {
-        id: 'b-1',
-        branchName: 'สาขาหลัก',
-        address: '',
-        province: 'กรุงเทพมหานคร',
-        amphoe: '',
-        phone: '',
-        photo: null,
-        radius: 30,
-        vip: false,
-        express: false,
-      },
-    ],
-  },
-  expertise: {
-    appliances: {
-      washing: true,
-      fridge: true,
-      air: false,
-      tv: false,
-      waterHeater: false,
-      microwave: false,
-    },
-    isBrandAuthorized: false,
-    defaultSlaDays: 7,
-    warrantyDays: 90,
-  },
-  coverage: { coverage: {} },
-  finance: {
-    bank: 'กสิกรไทย',
-    accNo: '',
-    accName: '',
-    commission: false,
-    documents: { idcard: '', company: '', license: '', portfolio: [] },
-  },
-  agreements: {
-    agreements: {
-      sla: false,
-      pdpa: false,
-      standard: false,
-      transportDamage: false,
-      warrantyRepeat: false,
-    },
-    signatureUrl: '',
-  },
-}
+import { INITIAL_FORM } from './initial-form'
+import { useDraftStorage } from './useDraftStorage'
 
 export function useVendorSetupForm() {
   const [currentStep, setCurrentStep] = useState(1)
@@ -63,6 +10,15 @@ export function useVendorSetupForm() {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submittedResult, setSubmittedResult] = useState<{ applicationNo: string; score: number; estimatedTier: string } | null>(null)
+  const { clearDraft, draftRestored } = useDraftStorage({
+    form,
+    step: currentStep,
+    enabled: !submittedResult,
+    onRestore: draft => {
+      setForm(draft.form)
+      setCurrentStep(draft.step)
+    },
+  })
 
   const updateStore = (patch: Partial<VendorSetupFormData['store']>) =>
     setForm(prev => ({ ...prev, store: { ...prev.store, ...patch } }))
@@ -148,6 +104,7 @@ export function useVendorSetupForm() {
         score: data.score,
         estimatedTier: data.estimatedTier,
       })
+      clearDraft()
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการส่งใบสมัคร')
     } finally {
@@ -173,5 +130,6 @@ export function useVendorSetupForm() {
     submitError,
     submittedResult,
     submitApplication,
+    draftRestored,
   }
 }

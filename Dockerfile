@@ -3,16 +3,20 @@ RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
 FROM base AS deps
+# Explicitly force development environment during dependency install
+# so that Coolify build-time NODE_ENV=production does not skip devDependencies
+ENV NODE_ENV=development
 COPY package.json package-lock.json ./
 COPY prisma ./prisma
-RUN npm ci --include=dev
+RUN npm ci --no-audit --maxsockets=3
 
 FROM base AS builder
-ENV NODE_ENV=production
+# Cap Node memory to avoid OOM killer on small VPS instances
+ENV NODE_OPTIONS="--max-old-space-size=1536"
+ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npx prisma generate
-ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 FROM base AS runner

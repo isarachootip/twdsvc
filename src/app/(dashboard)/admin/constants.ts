@@ -37,6 +37,16 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { id: 'products', name: 'Product Master', title: 'Product Master (ข้อมูลสินค้า 302,475 SKU)', sub: 'ค้นหาและจัดการสินค้า Brand, Category, Barcode, ราคา และดูข้อมูลครบ 32 Fields' },
 ]
 
+/** Admin sidebar links that open standalone pages (not tabs rendered by AdminClient). */
+export interface AdminExtraLink {
+  href: string
+  name: string
+}
+
+export const ADMIN_EXTRA_LINKS: AdminExtraLink[] = [
+  { href: '/admin/vendors/applications', name: 'ตรวจรับใบสมัครคู่ค้า' },
+]
+
 export const SECTION_ALIAS: Record<string, string> = {
   '1': 'vendor',
   '2': 'fee',

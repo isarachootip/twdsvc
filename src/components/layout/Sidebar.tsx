@@ -8,7 +8,7 @@ import {
   CreditCard, Settings, LogOut, BookOpen, X, ChevronDown, ChevronRight, Users,
 } from 'lucide-react'
 import { MENU_DEFS, ROLE_LABELS } from '@/lib/constants'
-import { ADMIN_NAV_ITEMS } from '@/app/(dashboard)/admin/constants'
+import { ADMIN_NAV_ITEMS, ADMIN_EXTRA_LINKS } from '@/app/(dashboard)/admin/constants'
 
 const ICONS: Record<string, React.ReactNode> = {
   exec: <ChartBar size={18} />, analytics: <BarChart3 size={18} />, jobs: <ClipboardList size={18} />, cs: <UserPlus size={18} />,
@@ -115,6 +115,24 @@ export default function Sidebar({ user, menus, open, onClose }: SidebarProps) {
                               {i + 1}.
                             </span>
                             <span className="truncate">{sub.name}</span>
+                          </Link>
+                        )
+                      })}
+                      {ADMIN_EXTRA_LINKS.map(link => {
+                        const isActive = pathname === link.href || pathname.startsWith(link.href + '/')
+                        return (
+                          <Link
+                            key={link.href}
+                            href={link.href}
+                            onClick={onClose}
+                            className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[12.5px] transition-colors ${
+                              isActive
+                                ? 'bg-red-50 text-red-700 font-semibold'
+                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                            }`}
+                          >
+                            <UserPlus size={13} className="shrink-0 w-4" />
+                            <span className="truncate">{link.name}</span>
                           </Link>
                         )
                       })}
