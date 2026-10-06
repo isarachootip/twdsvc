@@ -224,6 +224,11 @@ model Commodity {
   norprice         Decimal? @db.Decimal(14, 2)
   posprice         Decimal? @db.Decimal(14, 2)
 
+  @@index([brand])
+  @@index([deptName])
+  @@index([className])
+  @@index([barcode])
+  @@index([active])
   @@map("commodities")
 }
 

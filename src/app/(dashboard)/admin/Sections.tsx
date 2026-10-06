@@ -17,6 +17,7 @@ export {
   DashboardSection,
   GeneralSection,
   PendingVendorSection,
+  ProductsSection,
   useSave,
   SaveButton,
   Row,

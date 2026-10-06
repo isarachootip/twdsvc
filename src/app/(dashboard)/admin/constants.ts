@@ -11,6 +11,7 @@ export const ADMIN_SECTION_IDS = [
   'dashboard',
   'general',
   'pending',
+  'products',
 ] as const
 
 export interface AdminNavItem {
@@ -33,6 +34,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { id: 'dashboard', name: 'Dashboard', title: 'ตั้งค่าการแสดงผล Dashboard', sub: 'เลือกรายการสรุปที่แสดง และสิทธิ์เห็นข้อมูลต้นทุน' },
   { id: 'general', name: 'ตั้งค่าทั่วไป', title: 'ตั้งค่าทั่วไป', sub: 'VAT, อายุลิงก์ใบเสนอราคา, ค่า 3PL ขากลับ, อายุคูปอง, เกณฑ์ SLA VD' },
   { id: 'pending', name: 'รอกำหนดศูนย์ซ่อม', title: 'รอกำหนดศูนย์ซ่อม', sub: 'คิวงานที่ระบบหาศูนย์ซ่อมไม่ได้ (PENDING_VENDOR_ASSIGNMENT)' },
+  { id: 'products', name: 'Product Master', title: 'Product Master (ข้อมูลสินค้า 302,475 SKU)', sub: 'ค้นหาและจัดการสินค้า Brand, Category, Barcode, ราคา และดูข้อมูลครบ 32 Fields' },
 ]
 
 export const SECTION_ALIAS: Record<string, string> = {
@@ -48,6 +50,13 @@ export const SECTION_ALIAS: Record<string, string> = {
   '10': 'dashboard',
   '11': 'general',
   '12': 'pending',
+  '13': 'products',
+  'product': 'products',
+  'products': 'products',
+  'commodities': 'products',
+  'commodity': 'products',
+  'Product': 'products',
+  'Products': 'products',
   // Named and slug aliases
   'vendors': 'vendor',
   'Vendors': 'vendor',
