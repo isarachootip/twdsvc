@@ -16,6 +16,7 @@ async function runLifecycleTest() {
   // Clean up any previous test leftovers (including vendor entities from failed runs)
   const staleParents = await prisma.vendorParent.findMany({ where: { name: storeName }, include: { centers: true } })
   const staleCenterIds = staleParents.flatMap(p => p.centers.map(c => c.id))
+  await prisma.user.deleteMany({ where: { vendorCenterId: { in: staleCenterIds } } })
   await prisma.branchVendorRoute.deleteMany({ where: { primaryCenterId: { in: staleCenterIds } } })
   await prisma.vendorCenter.deleteMany({ where: { id: { in: staleCenterIds } } })
   await prisma.vendorParent.deleteMany({ where: { id: { in: staleParents.map(p => p.id) } } })
@@ -28,6 +29,7 @@ async function runLifecycleTest() {
       type: 'บริษัทจำกัด' as const,
       taxId: testTaxId,
       phone: '0899999999',
+      email: 'vendor-test@example.com',
       lineId: '@testvendor',
       branches: [
         {
@@ -109,7 +111,7 @@ async function runLifecycleTest() {
     ? (await prisma.branchVendorRoute.aggregate({ where: { branchId: site.id }, _max: { priority: true } }))._max.priority ?? 0
     : 0
 
-  const approvedApp = await approveVendorApplication(app.id, 'admin-tester')
+  const { application: approvedApp, credentials } = await approveVendorApplication(app.id, 'admin-tester')
   console.log('✔ 3. Application approved, approvedParentId:', approvedApp.approvedParentId)
 
   if (site && fixtureRoute) {
@@ -153,7 +155,17 @@ async function runLifecycleTest() {
   if (routesAfter !== routesBefore) throw new Error(`Route rows duplicated: ${routesBefore} → ${routesAfter}`)
   console.log('✔ 4b. Double decision correctly blocked, no duplicate routes')
 
+  // 4c. VD login created in the same transaction: role VD, linked to first center, password hashed
+  const vdUser = await prisma.user.findUnique({ where: { username: credentials.username } })
+  if (!vdUser) throw new Error('VD user was not created on approval')
+  if (vdUser.role !== 'VD') throw new Error(`Expected role VD, got ${vdUser.role}`)
+  if (vdUser.vendorCenterId !== parent.centers[0].id) throw new Error('VD user must be linked to the first center')
+  if (vdUser.password === credentials.tempPassword || !vdUser.password.startsWith('$2')) throw new Error('Password must be stored as a bcrypt hash')
+  if (!vdUser.mustChangePassword) throw new Error('New VD user must be forced to change the temporary password')
+  console.log('✔ 4c. VD user created with hashed password:', vdUser.username)
+
   // 5. Cleanup test data
+  await prisma.user.deleteMany({ where: { vendorCenterId: { in: parent.centers.map(c => c.id) } } })
   await prisma.branchVendorRoute.deleteMany({ where: { primaryCenterId: { in: parent.centers.map(c => c.id) } } })
   await prisma.vendorCenter.deleteMany({ where: { vendorParentId: parent.id } })
   await prisma.vendorParent.delete({ where: { id: parent.id } })

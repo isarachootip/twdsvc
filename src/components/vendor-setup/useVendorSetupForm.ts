@@ -61,7 +61,7 @@ export function useVendorSetupForm() {
   const canGoNext = useMemo(() => {
     if (currentStep === 1) {
       const s = form.store
-      return Boolean(s.name.trim() && s.type && s.taxId.length === 13 && s.phone.trim() && s.branches.length > 0 && s.branches[0].address)
+      return Boolean(s.name.trim() && s.type && s.taxId.length === 13 && s.phone.trim() && /^\S+@\S+\.\S+$/.test(s.email.trim()) && s.branches.length > 0 && s.branches[0].address)
     }
     if (currentStep === 2) {
       return Object.values(form.expertise.appliances).some(Boolean)

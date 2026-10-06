@@ -36,6 +36,7 @@ export interface VendorSetupFormData {
     type: 'บุคคลธรรมดา' | 'ห้างหุ้นส่วนจำกัด' | 'บริษัทจำกัด' | 'วิสาหกิจชุมชน' | ''
     taxId: string
     phone: string
+    email: string
     lineId: string
     branches: BranchItemUI[]
   }

@@ -33,7 +33,9 @@ export const SETTING_DEFAULTS: Record<string, string> = {
 }
 
 export async function getSettings(keys?: string[]): Promise<Record<string, string>> {
-  const rows = await prisma.systemSetting.findMany(keys ? { where: { key: { in: keys } } } : undefined)
+  const rows = (await prisma.systemSetting.findMany(keys ? { where: { key: { in: keys } } } : undefined)).filter(
+    r => !r.key.startsWith('INTEGRATION_')
+  )
   const out: Record<string, string> = {}
   for (const k of keys ?? Object.keys(SETTING_DEFAULTS)) out[k] = SETTING_DEFAULTS[k] ?? ''
   for (const r of rows) out[r.key] = r.value

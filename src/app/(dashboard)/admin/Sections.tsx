@@ -18,6 +18,7 @@ export {
   GeneralSection,
   PendingVendorSection,
   ProductsSection,
+  IntegrationsSection,
   useSave,
   SaveButton,
   Row,

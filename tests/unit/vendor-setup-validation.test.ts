@@ -42,6 +42,7 @@ function runValidationTests() {
       type: 'บริษัทจำกัด',
       taxId: '0105561234567',
       phone: '0819876543',
+      email: 'changdee@example.com',
       lineId: '@changdee',
       branches: [
         {

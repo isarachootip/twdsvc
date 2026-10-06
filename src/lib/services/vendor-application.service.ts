@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db'
 import { HttpError } from '@/lib/api'
 import { Prisma, VendorApplicationStatus } from '@prisma/client'
 import { calculateVendorScoreAndTier } from './vendor-tier.service'
+import { createVendorUser } from './vendor-account.service'
 import type { FullVendorApplicationInput, BranchItem, RouteCoverageItem } from '../validations/vendor-setup.schema'
 
 export async function createVendorApplication(input: FullVendorApplicationInput) {
@@ -31,6 +32,7 @@ export async function createVendorApplication(input: FullVendorApplicationInput)
     businessType: input.store.type,
     taxId: input.store.taxId.trim(),
     phone: input.store.phone.trim(),
+    email: input.store.email,
     lineId: input.store.lineId?.trim() || null,
     branches: input.store.branches as unknown as object,
     appliances: input.expertise.appliances as unknown as object,
@@ -165,10 +167,16 @@ export async function approveVendorApplication(id: string, adminUserId: string) 
       }
     }
 
-    return tx.vendorApplication.update({
+    const credentials = await createVendorUser(tx, {
+      parentCode,
+      storeName: app.storeName,
+      centerId: primaryCenterId ?? null,
+    })
+    const application = await tx.vendorApplication.update({
       where: { id },
       data: { approvedParentId: parent.id },
     })
+    return { application, credentials }
   })
 }
 

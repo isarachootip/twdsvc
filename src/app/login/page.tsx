@@ -41,7 +41,7 @@ export default function LoginPage() {
       setError(data.error ?? 'เข้าสู่ระบบไม่สำเร็จ')
       return
     }
-    const route = ROLE_ROUTES[data.role] ?? '/jobs'
+    const route = data.mustChangePassword ? '/change-password' : (ROLE_ROUTES[data.role] ?? '/jobs')
     router.push(route)
     router.refresh()
   }

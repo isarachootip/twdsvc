@@ -6,6 +6,8 @@ import { fmtDate, fmtPhone } from '@/lib/constants'
 import { useToast } from '@/components/ui/Toast'
 import { CheckCircle2, XCircle, Eye, Building2, ShieldCheck, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
+import { CopyRegisterLinkButton } from '@/components/vendor-setup/CopyRegisterLinkButton'
+import { ApprovedCredentialsModal, type ApprovedCredentials, type EmailStatus } from '@/components/vendor-setup/ApprovedCredentialsModal'
 
 interface ApplicationRow {
   id: string
@@ -26,6 +28,7 @@ export default function VendorApplicationsPage() {
   const [selected, setSelected] = useState<ApplicationRow | null>(null)
   const [rejectReason, setRejectReason] = useState('')
   const [busy, setBusy] = useState(false)
+  const [approved, setApproved] = useState<{ credentials: ApprovedCredentials; storeName: string; emailStatus?: EmailStatus } | null>(null)
   const { toast } = useToast()
 
   const load = useCallback(() => {
@@ -52,6 +55,9 @@ export default function VendorApplicationsPage() {
         action === 'APPROVE' ? 'อนุมัติคู่ค้าสำเร็จ' : 'ปฏิเสธใบสมัครแล้ว',
         action === 'APPROVE' ? 'success' : 'info'
       )
+      if (action === 'APPROVE' && data.credentials) {
+        setApproved({ credentials: data.credentials, storeName: selected?.storeName ?? '', emailStatus: data.email })
+      }
       setSelected(null)
       setRejectReason('')
       load()
@@ -73,9 +79,9 @@ export default function VendorApplicationsPage() {
             ใบสมัครคู่ค้าใหม่ (Vendor Applications)
           </h2>
         </div>
-        <Link href="/vendor/register" target="_blank" className="btn btn-primary text-xs">
+        <div className="flex items-center gap-2"><CopyRegisterLinkButton /><Link href="/vendor/register" target="_blank" className="btn btn-primary text-xs">
           เปิดหน้าสมัคร (Portal)
-        </Link>
+        </Link></div>
       </div>
 
       <div className="pcard">
@@ -188,6 +194,7 @@ export default function VendorApplicationsPage() {
           </div>
         </div>
       )}
+      {approved && <ApprovedCredentialsModal {...approved} onClose={() => setApproved(null)} />}
     </div>
   )
 }

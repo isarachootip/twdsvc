@@ -51,7 +51,7 @@ async function verifyToken(token?: string) {
   if (!token) return null
   try {
     const { payload } = await jwtVerify(token, SECRET)
-    return payload as { sub: string; role: string; siteId?: string; vendorCenterId?: string }
+    return payload as { sub: string; role: string; siteId?: string; vendorCenterId?: string; mcp?: boolean }
   } catch {
     return null
   }
@@ -79,6 +79,14 @@ export async function middleware(req: NextRequest) {
     const url = new URL('/login', req.url)
     if (pathname !== '/') url.searchParams.set('next', next)
     return NextResponse.redirect(url)
+  }
+
+  // Temporary password: only /change-password (pages) and /api/auth/* (public prefix above) are reachable
+  if (payload.mcp) {
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'PASSWORD_CHANGE_REQUIRED' }, { status: 403 })
+    }
+    if (pathname !== '/change-password') return NextResponse.redirect(new URL('/change-password', req.url))
   }
 
   // Root redirect to role home

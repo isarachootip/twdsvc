@@ -18,15 +18,31 @@ model User {
   siteId           String?
   vendorCenterId   String?
   active           Boolean        @default(true)
+  mustChangePassword Boolean      @default(false)
   failedLoginCount Int            @default(0)
   lockedUntil      DateTime?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
+  lineUserId       String?        @unique
   refreshTokens    RefreshToken[]
+  lineLinkCodes    LineLinkCode[]
   site             Site?          @relation(fields: [siteId], references: [id])
   vendorCenter     VendorCenter?  @relation(fields: [vendorCenterId], references: [id])
 
   @@map("users")
+}
+
+model LineLinkCode {
+  id        String    @id @default(cuid())
+  userId    String
+  codeHash  String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("line_link_codes")
 }
 
 model RefreshToken {
@@ -749,6 +765,7 @@ model VendorApplication {
   businessType      String
   taxId             String
   phone             String
+  email             String?
   lineId            String?
   branches          Json
   appliances        Json

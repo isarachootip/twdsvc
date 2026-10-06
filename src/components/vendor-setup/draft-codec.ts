@@ -33,6 +33,7 @@ const formSchema = z.object({
     type: z.enum(['บุคคลธรรมดา', 'ห้างหุ้นส่วนจำกัด', 'บริษัทจำกัด', 'วิสาหกิจชุมชน', '']),
     taxId: z.string(),
     phone: z.string(),
+    email: z.string(),
     lineId: z.string(),
     branches: z.array(branchSchema),
   }),

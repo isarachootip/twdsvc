@@ -6,6 +6,7 @@ import {
   approveVendorApplication,
   rejectVendorApplication,
 } from '@/lib/services/vendor-application.service'
+import { sendApprovalEmail } from '@/lib/services/vendor-notify.service'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,9 +36,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       throw new HttpError(400, parsed.error.issues[0]?.message ?? 'การกระทำไม่ถูกต้อง (ต้องเป็น APPROVE หรือ REJECT)')
     }
 
-    const result = parsed.data.action === 'APPROVE'
-      ? await approveVendorApplication(id, user.id)
-      : await rejectVendorApplication(id, parsed.data.reason, user.id)
+    if (parsed.data.action === 'APPROVE') {
+      const { application, credentials } = await approveVendorApplication(id, user.id)
+      const email = await sendApprovalEmail(application.email, application.storeName, credentials)
+      return NextResponse.json({ ok: true, result: application, credentials, email })
+    }
+    const result = await rejectVendorApplication(id, parsed.data.reason, user.id)
     return NextResponse.json({ ok: true, result })
   } catch (error) {
     return handleError(error)

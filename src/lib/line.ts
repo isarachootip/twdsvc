@@ -2,7 +2,7 @@
  * LINE Messaging API Integration (LINE Official Notification / Push)
  */
 
-const LINE_CHANNEL_ACCESS_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN
+import { getIntegrationConfig } from '@/lib/services/integration-config.service'
 
 export interface SendLineResult {
   success: boolean
@@ -11,10 +11,16 @@ export interface SendLineResult {
   error?: string
 }
 
+export interface LineMessage {
+  type: string
+  [key: string]: unknown
+}
+
 /**
  * Send a push message to a LINE user or group
  */
-export async function sendLinePush(toUserId: string, messages: any[]): Promise<SendLineResult> {
+export async function sendLinePush(toUserId: string, messages: LineMessage[]): Promise<SendLineResult> {
+  const LINE_CHANNEL_ACCESS_TOKEN = (await getIntegrationConfig()).LINE_CHANNEL_ACCESS_TOKEN
   if (!LINE_CHANNEL_ACCESS_TOKEN) {
     console.log(`[LINE Simulated Push] to ${toUserId}:`, JSON.stringify(messages, null, 2))
     return { success: true, mode: 'simulated' }
@@ -40,9 +46,9 @@ export async function sendLinePush(toUserId: string, messages: any[]): Promise<S
     }
 
     return { success: true, mode: 'live' }
-  } catch (err: any) {
+  } catch (err) {
     console.error('[LINE Exception]', err)
-    return { success: false, mode: 'live', error: err.message }
+    return { success: false, mode: 'live', error: err instanceof Error ? err.message : 'LINE request failed' }
   }
 }
 

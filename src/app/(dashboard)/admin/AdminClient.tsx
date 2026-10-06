@@ -4,7 +4,7 @@ import Link from 'next/link'
 import {
   VendorSection, FeeSection, BranchSection, ZoneSection, SlaSection, RoleSection, SkuSection,
   PayoutSection, TradeinSection, DashboardSection, GeneralSection, PendingVendorSection,
-  ProductsSection,
+  ProductsSection, IntegrationsSection,
 } from './Sections'
 
 import { SECTION_ALIAS, ADMIN_NAV_ITEMS } from './constants'
@@ -24,6 +24,7 @@ const SECTION_COMPONENTS: Record<string, React.ComponentType> = {
   general: GeneralSection,
   pending: PendingVendorSection,
   products: ProductsSection,
+  integrations: IntegrationsSection,
 }
 
 export const ADMIN_SECTIONS = ADMIN_NAV_ITEMS.map(nav => ({

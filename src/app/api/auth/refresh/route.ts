@@ -28,6 +28,7 @@ async function rotate(): Promise<boolean> {
     role: u.role,
     siteId: u.siteId,
     vendorCenterId: u.vendorCenterId,
+    mustChangePassword: u.mustChangePassword,
   })
   const secure = process.env.NODE_ENV === 'production' && process.env.COOKIE_SECURE !== 'false'
   store.set('access_token', access, { httpOnly: true, secure, sameSite: 'lax', maxAge: ACCESS_TTL_SECONDS, path: '/' })

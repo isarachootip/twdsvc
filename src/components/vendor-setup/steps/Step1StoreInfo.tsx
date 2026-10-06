@@ -123,6 +123,18 @@ export function Step1StoreInfo({ store, onUpdateStore, onUpdateBranches }: Step1
               />
             </div>
           </div>
+          <div className="space-y-1">
+            <label className="text-xs font-semibold" style={{ color: 'var(--text)' }}>
+              อีเมล (ใช้รับข้อมูลเข้าสู่ระบบเมื่ออนุมัติ) <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="email"
+              className="inp text-sm"
+              placeholder="shop@example.com"
+              value={store.email}
+              onChange={e => onUpdateStore({ email: e.target.value })}
+            />
+          </div>
         </div>
       </div>
 

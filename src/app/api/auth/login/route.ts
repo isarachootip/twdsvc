@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
       select: {
         id: true, username: true, fullName: true, role: true,
         siteId: true, vendorCenterId: true,
-        password: true, active: true,
+        password: true, active: true, mustChangePassword: true,
         failedLoginCount: true, lockedUntil: true,
       },
     })
@@ -47,6 +47,7 @@ export async function POST(req: NextRequest) {
     const session = {
       id: user.id, username: user.username, fullName: user.fullName,
       role: user.role.toString(), siteId: user.siteId, vendorCenterId: user.vendorCenterId,
+      mustChangePassword: user.mustChangePassword,
     }
 
     const accessToken = await signAccessToken(session)
@@ -76,6 +77,7 @@ export async function POST(req: NextRequest) {
       id: session.id, username: session.username,
       fullName: session.fullName, role: session.role,
       siteId: session.siteId, vendorCenterId: session.vendorCenterId,
+      mustChangePassword: session.mustChangePassword,
     })
   } catch (e) {
     console.error('[login]', e)

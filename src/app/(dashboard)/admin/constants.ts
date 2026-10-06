@@ -12,6 +12,7 @@ export const ADMIN_SECTION_IDS = [
   'general',
   'pending',
   'products',
+  'integrations',
 ] as const
 
 export interface AdminNavItem {
@@ -35,6 +36,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { id: 'general', name: 'ตั้งค่าทั่วไป', title: 'ตั้งค่าทั่วไป', sub: 'VAT, อายุลิงก์ใบเสนอราคา, ค่า 3PL ขากลับ, อายุคูปอง, เกณฑ์ SLA VD' },
   { id: 'pending', name: 'รอกำหนดศูนย์ซ่อม', title: 'รอกำหนดศูนย์ซ่อม', sub: 'คิวงานที่ระบบหาศูนย์ซ่อมไม่ได้ (PENDING_VENDOR_ASSIGNMENT)' },
   { id: 'products', name: 'Product Master', title: 'Product Master (ข้อมูลสินค้า 302,475 SKU)', sub: 'ค้นหาและจัดการสินค้า Brand, Category, Barcode, ราคา และดูข้อมูลครบ 32 Fields' },
+  { id: 'integrations', name: 'เชื่อมต่อระบบ (LINE / อีเมล)', title: 'เชื่อมต่อระบบ (Integrations)', sub: 'ตั้งค่า LINE Official Account, SMTP และ Base URL พร้อมปุ่มทดสอบการเชื่อมต่อ' },
 ]
 
 /** Admin sidebar links that open standalone pages (not tabs rendered by AdminClient). */

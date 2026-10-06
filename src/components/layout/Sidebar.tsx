@@ -164,6 +164,9 @@ export default function Sidebar({ user, menus, open, onClose }: SidebarProps) {
             <div>{ROLE_LABELS[user.role] ?? user.role}{user.siteName ? ` · ${user.siteName}` : ''}</div>
             {user.vendorLabel && <div>{user.vendorLabel}</div>}
           </div>
+          <Link href="/account/line" className="flex items-center gap-2 w-full text-sm px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors mb-1" style={{ color: 'var(--text-2)' }}>
+            เชื่อมต่อ LINE
+          </Link>
           <form action="/api/auth/logout" method="POST">
             <button type="submit" className="flex items-center gap-2 w-full text-sm px-3 py-2 rounded-lg hover:bg-red-50 transition-colors" style={{ color: 'var(--red)' }}>
               <LogOut size={16} />

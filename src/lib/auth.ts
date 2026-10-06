@@ -26,6 +26,7 @@ export interface UserSession {
   vendorCenterId: string | null
   siteName?: string | null
   vendorLabel?: string | null
+  mustChangePassword?: boolean
 }
 
 export function hashToken(raw: string): string {
@@ -37,7 +38,10 @@ export function generateRefreshToken(): string {
 }
 
 export async function signAccessToken(user: UserSession): Promise<string> {
-  return new SignJWT({ sub: user.id, role: user.role, siteId: user.siteId, vendorCenterId: user.vendorCenterId })
+  return new SignJWT({
+    sub: user.id, role: user.role, siteId: user.siteId, vendorCenterId: user.vendorCenterId,
+    ...(user.mustChangePassword ? { mcp: true } : {}),
+  })
     .setProtectedHeader({ alg: 'HS256' })
     .setExpirationTime(`${ACCESS_TTL_SECONDS}s`)
     .setIssuedAt()
@@ -96,6 +100,7 @@ export async function getCurrentUser(req?: Request): Promise<UserSession | null>
         role: true,
         siteId: true,
         vendorCenterId: true,
+        mustChangePassword: true,
         site: { select: { name: true } },
         vendorCenter: { select: { code: true, vendorParent: { select: { code: true, name: true } } } },
       },

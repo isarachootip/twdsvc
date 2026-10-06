@@ -3,6 +3,8 @@ import { prisma } from '../db'
 import { slaOnEvent } from '../sla-engine'
 import { ActionType, ActionInput, Actor, ActionResult, Ctx } from './types'
 import { ActionError } from './errors'
+import { shouldNotifyVendor } from '../services/job-notify-message'
+import { notifyVendorOfJob } from '../services/job-notify.service'
 import { ACTIONS, normalizeAction } from './registry'
 import {
   validateRolePermission,
@@ -109,10 +111,20 @@ export async function executeAction(
         await slaOnEvent(tx, slaCtx, e, now)
       }
 
-      return { job: { id: updated.id, jobNo: updated.jobNo, stage: updated.stage, version: updated.version }, extra: c.extra }
+      return {
+        job: { id: updated.id, jobNo: updated.jobNo, stage: updated.stage, version: updated.version },
+        extra: c.extra,
+        notify: { prevStage: job.stage, vendorCenterId: updated.vendorCenterId },
+      }
     }, { timeout: 20000, maxWait: 10000 })
 
-    return { success: true, ...result }
+    // After commit, best-effort: a LINE failure must never fail the action
+    const { notify, ...payload } = result
+    if (shouldNotifyVendor(notify.prevStage, payload.job.stage, notify.vendorCenterId) && notify.vendorCenterId) {
+      void notifyVendorOfJob({ jobNo: payload.job.jobNo, vendorCenterId: notify.vendorCenterId })
+    }
+
+    return { success: true, ...payload }
   } catch (e: unknown) {
     if (e instanceof ActionError) return { success: false, error: e.message, status: e.status }
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2025') {

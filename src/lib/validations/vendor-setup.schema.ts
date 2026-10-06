@@ -33,6 +33,7 @@ export const step1StoreSchema = z.object({
   }),
   taxId: z.string().regex(/^\d{13}$/, 'เลขประจำตัวผู้เสียภาษีต้องเป็นตัวเลข 13 หลัก'),
   phone: z.string().min(9, 'กรุณาระบุเบอร์โทรหลัก'),
+  email: z.string().trim().toLowerCase().email('กรุณาระบุอีเมลที่ถูกต้อง').max(254),
   lineId: z.string().optional().default(''),
   branches: z.array(branchItemSchema).min(1, 'ต้องมีสาขาอย่างน้อย 1 สาขา').max(10, 'เพิ่มได้สูงสุด 10 สาขา'),
 })

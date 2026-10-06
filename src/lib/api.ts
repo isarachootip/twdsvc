@@ -12,6 +12,7 @@ export class HttpError extends Error {
 export async function requireUser(roles?: string[], req?: Request): Promise<UserSession> {
   const user = await getCurrentUser(req)
   if (!user) throw new HttpError(401, 'Unauthorized')
+  if (user.mustChangePassword) throw new HttpError(403, 'PASSWORD_CHANGE_REQUIRED')
   if (roles && !roles.includes(user.role) && user.role !== 'ADMIN') throw new HttpError(403, 'ไม่มีสิทธิ์ใช้งานส่วนนี้')
   return user
 }

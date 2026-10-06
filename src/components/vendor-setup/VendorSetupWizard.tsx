@@ -37,6 +37,7 @@ export function VendorSetupWizard() {
     submitError,
     submittedResult,
     submitApplication,
+    draftRestored,
   } = useVendorSetupForm()
 
   if (submittedResult) {
@@ -96,6 +97,12 @@ export function VendorSetupWizard() {
           })}
         </div>
       </div>
+
+      {draftRestored && (
+        <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs">
+          กู้คืนข้อมูลฉบับร่างที่คุณกรอกไว้แล้ว — เพื่อความปลอดภัย บัญชีธนาคาร เอกสารแนบ และลายเซ็นไม่ถูกบันทึกไว้ กรุณากรอก/อัปโหลดใหม่
+        </div>
+      )}
 
       {submitError && (
         <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs flex items-center gap-2">

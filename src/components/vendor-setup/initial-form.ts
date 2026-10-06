@@ -6,6 +6,7 @@ export const INITIAL_FORM: VendorSetupFormData = {
     type: '',
     taxId: '',
     phone: '',
+    email: '',
     lineId: '',
     branches: [
       {
