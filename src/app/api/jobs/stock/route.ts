@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     if (!branchId)
       return NextResponse.json({ error: 'ไม่พบข้อมูลสาขาในระบบ' }, { status: 400 })
 
-    const jobNo = await generateJobNo('STOCK')
+    const jobNo = await generateJobNo(branchId)
     const now = new Date()
 
     const job = await prisma.$transaction(async (tx) => {

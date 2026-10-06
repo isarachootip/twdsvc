@@ -7,6 +7,14 @@ function getYYMM(): string {
   return `${yy}${mm}`
 }
 
+function getDDMMYYYY(date: Date = new Date()): string {
+  const bkk = new Date(date.toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }))
+  const dd = String(bkk.getDate()).padStart(2, '0')
+  const mm = String(bkk.getMonth() + 1).padStart(2, '0')
+  const yyyy = String(bkk.getFullYear())
+  return `${dd}${mm}${yyyy}`
+}
+
 async function nextSeq(prefix: string): Promise<number> {
   const result = await prisma.runningNumber.upsert({
     where: { prefix },
@@ -17,12 +25,25 @@ async function nextSeq(prefix: string): Promise<number> {
   return result.lastSeq
 }
 
-export async function generateJobNo(type: 'CUSTOMER' | 'STOCK'): Promise<string> {
-  const prefix = type === 'STOCK' ? 'STK' : 'JB'
-  const yymm = getYYMM()
-  const key = `${prefix}-${yymm}`
+export async function generateJobNo(branchId?: string | null, date: Date = new Date()): Promise<string> {
+  let branchCode = 'HQ'
+  const cleanId = (branchId === 'CUSTOMER' || branchId === 'STOCK') ? null : branchId
+
+  if (cleanId) {
+    const site = await prisma.site.findUnique({
+      where: { id: cleanId },
+      select: { nickname: true, code: true },
+    })
+    if (site) {
+      const candidate = (site.nickname || site.code || 'HQ').trim().toUpperCase().replace(/[^A-Z0-9]/g, '')
+      if (candidate) branchCode = candidate
+    }
+  }
+
+  const ddmmyyyy = getDDMMYYYY(date)
+  const key = `JOB-${branchCode}-${ddmmyyyy}`
   const seq = await nextSeq(key)
-  return `${key}-${String(seq).padStart(5, '0')}`
+  return `${branchCode}-${ddmmyyyy}-${String(seq).padStart(4, '0')}`
 }
 
 export async function generateQuoteNo(): Promise<string> {

@@ -924,7 +924,7 @@ describe('Admin Full Access & Operational Flow Integration (R1, R2, R3)', () => 
       const res = await createJobRoute(req)
       expect(res.status).toBe(201)
       const data = await res.json()
-      expect(data.jobNo).toMatch(/^JB-\d{4}-\d{5}$/)
+      expect(data.jobNo).toMatch(/^[A-Z0-9]+-\d{8}-\d{4}$/)
 
       // Verify in DB that a valid branchId was assigned automatically
       const savedJob = await prisma.job.findUnique({ where: { id: data.id } })

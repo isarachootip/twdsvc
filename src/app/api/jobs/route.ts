@@ -159,7 +159,7 @@ export async function POST(req: NextRequest) {
       throw new HttpError(400, 'กรุณากรอกเลขที่ใบเสร็จ POS')
     }
 
-    const jobNo = await generateJobNo('CUSTOMER')
+    const jobNo = await generateJobNo(branchId)
     const now = new Date()
 
     const result = await prisma.$transaction(async tx => {

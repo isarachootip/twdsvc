@@ -14,6 +14,7 @@ import './e2e/tier1-features/features16_to_20.test'
 import './e2e/tier1-features/features21_to_25.test'
 import './e2e/tier1-features/admin_full_access.test'
 import './e2e/tier1-features/customer_service_view.test'
+import './unit/number-generator.test'
 
 // Tier 2: Boundary & Corner Cases
 import './e2e/tier2-boundaries/boundary_financial_satang.test'

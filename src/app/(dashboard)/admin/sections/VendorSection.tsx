@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import Link from 'next/link'
 import { api } from '@/lib/client'
 import { useToast } from '@/components/ui/Toast'
 import { useSave, SaveButton, Row, Loading, useSites } from './admin-helpers'
@@ -78,10 +79,22 @@ export function VendorSection() {
 
   return (
     <div className="pcard">
-      <h3>VD หลัก (ระดับบริษัท)</h3>
-      <p className="hint">
-        ข้อมูลสัญญา/เงื่อนไขทางธุรกิจ ใช้ร่วมกันในทุกศูนย์บริการย่อยของ VD นี้
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-3 pb-2 border-b" style={{ borderColor: 'var(--border)' }}>
+        <div>
+          <h3 className="m-0">VD หลัก (ระดับบริษัท)</h3>
+          <p className="hint m-0">
+            ข้อมูลสัญญา/เงื่อนไขทางธุรกิจ ใช้ร่วมกันในทุกศูนย์บริการย่อยของ VD นี้
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Link href="/admin/vendors/applications" className="btn btn-secondary text-xs">
+            ตรวจสอบใบสมัครใหม่
+          </Link>
+          <Link href="/vendor/register" target="_blank" className="btn btn-primary text-xs">
+            + เปิดตัวช่วยลงทะเบียน (Wizard)
+          </Link>
+        </div>
+      </div>
       {list.map((p, pi) => (
         <VendorParentCard
           key={p.id ?? `new-${pi}`}

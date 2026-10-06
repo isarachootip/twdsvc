@@ -729,3 +729,39 @@ enum SiteType {
   BRANCH
   DC
 }
+
+enum VendorApplicationStatus {
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+}
+
+model VendorApplication {
+  id                String                  @id @default(cuid())
+  applicationNo     String                  @unique
+  status            VendorApplicationStatus @default(PENDING_APPROVAL)
+  storeName         String
+  businessType      String
+  taxId             String
+  phone             String
+  lineId            String?
+  branches          Json
+  appliances        Json
+  isBrandAuthorized Boolean                 @default(false)
+  coverage          Json
+  documents         Json
+  bank              Json
+  agreements        Json
+  signatureUrl      String?
+  estimatedTier     String                  @default("STANDARD")
+  estimatedCases    Int                     @default(0)
+  score             Int                     @default(0)
+  approvedParentId  String?
+  adminNotes        String?
+  reviewedBy        String?
+  reviewedAt        DateTime?
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+
+  @@map("vendor_applications")
+}
