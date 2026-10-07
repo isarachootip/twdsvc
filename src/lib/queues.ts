@@ -86,8 +86,10 @@ export async function queueHandler(dept: keyof typeof QUEUES, req: Request) {
     }
     const tabs: Record<string, JobView[]> = {}
     const kpis: Record<string, number> = {}
+    const labels: Record<string, string> = {} // tabKey หลัก → ชื่อแท็บ (ไม่มี alias)
     const overdue: Array<{ id: string; jobNo: string; customerName: string | null; productName: string; tab: string; tabLabel: string; stepName: string; overHours: number }> = []
     for (const t of def.tabs) {
+      labels[t.key] = t.label
       let extraScope: Prisma.JobWhereInput = {}
       if (dept === 'CS' && t.key === 'opened') {
         const startToday = new Date(new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10) + 'T00:00:00+07:00')
@@ -116,7 +118,7 @@ export async function queueHandler(dept: keyof typeof QUEUES, req: Request) {
       }
     }
     overdue.sort((a, b) => b.overHours - a.overHours)
-    return NextResponse.json({ tabs, overdue, kpis, overdueJobs: overdue })
+    return NextResponse.json({ tabs, labels, overdue, kpis, overdueJobs: overdue })
   } catch (e) {
     return handleError(e)
   }

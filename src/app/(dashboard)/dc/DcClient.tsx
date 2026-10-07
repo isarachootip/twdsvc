@@ -32,8 +32,8 @@ export default function DcClient({ role }: { role: string }) {
   const [range, setRange] = useState({ from: '', to: '' })
   const [branchFilter, setBranchFilter] = useState('')
   const [siteOptions, setSiteOptions] = useState<Array<{ id: string; name: string }>>([])
-  const { data, loading, reload, run, done, busy } = useQueue('DC', range, branchFilter ? { branchId: branchFilter } : undefined)
   const inp = useRowInputs()
+  const { data, loading, reload, run, done, busy } = useQueue('DC', range, branchFilter ? { branchId: branchFilter } : undefined, inp.clear)
   const [openId, setOpenId] = useState<string | null>(null)
   const [driverDoc, setDriverDoc] = useState<{ job: JobView; leg: string; url?: string } | null>(null)
   const [label, setLabel] = useState<LabelData | null>(null)
@@ -80,7 +80,6 @@ export default function DcClient({ role }: { role: string }) {
     } else {
       setDriverDoc({ job: j, leg: legLabel })
     }
-    await reload(true)
   }
 
   const shipBadge = (j: JobView, which: 'out' | 'in') => {

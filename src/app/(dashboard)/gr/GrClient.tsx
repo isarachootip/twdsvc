@@ -42,13 +42,16 @@ export default function GrClient({ role }: { role: string }) {
   const [tab, setTab] = useState(initialTab && TABS.some(t => t.key === initialTab) ? initialTab : 'receive')
   const [branchFilter, setBranchFilter] = useState('')
   const [siteOptions, setSiteOptions] = useState<Array<{ id: string; name: string }>>([])
-  const { data, loading, reload, run, done, busy } = useQueue('GR', undefined, branchFilter ? { branchId: branchFilter } : undefined)
   const inp = useRowInputs()
+  const scanRef = useRef<HTMLInputElement>(null)
+  const { data, loading, reload, run, done, busy } = useQueue('GR', undefined, branchFilter ? { branchId: branchFilter } : undefined, id => {
+    inp.clear(id)
+    scanRef.current?.focus()
+  })
   const [label, setLabel] = useState<LabelData | null>(null)
   const [openId, setOpenId] = useState<string | null>(null)
   const [highlight, setHighlight] = useState<string | null>(null)
   const [scan, setScan] = useState('')
-  const scanRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
   const readOnly = role !== 'GR' && role !== 'ADMIN'
 

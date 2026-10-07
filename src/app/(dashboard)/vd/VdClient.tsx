@@ -40,8 +40,8 @@ export default function VdClient({ role }: { role: string }) {
   const [range, setRange] = useState({ from: '', to: '' })
   const [vendorFilter, setVendorFilter] = useState('')
   const [centerOptions, setCenterOptions] = useState<Array<{ id: string; label: string }>>([])
-  const { data, loading, reload, run, done, busy } = useQueue('VD', range, vendorFilter ? { vendorCenterId: vendorFilter } : undefined)
   const inp = useRowInputs()
+  const { data, loading, reload, run, done, busy } = useQueue('VD', range, vendorFilter ? { vendorCenterId: vendorFilter } : undefined, inp.clear)
   const [openId, setOpenId] = useState<string | null>(null)
   const [filter, setFilter] = useState('ทั้งหมด')
   const [scan, setScan] = useState('')
@@ -96,7 +96,6 @@ export default function VdClient({ role }: { role: string }) {
       try { await navigator.clipboard?.writeText(url) } catch { /* ignore */ }
       setDriverDoc({ job: j, leg, url })
     } else setDriverDoc({ job: j, leg })
-    await reload(true)
   }
 
   const onScan = async (e: React.FormEvent) => {
@@ -105,7 +104,7 @@ export default function VdClient({ role }: { role: string }) {
     if (!q) return
     const j = list('receive').find(x => x.jobNo.toLowerCase() === q && x.stage === 'OUTBOUND_TO_VD' && x.channel !== 'TPL')
     setScan('')
-    if (j) await run(j, 'vd_receive', {}, 'ส่งมอบช่างแล้ว', { reload: true })
+    if (j) await run(j, 'vd_receive', {}, 'ส่งมอบช่างแล้ว')
     else toast('ไม่พบใบแจ้งซ่อมนี้ในสถานะ "ขนส่ง VD รับแล้ว" ที่พร้อมส่งมอบช่าง', 'error')
   }
 
@@ -118,7 +117,7 @@ export default function VdClient({ role }: { role: string }) {
       return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-start' }}>
           <span className="badge b-blue">รอ 3PL นำส่งถึงศูนย์บริการ</span>
-          {demo && !readOnly && <button className="btn btn-primary" disabled={busy !== null} onClick={() => run(j, 'tpl_delivered', { note: 'จำลอง API 3PL แจ้งส่งสำเร็จ' }, 'ส่งมอบช่างแล้ว', { reload: true })}>จำลอง: API 3PL แจ้งส่งสำเร็จ</button>}
+          {demo && !readOnly && <button className="btn btn-primary" disabled={busy !== null} onClick={() => run(j, 'tpl_delivered', { note: 'จำลอง API 3PL แจ้งส่งสำเร็จ' }, 'ส่งมอบช่างแล้ว')}>จำลอง: API 3PL แจ้งส่งสำเร็จ</button>}
         </div>
       )
     }
@@ -134,7 +133,7 @@ export default function VdClient({ role }: { role: string }) {
       return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-start' }}>
           <span className="badge b-amber">ส่งรถเข้ารับแล้ว — รอรับของ</span>
-          <button className="btn btn-primary" disabled={readOnly || busy !== null} onClick={() => run(j, 'carrier_confirm_pickup', {}, 'คนรถรับของแล้ว', { reload: true })}>คนรถยืนยันรับของ (ขึ้นรถ)</button>
+          <button className="btn btn-primary" disabled={readOnly || busy !== null} onClick={() => run(j, 'carrier_confirm_pickup', {}, 'คนรถรับของแล้ว')}>คนรถยืนยันรับของ (ขึ้นรถ)</button>
         </div>
       )
     }
@@ -142,7 +141,7 @@ export default function VdClient({ role }: { role: string }) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-start' }}>
         <span className="badge b-teal">ขนส่ง VD รับแล้ว</span>
-        <button className="btn btn-primary" disabled={readOnly || busy !== null} onClick={() => run(j, 'vd_receive', {}, 'ส่งมอบช่างแล้ว', { reload: true })}>ส่งมอบช่าง (ถึงศูนย์บริการ VD)</button>
+        <button className="btn btn-primary" disabled={readOnly || busy !== null} onClick={() => run(j, 'vd_receive', {}, 'ส่งมอบช่างแล้ว')}>ส่งมอบช่าง (ถึงศูนย์บริการ VD)</button>
       </div>
     )
   }
@@ -212,7 +211,7 @@ export default function VdClient({ role }: { role: string }) {
               <td><JobIdCell job={j} onOpen={() => setOpenId(j.id)} /></td><td>{j.customerName ?? 'สต็อกสาขา'}</td><td>{j.productName}</td>
               <td>{j.type === 'STOCK' ? 'งานสต็อก' : j.hasWarranty ? 'มีประกัน' : 'ไม่มีประกัน'}</td><td><SlaCell job={j} /></td>
               <td>{done[j.id] ? <span className="badge b-green">{done[j.id]}</span> : j.type === 'STOCK' ? (
-                <button className="btn btn-primary" disabled={readOnly || busy !== null} onClick={() => run(j, 'vd_start_repair', {}, 'เริ่มซ่อมแล้ว', { reload: true })}>เริ่มซ่อม</button>
+                <button className="btn btn-primary" disabled={readOnly || busy !== null} onClick={() => run(j, 'vd_start_repair', {}, 'เริ่มซ่อมแล้ว')}>เริ่มซ่อม</button>
               ) : (
                 <button className="btn btn-primary" disabled={readOnly} onClick={() => router.push(`/vd/jobs/${j.id}/quote`)}>ประเมิน + เสนอราคา</button>
               )}</td>
@@ -246,9 +245,9 @@ export default function VdClient({ role }: { role: string }) {
               <td><JobIdCell job={j} onOpen={() => setOpenId(j.id)} /></td><td>{j.customerName ?? 'สต็อกสาขา'}</td><td>{j.productName}</td>
               <td>{j.quote?.repairDays ? `${j.quote.repairDays} วัน` : '-'}</td><td><SlaCell job={j} /></td>
               <td>{!done[j.id] && (j.sla?.paused ? (
-                <button className="btn" disabled={readOnly || busy !== null} onClick={() => run(j, 'vd_resume_parts', {}, 'ซ่อมต่อ', { reload: true, silent: true })}>▶ ซ่อมต่อ</button>
+                <button className="btn" disabled={readOnly || busy !== null} onClick={() => run(j, 'vd_resume_parts', {}, 'ซ่อมต่อ', { silent: true })}>▶ ซ่อมต่อ</button>
               ) : (
-                <button className="btn" disabled={readOnly || busy !== null} onClick={() => run(j, 'vd_pause_parts', {}, 'รออะไหล่', { reload: true, silent: true })}>⏸ รออะไหล่</button>
+                <button className="btn" disabled={readOnly || busy !== null} onClick={() => run(j, 'vd_pause_parts', {}, 'รออะไหล่', { silent: true })}>⏸ รออะไหล่</button>
               ))}</td>
               <td>{done[j.id] ? <span className="badge b-green">{done[j.id]}</span> : <button className="btn btn-primary" disabled={readOnly || busy !== null} onClick={() => run(j, 'vd_finish_repair', {}, 'ซ่อมเสร็จ')}>ซ่อมเสร็จ</button>}</td>
             </tr>

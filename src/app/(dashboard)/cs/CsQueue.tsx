@@ -145,10 +145,10 @@ export default function CsQueue({ role }: { role: string }) {
             <div className="info-row"><span className="info-label">ลูกค้า</span><span>{current.customerName} · {fmtPhone(current.customerPhone)}</span></div>
             <div className="info-row"><span className="info-label">สินค้า</span><span>{current.productName} ({current.brandName})</span></div>
             {tab === 'pickup' && <PickupPanel job={current} readOnly={readOnly} busy={busy} onPay={() => setPay({ job: current, kind: 'repair', amount: current.money?.balance ?? 0 })}
-              onClose={async (opt) => { const r = await run(current, 'cs_close', { pickupOption: opt }, 'ปิดงานแล้ว'); if (r) { setSel(null); reload() } }}
+              onClose={async (opt) => { const r = await run(current, 'cs_close', { pickupOption: opt }, 'ปิดงานแล้ว'); if (r) setSel(null) }}
               onTradein={() => router.push(`/tradein?type=2&jobId=${current.id}`)} onDetail={() => setOpenId(current.id)} />}
             {tab === 'approval' && <ApprovalPanel job={current} readOnly={readOnly} busy={busy} onDetail={() => setOpenId(current.id)}
-              onRecord={async (decision, reason) => { const r = await run(current, 'cs_record_decision', { decision, reason, note: reason }, decision === 'approve' ? 'บันทึก: ลูกค้าอนุมัติ' : 'บันทึก: ลูกค้าไม่อนุมัติ'); if (r) { setSel(null); reload() } }} />}
+              onRecord={async (decision, reason) => { const r = await run(current, 'cs_record_decision', { decision, reason, note: reason }, decision === 'approve' ? 'บันทึก: ลูกค้าอนุมัติ' : 'บันทึก: ลูกค้าไม่อนุมัติ'); if (r) setSel(null) }} />}
           </div>
         )}
       </div>
