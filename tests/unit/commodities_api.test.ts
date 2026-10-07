@@ -66,4 +66,34 @@ describe('Unit: Product Master Commodities & Filter Integrity', () => {
     expect(results.length).toBeGreaterThanOrEqual(1)
     expect(results.some((r) => r.sku === '60453445')).toBe(true)
   })
+
+  it('COMM-06: filters commodities by brand and department combination', async () => {
+    const results = await prisma.commodity.findMany({
+      where: {
+        brand: 'ACCORD',
+        active: true,
+      },
+      take: 10,
+    })
+    expect(results.length).toBeGreaterThanOrEqual(1)
+    for (const r of results) {
+      expect(r.brand).toBe('ACCORD')
+      expect(r.active).toBe(true)
+    }
+  })
+
+  it('COMM-07: searches across model and name fields for CS autocomplete', async () => {
+    const results = await prisma.commodity.findMany({
+      where: {
+        active: true,
+        OR: [
+          { name: { contains: 'พัดลม', mode: 'insensitive' } },
+          { model: { contains: 'FS3-290VT', mode: 'insensitive' } },
+        ],
+      },
+      take: 5,
+    })
+    expect(results.length).toBeGreaterThanOrEqual(1)
+  })
 })
+

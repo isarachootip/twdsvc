@@ -8,6 +8,7 @@ interface SkuSearchInputProps {
   skuResults: Commodity[]
   onPickSku: (item: Commodity) => void
   onClearSkuResults: () => void
+  onOpenPicker?: () => void
 }
 
 export function SkuSearchInput({
@@ -16,13 +17,33 @@ export function SkuSearchInput({
   skuResults,
   onPickSku,
   onClearSkuResults,
+  onOpenPicker,
 }: SkuSearchInputProps) {
   return (
     <div className="field" style={{ position: 'relative' }}>
-      <label>SKU (ถ้ามี)</label>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <label>SKU (ถ้ามี)</label>
+        {onOpenPicker && (
+          <button
+            type="button"
+            onClick={onOpenPicker}
+            style={{
+              fontSize: 11.5,
+              background: 'none',
+              border: 'none',
+              color: 'var(--brand, #b91c1c)',
+              cursor: 'pointer',
+              fontWeight: 600,
+              padding: 0,
+            }}
+          >
+            🔍 ค้นหาละเอียด
+          </button>
+        )}
+      </div>
       <input
         className="inp"
-        placeholder="ไม่บังคับ"
+        placeholder="รหัส SKU หรือพิมพ์ค้นหา"
         value={sku}
         onChange={e => onSkuChange(e.target.value)}
         onBlur={() => setTimeout(onClearSkuResults, 200)}
@@ -38,8 +59,9 @@ export function SkuSearchInput({
             border: '1px solid var(--border-strong)',
             borderRadius: 8,
             marginTop: 2,
-            maxHeight: 220,
+            maxHeight: 240,
             overflowY: 'auto',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
           }}
         >
           {skuResults.map(c => (
@@ -51,15 +73,21 @@ export function SkuSearchInput({
                 display: 'block',
                 width: '100%',
                 textAlign: 'left',
-                padding: '7px 10px',
+                padding: '8px 10px',
                 fontSize: 12.5,
                 border: 'none',
+                borderBottom: '1px solid var(--border)',
                 background: 'none',
                 cursor: 'pointer',
                 fontFamily: 'inherit',
               }}
             >
-              <b>{c.sku}</b> — {c.name} <span className="sub-mute">{c.brand}</span>
+              <div>
+                <b>{c.sku}</b> — {c.name} {c.model ? `(${c.model})` : ''}
+              </div>
+              <div className="sub-mute" style={{ fontSize: 11, marginTop: 2 }}>
+                แบรนด์: <b>{c.brand}</b> {c.deptName ? `| กลุ่ม: ${c.deptName}` : ''}
+              </div>
             </button>
           ))}
         </div>

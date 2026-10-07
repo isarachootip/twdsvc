@@ -1,6 +1,8 @@
 'use client'
 
+import { useState } from 'react'
 import { SkuSearchInput } from './SkuSearchInput'
+import { ProductPickerModal } from './ProductPickerModal'
 
 export interface Brand {
   id: number
@@ -18,6 +20,9 @@ export interface Commodity {
   sku: string
   name: string
   brand: string
+  barcode?: string | null
+  deptName?: string | null
+  model?: string | null
 }
 
 interface ProductSectionProps {
@@ -75,6 +80,8 @@ export function ProductSection({
   method,
   setMethod,
 }: ProductSectionProps) {
+  const [pickerOpen, setPickerOpen] = useState(false)
+
   return (
     <div className="pcard">
       <h3>ข้อมูลสินค้าและการรับประกัน</h3>
@@ -85,6 +92,7 @@ export function ProductSection({
           skuResults={skuResults}
           onPickSku={onPickSku}
           onClearSkuResults={onClearSkuResults}
+          onOpenPicker={() => setPickerOpen(true)}
         />
         <div className="field">
           <label>ชื่อสินค้า <span style={{ color: 'var(--red)' }}>*</span></label>
@@ -173,6 +181,12 @@ export function ProductSection({
           ส่งด่วน (3PL)
         </button>
       </div>
+
+      <ProductPickerModal
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onSelect={onPickSku}
+      />
     </div>
   )
 }
