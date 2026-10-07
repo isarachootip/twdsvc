@@ -5,7 +5,8 @@ export interface ValidateCsFormInput {
   lastName: string
   phone: string
   product: string
-  brandId: string
+  brandName: string
+  brandId?: string
   symptom: string
   sizeId: number | null
   feesTotal: number
@@ -20,7 +21,7 @@ export function validateCsForm(input: ValidateCsFormInput): string | null {
   if (!/^0\d{9}$/.test(input.phone.replace(/\D/g, '')))
     return 'กรุณากรอกเบอร์โทรศัพท์ 10 หลักให้ถูกต้อง (เช่น 0812345678)'
   if (!input.product.trim()) return 'กรุณากรอกชื่อสินค้า'
-  if (!input.brandId) return 'กรุณาเลือกแบรนด์'
+  if (!input.brandName.trim()) return 'กรุณาระบุแบรนด์'
   if (!input.symptom.trim()) return 'กรุณากรอกอาการเสีย'
   if (!input.sizeId) return 'กรุณาเลือกขนาดสินค้า'
   if (input.feesTotal > 0 && input.pay === 'POS_RECEIPT' && !input.pos.trim())

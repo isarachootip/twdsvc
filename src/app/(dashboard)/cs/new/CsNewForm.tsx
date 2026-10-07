@@ -88,6 +88,7 @@ export default function CsNewForm({
               skuResults={form.skuResults} onPickSku={form.pickSku}
               onClearSkuResults={() => form.setSkuResults([])}
               product={form.product} setProduct={form.setProduct}
+              brandName={form.brandName} setBrandName={form.setBrandName}
               brandId={form.brandId} setBrandId={form.setBrandId}
               brands={form.brands} symptom={form.symptom} setSymptom={form.setSymptom}
               serialNo={form.serialNo} setSerialNo={form.setSerialNo}

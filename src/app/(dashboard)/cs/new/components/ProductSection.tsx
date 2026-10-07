@@ -3,84 +3,27 @@
 import { useState } from 'react'
 import { SkuSearchInput } from './SkuSearchInput'
 import { ProductPickerModal } from './ProductPickerModal'
+import type { ProductSectionProps, Brand, Size, Commodity } from './product-types'
 
-export interface Brand {
-  id: number
-  name: string
-}
-
-export interface Size {
-  id: number
-  code: string
-  name: string
-}
-
-export interface Commodity {
-  id: number
-  sku: string
-  name: string
-  brand: string
-  barcode?: string | null
-  deptName?: string | null
-  model?: string | null
-}
-
-interface ProductSectionProps {
-  sku: string
-  onSkuChange: (val: string) => void
-  skuResults: Commodity[]
-  onPickSku: (item: Commodity) => void
-  onClearSkuResults: () => void
-  product: string
-  setProduct: (val: string) => void
-  brandId: string
-  setBrandId: (val: string) => void
-  brands: Brand[]
-  symptom: string
-  setSymptom: (val: string) => void
-  serialNo: string
-  setSerialNo: (val: string) => void
-  onExtractSerial?: () => void
-  extractingSerial?: boolean
-  warranty: 'yes' | 'no'
-  setWarranty: (val: 'yes' | 'no') => void
-  allowOutside: boolean
-  setAllowOutside: (val: boolean) => void
-  sizeId: number | null
-  setSizeId: (val: number) => void
-  sizes: Size[]
-  method: 'STANDARD' | 'EXPRESS'
-  setMethod: (val: 'STANDARD' | 'EXPRESS') => void
-}
+export type { Brand, Size, Commodity, ProductSectionProps }
 
 export function ProductSection({
-  sku,
-  onSkuChange,
-  skuResults,
-  onPickSku,
-  onClearSkuResults,
-  product,
-  setProduct,
-  brandId,
-  setBrandId,
-  brands,
-  symptom,
-  setSymptom,
-  serialNo,
-  setSerialNo,
-  onExtractSerial,
-  extractingSerial,
-  warranty,
-  setWarranty,
-  allowOutside,
-  setAllowOutside,
-  sizeId,
-  setSizeId,
-  sizes,
-  method,
-  setMethod,
+  sku, onSkuChange, skuResults, onPickSku, onClearSkuResults,
+  product, setProduct, brandName = '', setBrandName, brandId = '', setBrandId,
+  brands, symptom, setSymptom, serialNo, setSerialNo,
+  onExtractSerial, extractingSerial, warranty, setWarranty,
+  allowOutside, setAllowOutside, sizeId, setSizeId, sizes, method, setMethod,
 }: ProductSectionProps) {
   const [pickerOpen, setPickerOpen] = useState(false)
+
+  const currentBrand = brandName || (brands.find(b => String(b.id) === brandId)?.name ?? '')
+  const handleBrandChange = (val: string) => {
+    if (setBrandName) setBrandName(val)
+    if (setBrandId) {
+      const b = brands.find(x => x.name.trim().toLowerCase() === val.trim().toLowerCase())
+      setBrandId(b ? String(b.id) : '')
+    }
+  }
 
   return (
     <div className="pcard">
@@ -100,12 +43,18 @@ export function ProductSection({
         </div>
         <div className="field">
           <label>แบรนด์ <span style={{ color: 'var(--red)' }}>*</span></label>
-          <select className="sel" value={brandId} onChange={e => setBrandId(e.target.value)}>
-            <option value="">เลือกแบรนด์</option>
+          <input
+            className="inp"
+            list="brands-datalist"
+            placeholder="พิมพ์หรือเลือกแบรนด์"
+            value={currentBrand}
+            onChange={e => handleBrandChange(e.target.value)}
+          />
+          <datalist id="brands-datalist">
             {brands.map(b => (
-              <option key={b.id} value={b.id}>{b.name}</option>
+              <option key={b.id} value={b.name} />
             ))}
-          </select>
+          </datalist>
         </div>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>

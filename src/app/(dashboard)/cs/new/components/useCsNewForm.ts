@@ -7,13 +7,7 @@ import { useToast } from '@/components/ui/Toast'
 import { api } from '@/lib/client'
 import type { JobStage } from '@prisma/client'
 import type {
-  BranchOption,
-  CustomerLookupResult,
-  Brand,
-  Size,
-  Commodity,
-  TaxInfo,
-  FeesState,
+  BranchOption, CustomerLookupResult, Brand, Size, Commodity, TaxInfo, FeesState,
 } from './index'
 import { validateCsForm } from './formValidation'
 import { useSerialExtractor } from './useSerialExtractor'
@@ -62,6 +56,7 @@ export function useCsNewForm({
   const [skuResults, setSkuResults] = useState<Commodity[]>([])
   const [product, setProduct] = useState(initialProduct)
   const [brandId, setBrandId] = useState('')
+  const [brandName, setBrandName] = useState('')
   const [symptom, setSymptom] = useState('')
   const [serialNo, setSerialNo] = useState(initialSerialNo || '')
   const [warranty, setWarranty] = useState<'yes' | 'no'>('yes')
@@ -96,8 +91,7 @@ export function useCsNewForm({
             setBranchList(b)
             setSelectedBranchId(prev => prev || b.find(x => x.code === 'BN' || x.name.includes('บางนา'))?.id || b[0].id)
           }
-        })
-        .catch(() => {})
+        }).catch(() => {})
     }
   }, [branches, role])
 
@@ -126,11 +120,18 @@ export function useCsNewForm({
     skuTimer.current = setTimeout(() => api<Commodity[]>(`/api/commodities?search=${encodeURIComponent(v)}`).then(setSkuResults).catch(() => {}), 300)
   }
 
+  const onBrandChange = (val: string) => {
+    setBrandName(val)
+    const b = brands.find(x => x.name.trim().toLowerCase() === val.trim().toLowerCase())
+    setBrandId(b ? String(b.id) : '')
+  }
+
   const pickSku = (c: Commodity) => {
     setSku(c.sku)
     setProduct(c.name)
-    const b = brands.find(x => x.name.toLowerCase() === c.brand.toLowerCase())
-    if (b) setBrandId(String(b.id))
+    setBrandName(c.brand)
+    const b = brands.find(x => x.name.trim().toLowerCase() === c.brand.trim().toLowerCase())
+    setBrandId(b ? String(b.id) : '')
     setSkuResults([])
   }
 
@@ -152,18 +153,17 @@ export function useCsNewForm({
 
   const save = useCallback(async (): Promise<SavedJob | null> => {
     if (saved) return saved
-    const err = validateCsForm({ role, selectedBranchId, firstName, lastName, phone, product, brandId, symptom, sizeId, feesTotal: fees.total, pay, pos })
+    const err = validateCsForm({ role, selectedBranchId, firstName, lastName, phone, product, brandName, symptom, sizeId, feesTotal: fees.total, pay, pos })
     if (err) { toast(err, 'error'); return null }
     setSaving(true)
     try {
-      const brand = brands.find(b => String(b.id) === brandId)
       const fullName = [firstName.trim(), lastName.trim()].filter(Boolean).join(' ')
       const r = await api<SavedJob>('/api/jobs', {
         body: {
           ...(role === 'ADMIN' ? { branchId: selectedBranchId } : {}),
           customerName: fullName, customerPhone: phone, customerAddress: formatAddress(addr) || null, customerZip: addr.zip || null,
           ...(tax && !taxSame ? { taxInvoiceName: tax.name, taxInvoiceId: tax.id, taxInvoiceAddr: formatAddress(tax.addr) } : {}),
-          sku: sku.trim() || null, productName: product.trim(), brandId: Number(brandId), brandName: brand?.name ?? '',
+          sku: sku.trim() || null, productName: product.trim(), brandId: brandId ? Number(brandId) : null, brandName: brandName.trim(),
           symptom: symptom.trim(), serialNo: serialNo.trim() || null, hasWarranty: warranty === 'yes', allowNonAuth: allowOutside,
           sizeCategoryId: sizeId, shippingMethod: method,
           photos: photos.filter((p): p is Photo => Boolean(p && p.fileUrl)),
@@ -179,19 +179,18 @@ export function useCsNewForm({
       toast(e instanceof Error ? e.message : 'บันทึกไม่สำเร็จ', 'error')
       return null
     } finally { setSaving(false) }
-  }, [saved, firstName, lastName, phone, addr, tax, taxSame, sku, product, brandId, brands, symptom, serialNo, warranty, allowOutside, sizeId, method, photos, defect, fees.total, pay, pos, selectedBranchId, role, toast]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [saved, firstName, lastName, phone, addr, tax, taxSame, sku, product, brandName, brandId, symptom, serialNo, warranty, allowOutside, sizeId, method, photos, defect, fees.total, pay, pos, selectedBranchId, role, toast])
 
   return {
     branchList, selectedBranchId, setSelectedBranchId, brands, sizes,
     firstName, setFirstName, lastName, setLastName, phone, setPhone, addr, setAddr,
     taxSame, tax, setTax, taxModal, setTaxModal, taxDraft, setTaxDraft, found, setFound,
-    sku, skuResults, setSkuResults, product, setProduct, brandId, setBrandId,
+    sku, skuResults, setSkuResults, product, setProduct, brandId, setBrandId, brandName, setBrandName: onBrandChange,
     symptom, setSymptom, serialNo, setSerialNo, extractSerialFromPhoto, extractingSerial,
     warranty, setWarranty, allowOutside, setAllowOutside, sizeId, setSizeId, method, setMethod,
     photos, setPhotos, defect, setDefect, fees, pay, setPay, pos, setPos, saving, saved,
     payOpen, setPayOpen, paid, setPaid, lon, setLon, printDoc, setPrintDoc, onSku, pickSku, onTaxCheckbox, closeTax, save,
     readOnly: role !== 'CS' && role !== 'ADMIN',
-    brandName: brands.find(b => String(b.id) === brandId)?.name ?? '',
     sizeName: sizes.find(s => s.id === sizeId)?.name ?? '',
     activeBranchName: branchName || branchList.find(b => b.id === selectedBranchId)?.name || '',
     customerFullName: [firstName.trim(), lastName.trim()].filter(Boolean).join(' '),
