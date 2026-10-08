@@ -1,7 +1,8 @@
 'use client'
 
+import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Menu, Search } from 'lucide-react'
+import { Menu, Search, BookOpen } from 'lucide-react'
 import { useState } from 'react'
 import { api } from '@/lib/client'
 import { useToast } from '@/components/ui/Toast'
@@ -72,6 +73,15 @@ export default function Topbar({ user, onMenu }: TopbarProps) {
           style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
         />
       </form>
+      <Link
+        href="/manual"
+        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border hover:bg-gray-50 transition-colors shrink-0 text-gray-700 shadow-sm"
+        style={{ borderColor: 'var(--border)' }}
+        title="คู่มือใช้งาน & หลักสูตรฝึกอบรม"
+      >
+        <BookOpen size={15} className="text-red-600" />
+        <span className="hidden sm:inline">คู่มือระบบ</span>
+      </Link>
       <div className="text-sm text-right flex-shrink-0 hidden md:block">
         <div className="font-medium" style={{ color: 'var(--text)' }}>{user.fullName}</div>
         <div className="text-xs" style={{ color: 'var(--text-mute)' }}>

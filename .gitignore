@@ -29,6 +29,7 @@ yarn-error.log*
 # agent swarm runs
 .agents/*
 !.agents/skills/
+!.agents/plugins/
 
 # uploads
 /public/uploads/*
@@ -39,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# scratch scripts
+scratch/

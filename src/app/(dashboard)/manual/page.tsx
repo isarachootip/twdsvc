@@ -1,14 +1,15 @@
 'use client'
 
 import { useState } from 'react'
+import TrainingKitViewer from '@/components/manual/TrainingKitViewer'
 import { 
   BookOpen, Search, UserCheck, Package, Warehouse, Wrench, 
   Truck, ShieldCheck, HelpCircle, ChevronRight, CheckCircle2, 
-  AlertTriangle, ArrowRight, ExternalLink, Copy, Check
+  AlertTriangle, ArrowRight, ExternalLink, Copy, Check, GraduationCap
 } from 'lucide-react'
 
 export default function ManualPage() {
-  const [activeTab, setActiveTab] = useState<'all' | 'cs' | 'gr' | 'dc' | 'vd' | 's2' | 'admin' | 'km' | 'faq'>('all')
+  const [activeTab, setActiveTab] = useState<'all' | 'training' | 'cs' | 'gr' | 'dc' | 'vd' | 's2' | 'admin' | 'km' | 'faq'>('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [copiedUser, setCopiedUser] = useState<string | null>(null)
 
@@ -69,6 +70,7 @@ export default function ManualPage() {
         <div className="flex items-center gap-2 mt-6 overflow-x-auto pb-2 scrollbar-none border-t border-white/10 pt-4">
           {[
             { id: 'all', label: 'ทั้งหมด' },
+            { id: 'training', label: '🎓 หลักสูตรอบรม (Training Kit)' },
             { id: 'cs', label: 'CS บริการลูกค้า' },
             { id: 'gr', label: 'GR คลังสาขา' },
             { id: 'dc', label: 'DC คลังกลาง' },
@@ -92,6 +94,17 @@ export default function ManualPage() {
           ))}
         </div>
       </div>
+
+      {/* Role Training Kit Section */}
+      {(activeTab === 'training' || (activeTab === 'all' && matchesSearch('อบรม แบบฝึกหัด ข้อสอบ quiz training cs guide demo script'))) && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 text-gray-800 font-bold text-lg">
+            <GraduationCap size={22} className="text-red-600" />
+            <span>หลักสูตรฝึกอบรมและแบบทดสอบประจำบทบาท (Role-based Training Kits)</span>
+          </div>
+          <TrainingKitViewer />
+        </div>
+      )}
 
       {/* Demo Accounts Card */}
       {(activeTab === 'all' || activeTab === 'admin') && matchesSearch('บัญชีผู้ใช้ รหัสผ่าน demo test account login') && (

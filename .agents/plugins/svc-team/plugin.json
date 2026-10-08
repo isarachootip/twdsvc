@@ -1,0 +1,11 @@
+{
+  "name": "svc-team",
+  "displayName": "SVC Team (Trainer & Tester)",
+  "description": "Project agents for the VService Repair System: a Trainer that produces role-based Thai training kits, and a Tester that runs type-checks and test suites and reports triaged failures without touching src/.",
+  "version": "1.0.0",
+  "suggestedPrompts": [
+    "ให้ trainer ทำชุดอบรมสำหรับ role CS",
+    "ให้ tester รัน tsc และ test ทั้งหมด แล้วสรุปผล",
+    "ให้ tester รันเฉพาะ tier2 แล้ววิเคราะห์ test ที่ fail"
+  ]
+}
