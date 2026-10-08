@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/db'
 import { signAccessToken, generateRefreshToken, hashToken, ACCESS_TTL_SECONDS, REFRESH_TTL_SECONDS } from '@/lib/auth'
+import { relativeRedirect } from '@/lib/http/relative-redirect'
 
 async function rotate(): Promise<boolean> {
   const store = await cookies()
@@ -47,7 +48,7 @@ export async function GET(req: NextRequest) {
   const nextPath = new URL(req.url).searchParams.get('next') || '/'
   const safe = nextPath.startsWith('/') && !nextPath.startsWith('//') ? nextPath : '/'
   const ok = await rotate()
-  const res = NextResponse.redirect(new URL(ok ? safe : `/login?next=${encodeURIComponent(safe)}`, req.url))
+  const res = relativeRedirect(ok ? safe : `/login?next=${encodeURIComponent(safe)}`, 307)
   if (!ok) {
     res.cookies.delete('access_token')
     res.cookies.delete('refresh_token')

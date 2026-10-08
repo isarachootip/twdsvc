@@ -1,16 +1,16 @@
-import { NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
+import { relativeRedirect } from '@/lib/http/relative-redirect'
 
-export async function POST(request: Request) {
-  const cookieStore = await cookies()
-  cookieStore.delete('access_token')
-  cookieStore.delete('refresh_token')
-  return NextResponse.redirect(new URL('/login', request.url), 303)
+function logout() {
+  const res = relativeRedirect('/login', 303)
+  res.cookies.delete('access_token')
+  res.cookies.delete('refresh_token')
+  return res
 }
 
-export async function GET(request: Request) {
-  const cookieStore = await cookies()
-  cookieStore.delete('access_token')
-  cookieStore.delete('refresh_token')
-  return NextResponse.redirect(new URL('/login', request.url), 303)
+export async function POST() {
+  return logout()
+}
+
+export async function GET() {
+  return logout()
 }
