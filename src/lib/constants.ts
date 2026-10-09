@@ -146,7 +146,7 @@ export function fmtDate(d: string | Date | null | undefined): string {
 export function fmtDateTime(d: string | Date | null | undefined): string {
   if (!d) return '-'
   const x = new Date(d)
-  return x.toLocaleString('th-TH', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' })
+  return x.toLocaleString('th-TH', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' })
 }
 
 /** yyyy-mm-dd in Asia/Bangkok */

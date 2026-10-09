@@ -2,39 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import StageBadge from '@/components/ui/StageBadge'
 import JobDetailModal from '@/components/jobs/JobDetail'
-import { useSort, Th } from '@/components/ui/Sortable'
+import { useSort } from '@/components/ui/Sortable'
 import { DateRange } from '@/components/ui/Queue'
 import { useToast } from '@/components/ui/Toast'
 import { api, exportXlsx, monthStartBkk, todayBkk } from '@/lib/client'
-import { CHANNEL_LABELS, OWNER_LABELS, STAGE_LABELS, STAGE_ORDER, fmtPhone, type Stage } from '@/lib/constants'
+import { CHANNEL_LABELS, OWNER_LABELS, STAGE_ORDER, fmtDateTime, type Stage } from '@/lib/constants'
 import type { JobView } from '@/lib/job-view'
-
-interface Kpis { total: number; GR: number; VD: number; transport: number; CS: number; unpaid: number }
-
-const KPI_DEFS: Array<{ key: string | null; label: string; cls: string }> = [
-  { key: null, label: 'งานทั้งหมด', cls: 'total' },
-  { key: 'GR', label: 'เกิน SLA ฝั่ง GR', cls: 'urgent' },
-  { key: 'VD', label: 'เกิน SLA ฝั่ง VD', cls: 'urgent' },
-  { key: 'transport', label: 'เกิน SLA ฝั่งขนส่ง (DC/3PL)', cls: 'urgent' },
-  { key: 'CS', label: 'เกิน SLA ฝั่ง CS/ลูกค้า', cls: 'urgent' },
-  { key: 'unpaid', label: 'ยอดค้างชำระ', cls: 'urgent' },
-]
-
-function ownerOf(j: JobView) {
-  return j.overdue ? j.overdueOwner : j.sla?.owner ?? null
-}
-
-function matchFlag(j: JobView, flag: string | null) {
-  if (!flag) return true
-  if (flag === 'unpaid') return j.unpaid
-  if (!j.overdue) return false
-  if (flag === 'overdue') return true
-  if (flag === 'transport') return ['DC', 'TPL', 'CARRIER'].includes(j.overdueOwner ?? '')
-  if (flag === 'CS') return ['CS', 'CUSTOMER'].includes(j.overdueOwner ?? '')
-  return j.overdueOwner === flag
-}
+import JobsTable, { ownerOf } from './components/JobsTable'
+import JobsFilterBar from './components/JobsFilterBar'
+import JobsKpiCards, { matchFlag } from './components/JobsKpiCards'
 
 export interface JobsClientProps {
   role?: string
@@ -55,7 +32,6 @@ export default function JobsClient({ role: initialRole, user, initialJobs }: Job
   const [jobs, setJobs] = useState<JobView[]>(initialJobs && initialJobs.length > 0 ? initialJobs : [])
   const [loading, setLoading] = useState<boolean>(!initialJobs || initialJobs.length === 0)
 
-  // Parse initial filter flags from URL params
   const initialFlag = sp.get('flag') ?? (sp.get('overdue') === 'true' || sp.get('overdue') === '1' ? 'overdue' : null)
   const [flag, setFlag] = useState<string | null>(initialFlag)
   const [branch, setBranch] = useState('')
@@ -64,6 +40,14 @@ export default function JobsClient({ role: initialRole, user, initialJobs }: Job
   const [stageGroup, setStageGroup] = useState<string[]>((sp.get('stages') ?? '').split(',').filter(Boolean))
   const [search, setSearch] = useState(sp.get('search') ?? '')
   const [openId, setOpenId] = useState<string | null>(sp.get('open'))
+  const [sysTime, setSysTime] = useState<string>('')
+
+  useEffect(() => {
+    const update = () => setSysTime(fmtDateTime(new Date()))
+    update()
+    const timer = setInterval(update, 10000)
+    return () => clearInterval(timer)
+  }, [])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -71,7 +55,7 @@ export default function JobsClient({ role: initialRole, user, initialJobs }: Job
       const qs = new URLSearchParams({ limit: '1000' })
       if (from) qs.set('from', from)
       if (to) qs.set('to', to)
-      const d = await api<{ jobs: JobView[]; kpis: Kpis }>(`/api/jobs?${qs}`)
+      const d = await api<{ jobs: JobView[] }>(`/api/jobs?${qs}`)
       setJobs(d.jobs ?? [])
     } catch (e) {
       toast(e instanceof Error ? e.message : 'โหลดข้อมูลไม่สำเร็จ', 'error')
@@ -80,14 +64,10 @@ export default function JobsClient({ role: initialRole, user, initialJobs }: Job
     }
   }, [from, to, toast])
 
-  // Always fetch on mount if jobs are empty or to ensure sync
   useEffect(() => {
-    if (!initialJobs || initialJobs.length === 0) {
-      load()
-    }
+    if (!initialJobs || initialJobs.length === 0) load()
   }, [load, initialJobs])
 
-  // Synchronize when searchParams change
   useEffect(() => {
     const o = sp.get('open')
     if (o) setOpenId(o)
@@ -122,11 +102,12 @@ export default function JobsClient({ role: initialRole, user, initialJobs }: Job
     })
   }, [jobs, branch, channel, status, search, stageGroup])
 
-  const kpiCount = (key: string | null) => base.filter(j => matchFlag(j, key)).length
   const filtered = useMemo(() => base.filter(j => matchFlag(j, flag)), [base, flag])
 
+  // Default sorting: Latest item that entered the current state (stageEnteredAt desc)
   const { sorted, sort, toggle } = useSort(filtered, {
     id: j => j.jobNo,
+    systemTime: j => (j.stageEnteredAt ? new Date(j.stageEnteredAt).getTime() : 0),
     customer: j => j.customerName ?? '',
     product: j => j.productName,
     branch: j => j.branch.name,
@@ -134,21 +115,13 @@ export default function JobsClient({ role: initialRole, user, initialJobs }: Job
     status: j => STAGE_ORDER.indexOf(j.stage as Stage),
     owner: j => ownerOf(j) ?? '',
     hours: j => j.sla?.hoursInStep ?? 0,
-  }, { key: 'id', dir: -1 })
-
-  const flags = (j: JobView) => {
-    const out: string[] = []
-    if (j.overdue) out.push(`เกิน SLA (${OWNER_LABELS[j.overdueOwner ?? ''] ?? j.overdueOwner})`)
-    if (j.unpaid) out.push('ค้างชำระ')
-    if (j.intakeUnpaid && ['CS_OPENED', 'PENDING_VENDOR_ASSIGNMENT'].includes(j.stage)) out.push('รอชำระค่าดำเนินการ')
-    if (j.stage === 'PENDING_VENDOR_ASSIGNMENT') out.push('รอกำหนดศูนย์ซ่อม')
-    return out
-  }
+  }, { key: 'systemTime', dir: -1 })
 
   const doExport = () => exportXlsx([{
     name: 'งานซ่อม',
     rows: sorted.map(j => ({
       'เลขที่ใบแจ้งซ่อม': j.jobNo,
+      'วัน-เวลาระบบ (เข้าสถานะ)': fmtDateTime(j.stageEnteredAt),
       'วันที่เปิด': new Date(j.openedAt).toLocaleDateString('th-TH'),
       'ลูกค้า': j.customerName ?? '',
       'เบอร์โทร': j.customerPhone ?? '',
@@ -171,102 +144,48 @@ export default function JobsClient({ role: initialRole, user, initialJobs }: Job
       <div className="toprow">
         <div>
           <p className="page-title">งานซ่อมทั้งหมด</p>
-          <p className="page-sub">กดที่ตัวเลขเพื่อดูเฉพาะรายการเร่งด่วนตามส่วนงานที่รับผิดชอบ SLA</p>
+          <p className="page-sub">
+            กดที่ตัวเลขเพื่อดูเฉพาะรายการเร่งด่วนตามส่วนงานที่รับผิดชอบ SLA
+            {sysTime && <span style={{ marginLeft: 8 }}>· วันและเวลาระบบ: <b>{sysTime}</b></span>}
+          </p>
         </div>
         <DateRange from={from} to={to} onChange={(f, t) => { setFrom(f); setTo(t) }} onExport={doExport} />
       </div>
 
-      <div className="kpi-grid">
-        {KPI_DEFS.map(k => (
-          <button
-            key={k.label}
-            className={`kpi-card ${k.cls} ${flag === k.key && k.key !== null ? 'active' : ''}`}
-            onClick={() => setFlag(flag === k.key ? null : k.key)}
-          >
-            <div className="num">{kpiCount(k.key)}</div>
-            <div className="lbl">{k.label}</div>
-          </button>
-        ))}
-      </div>
+      <JobsKpiCards jobs={base} flag={flag} onToggleFlag={k => setFlag(flag === k ? null : k)} />
 
-      <div className="filter-bar">
-        <select className="sel" value={branch} onChange={e => setBranch(e.target.value)}>
-          <option value="">ทุกสาขา</option>
-          {branches.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
-        </select>
-        <select className="sel" value={channel} onChange={e => setChannel(e.target.value)}>
-          <option value="">ทุกช่องทาง</option>
-          <option value="DSD">DSD</option>
-          <option value="DC">DC</option>
-          <option value="TPL">3PL</option>
-        </select>
-        <select className="sel" value={status} onChange={e => setStatus(e.target.value)}>
-          <option value="">ทุกสถานะ</option>
-          {STAGE_ORDER.map(s => <option key={s} value={s}>{STAGE_LABELS[s]}</option>)}
-        </select>
-        <input
-          className="inp"
-          style={{ flex: 1, minWidth: 220 }}
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="ค้นหา: เลขที่ใบแจ้งซ่อม / ชื่อลูกค้า / เบอร์โทร"
-        />
-        {flag && <button className="clear-filter" onClick={() => setFlag(null)}>✕ ล้างตัวกรองรายการเร่งด่วน</button>}
-        {stageGroup.length > 0 && <button className="clear-filter" onClick={() => setStageGroup([])}>✕ ล้างตัวกรองกลุ่มสถานะ ({stageGroup.length})</button>}
-        {status && <button className="clear-filter" onClick={() => setStatus('')}>✕ ล้างสถานะ</button>}
-        {['CS', 'ADMIN'].includes(role) && (
-          <button className="btn btn-primary" onClick={() => router.push('/cs/new')}>+ เปิดใบแจ้งซ่อม</button>
-        )}
-      </div>
+      <JobsFilterBar
+        branch={branch}
+        setBranch={setBranch}
+        branches={branches}
+        channel={channel}
+        setChannel={setChannel}
+        status={status}
+        setStatus={setStatus}
+        search={search}
+        setSearch={setSearch}
+        flag={flag}
+        setFlag={setFlag}
+        stageGroup={stageGroup}
+        setStageGroup={setStageGroup}
+        role={role}
+        onNewJob={() => router.push('/cs/new')}
+      />
 
-      <div className="tcard">
-        <div className="tbl-wrap">
-          <table className="tbl">
-            <thead>
-              <tr>
-                <Th k="id" label="เลขที่ใบแจ้งซ่อม" sort={sort} toggle={toggle} />
-                <Th k="customer" label="ลูกค้า" sort={sort} toggle={toggle} />
-                <Th k="product" label="สินค้า" sort={sort} toggle={toggle} />
-                <Th k="branch" label="สาขา" sort={sort} toggle={toggle} />
-                <Th k="channel" label="ช่องทาง" sort={sort} toggle={toggle} />
-                <Th k="status" label="สถานะ" sort={sort} toggle={toggle} />
-                <Th k="owner" label="ส่วนงานที่รับผิดชอบ" sort={sort} toggle={toggle} />
-                <Th k="hours" label="อยู่ใน step นี้มา" sort={sort} toggle={toggle} />
-                <th>หมายเหตุ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading && <tr><td colSpan={9} className="empty">กำลังโหลด…</td></tr>}
-              {!loading && sorted.length === 0 && <tr><td colSpan={9} className="empty">ไม่พบรายการที่ตรงกับตัวกรอง</td></tr>}
-              {!loading && sorted.map(j => (
-                <tr key={j.id} className="clickable" onClick={() => setOpenId(j.id)}>
-                  <td>
-                    <div className={`jobid ${j.overdue ? 'overdue' : ''}`}>{j.jobNo}</div>
-                    <div className="sub-mute">{new Date(j.openedAt).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: '2-digit' })}</div>
-                  </td>
-                  <td>{j.type === 'STOCK' ? <span className="sub-mute">สต็อกสาขา</span> : j.customerName}<div className="sub-mute">{j.customerPhone && !j.customerPhone.includes('x') ? fmtPhone(j.customerPhone) : j.customerPhone}</div></td>
-                  <td>{j.productName}<div className="sub-mute">{j.brandName}</div></td>
-                  <td>{j.branch.name}</td>
-                  <td>{j.channel ? CHANNEL_LABELS[j.channel] : '-'}</td>
-                  <td><StageBadge stage={j.stage} intakeUnpaid={j.intakeUnpaid} /></td>
-                  <td>{OWNER_LABELS[ownerOf(j) ?? ''] ?? '-'}</td>
-                  <td>{j.sla ? <>{j.sla.hoursInStep} ชม.<div className="sub-mute">SLA {j.sla.slaHours} ชม.</div></> : '-'}</td>
-                  <td>{flags(j).length ? <span className="flag">{flags(j).join(', ')}</span> : '-'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <JobsTable
+        jobs={sorted}
+        sort={sort}
+        toggle={toggle}
+        loading={loading}
+        onOpenJob={setOpenId}
+      />
 
       <JobDetailModal
         jobId={openId}
         role={role}
         onClose={() => {
           setOpenId(null)
-          if (sp.get('open')) {
-            router.replace('/jobs')
-          }
+          if (sp.get('open')) router.replace('/jobs')
         }}
         onChanged={load}
       />

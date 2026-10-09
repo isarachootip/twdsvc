@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
     const rows = await prisma.job.findMany({
       where: { AND: and },
       take: limit,
-      orderBy: { openedAt: 'desc' },
+      orderBy: [{ stageEnteredAt: 'desc' }, { openedAt: 'desc' }],
       include: JOB_LIST_INCLUDE,
     })
     let jobs: JobView[] = rows.map(j => serializeJob(j, user.role))
