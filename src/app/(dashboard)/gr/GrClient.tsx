@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { OverdueSummary, KpiGrid, TabBar, QueueHeader, EmptyCard } from '@/components/ui/Queue'
 import PrintLabel, { type LabelData } from '@/components/ui/PrintLabel'
+import ShippingLabel3PLModal from '@/components/ui/ShippingLabel3PLModal'
+import { buildCaseA3PlLabel, type ThreePlLabelData } from '@/lib/threepl-label'
 import JobDetailModal from '@/components/jobs/JobDetail'
 import { useSort } from '@/components/ui/Sortable'
 import { useQueue, useRowInputs } from '@/components/ui/useQueue'
@@ -31,6 +33,7 @@ export default function GrClient({ role }: { role: string }) {
     scanRef.current?.focus()
   })
   const [label, setLabel] = useState<LabelData | null>(null)
+  const [label3Pl, setLabel3Pl] = useState<ThreePlLabelData | null>(null)
   const [openId, setOpenId] = useState<string | null>(null)
   const [highlight, setHighlight] = useState<string | null>(null)
   const [scan, setScan] = useState('')
@@ -117,12 +120,13 @@ export default function GrClient({ role }: { role: string }) {
 
       {loading && <EmptyCard text="กำลังโหลด…" />}
       {!loading && tab === 'receive' && <GrReceiveTable ctx={ctx} s={receive} />}
-      {!loading && tab === 'pack' && <GrPackTable ctx={ctx} s={pack} onLabel={setLabel} />}
-      {!loading && tab === 'handoff' && <GrHandoffTab ctx={ctx} rows={list('handoff')} />}
+      {!loading && tab === 'pack' && <GrPackTable ctx={ctx} s={pack} onLabel={setLabel} onLabel3Pl={setLabel3Pl} />}
+      {!loading && tab === 'handoff' && <GrHandoffTab ctx={ctx} rows={list('handoff')} onPrint3Pl={j => setLabel3Pl(buildCaseA3PlLabel(j))} />}
       {!loading && tab === 'return' && <GrReturnTable ctx={ctx} s={ret} />}
       {!loading && tab === 'deliverCS' && <GrDeliverCsTable ctx={ctx} s={dcs} />}
 
       <PrintLabel data={label} onClose={() => setLabel(null)} />
+      <ShippingLabel3PLModal data={label3Pl} onClose={() => setLabel3Pl(null)} />
       <JobDetailModal jobId={openId} role={role} onClose={() => setOpenId(null)} onChanged={() => reload(true)} />
     </div>
   )

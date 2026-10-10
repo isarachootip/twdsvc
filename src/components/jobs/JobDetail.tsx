@@ -7,6 +7,8 @@ import StageBadge from '@/components/ui/StageBadge'
 import { useToast } from '@/components/ui/Toast'
 import QuoteDoc from './QuoteDoc'
 import PaymentModal from './PaymentModal'
+import ShippingLabel3PLModal from '@/components/ui/ShippingLabel3PLModal'
+import { buildCaseA3PlLabel } from '@/lib/threepl-label'
 import { JobNextActionCard } from './JobNextActionCard'
 import { api, absUrl } from '@/lib/client'
 import { CHANNEL_LABELS, OWNER_LABELS, fmtBaht, fmtDate, fmtDateTime, fmtPhone } from '@/lib/constants'
@@ -38,6 +40,7 @@ export default function JobDetailModal({
   const [d, setD] = useState<Detail | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const [showQuote, setShowQuote] = useState(false)
+  const [show3PlLabel, setShow3PlLabel] = useState(false)
   const [assign, setAssign] = useState<{ centers: any[]; centerId: string; channel: string } | null>(null)
   const [payOpen, setPayOpen] = useState(false)
   const { toast, prompt } = useToast()
@@ -52,7 +55,7 @@ export default function JobDetailModal({
     }
   }, [jobId])
 
-  useEffect(() => { setD(null); setShowQuote(false); setAssign(null); setPayOpen(false); load() }, [load])
+  useEffect(() => { setD(null); setShowQuote(false); setShow3PlLabel(false); setAssign(null); setPayOpen(false); load() }, [load])
 
   if (!jobId) return null
 
@@ -213,6 +216,17 @@ export default function JobDetailModal({
                 <div className="info-row" style={{ marginTop: 8 }}><span className="info-label">ใบเสนอราคา</span><span>ยังไม่ถึงขั้นตอนเสนอราคา</span></div>
               ))}
 
+              {(d.channel === 'TPL' || d.shippingMethod === 'EXPRESS' || d.shipments?.some((s: any) => s.carrier === 'TPL')) && (
+                <button
+                  type="button"
+                  className="btn"
+                  style={{ marginTop: 10, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                  onClick={() => setShow3PlLabel(true)}
+                >
+                  <span>🖨️ พิมพ์ใบปะหน้าส่ง 3PL</span>
+                </button>
+              )}
+
               {d.links && Object.keys(d.links).length > 0 && (
                 <div className="note" style={{ marginTop: 12 }}>
                   <b>ลิงก์ลูกค้า</b>
@@ -280,6 +294,27 @@ export default function JobDetailModal({
               </>
             )}
           </Modal>
+
+          {show3PlLabel && d && (
+            <ShippingLabel3PLModal
+              data={buildCaseA3PlLabel({
+                jobNo: d.jobNo,
+                productName: d.productName,
+                symptom: d.symptom,
+                sizeCategoryId: d.sizeCategoryId,
+                openedAt: d.openedAt,
+                branch: d.branch,
+                vendor: d.vendorCenter ? {
+                  name: d.vendorCenter.vendorParent?.name || d.vendor?.name || 'ศูนย์บริการ',
+                  centerCode: d.vendorCenter.code || d.vendor?.centerCode,
+                  phone: d.vendorCenter.phone,
+                  address: d.vendorCenter.address,
+                } : d.vendor,
+                trackingNo: d.shipments?.find((s: any) => s.carrier === 'TPL' && s.trackingNo)?.trackingNo ?? null,
+              })}
+              onClose={() => setShow3PlLabel(false)}
+            />
+          )}
 
           {payOpen && d && (
             <PaymentModal
