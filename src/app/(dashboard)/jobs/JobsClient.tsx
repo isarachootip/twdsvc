@@ -6,12 +6,13 @@ import JobDetailModal from '@/components/jobs/JobDetail'
 import { useSort } from '@/components/ui/Sortable'
 import { DateRange } from '@/components/ui/Queue'
 import { useToast } from '@/components/ui/Toast'
-import { api, exportXlsx, monthStartBkk, todayBkk } from '@/lib/client'
-import { CHANNEL_LABELS, OWNER_LABELS, STAGE_ORDER, fmtDateTime, type Stage } from '@/lib/constants'
+import { api, monthStartBkk, todayBkk } from '@/lib/client'
+import { STAGE_ORDER, fmtDateTime, type Stage } from '@/lib/constants'
 import type { JobView } from '@/lib/job-view'
 import JobsTable, { ownerOf } from './components/JobsTable'
 import JobsFilterBar from './components/JobsFilterBar'
 import JobsKpiCards, { matchFlag } from './components/JobsKpiCards'
+import { exportJobsXlsx } from './components/jobs-export'
 
 export interface JobsClientProps {
   role?: string
@@ -117,39 +118,28 @@ export default function JobsClient({ role: initialRole, user, initialJobs }: Job
     hours: j => j.sla?.hoursInStep ?? 0,
   }, { key: 'systemTime', dir: -1 })
 
-  const doExport = () => exportXlsx([{
-    name: 'งานซ่อม',
-    rows: sorted.map(j => ({
-      'เลขที่ใบแจ้งซ่อม': j.jobNo,
-      'วัน-เวลาระบบ (เข้าสถานะ)': fmtDateTime(j.stageEnteredAt),
-      'วันที่เปิด': new Date(j.openedAt).toLocaleDateString('th-TH'),
-      'ลูกค้า': j.customerName ?? '',
-      'เบอร์โทร': j.customerPhone ?? '',
-      'สินค้า': j.productName,
-      'แบรนด์': j.brandName,
-      'สาขา': j.branch.name,
-      'ช่องทาง': j.channel ? CHANNEL_LABELS[j.channel] : '',
-      'สถานะ': j.stageLabel,
-      'ส่วนงานที่รับผิดชอบ': OWNER_LABELS[ownerOf(j) ?? ''] ?? '',
-      'ชั่วโมงใน step นี้': j.sla?.hoursInStep ?? '',
-      'SLA (ชม.)': j.sla?.slaHours ?? '',
-      'เกิน SLA': j.overdue ? 'ใช่' : 'ไม่',
-      'ค้างชำระ': j.unpaid ? 'ใช่' : 'ไม่',
-      'ศูนย์ซ่อม': j.vendor ? `${j.vendor.code} ${j.vendor.name}` : '',
-    })),
-  }], `service_center_jobs_${todayBkk()}.xlsx`)
+  const doExport = () => exportJobsXlsx(sorted)
 
   return (
-    <div className="page">
-      <div className="toprow">
+    <div className="w-full max-w-[1400px] mx-auto px-4 py-5">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
         <div>
-          <p className="page-title">งานซ่อมทั้งหมด</p>
-          <p className="page-sub">
-            กดที่ตัวเลขเพื่อดูเฉพาะรายการเร่งด่วนตามส่วนงานที่รับผิดชอบ SLA
-            {sysTime && <span style={{ marginLeft: 8 }}>· วันและเวลาระบบ: <b>{sysTime}</b></span>}
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight">งานซ่อมทั้งหมด</h1>
+            {sysTime && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>วันและเวลาระบบ: {sysTime}</span>
+              </span>
+            )}
+          </div>
+          <p className="text-xs md:text-sm text-slate-500 mt-1">
+            กดที่การ์ดตัวเลขเพื่อดูเฉพาะรายการเร่งด่วนตาม SLA หรือค้นหาตามเงื่อนไขด้านล่าง
           </p>
         </div>
-        <DateRange from={from} to={to} onChange={(f, t) => { setFrom(f); setTo(t) }} onExport={doExport} />
+        <div className="self-start md:self-auto">
+          <DateRange from={from} to={to} onChange={(f, t) => { setFrom(f); setTo(t) }} onExport={doExport} />
+        </div>
       </div>
 
       <JobsKpiCards jobs={base} flag={flag} onToggleFlag={k => setFlag(flag === k ? null : k)} />

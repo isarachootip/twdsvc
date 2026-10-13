@@ -28,51 +28,138 @@ interface JobsTableProps {
 
 export default function JobsTable({ jobs, sort, toggle, loading, onOpenJob }: JobsTableProps) {
   return (
-    <div className="tcard">
-      <div className="tbl-wrap">
-        <table className="tbl">
+    <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-left text-xs">
           <thead>
-            <tr>
-              <Th k="id" label="เลขที่ใบแจ้งซ่อม" sort={sort} toggle={toggle} />
-              <Th k="systemTime" label="วัน-เวลาระบบ" sort={sort} toggle={toggle} />
-              <Th k="customer" label="ลูกค้า" sort={sort} toggle={toggle} />
-              <Th k="product" label="สินค้า" sort={sort} toggle={toggle} />
-              <Th k="branch" label="สาขา" sort={sort} toggle={toggle} />
-              <Th k="channel" label="ช่องทาง" sort={sort} toggle={toggle} />
-              <Th k="status" label="สถานะ" sort={sort} toggle={toggle} />
-              <Th k="owner" label="ส่วนงานที่รับผิดชอบ" sort={sort} toggle={toggle} />
-              <Th k="hours" label="อยู่ใน step นี้มา" sort={sort} toggle={toggle} />
-              <th>หมายเหตุ</th>
+            <tr className="bg-slate-50/90 border-b border-slate-200 text-slate-600 font-semibold select-none">
+              <Th k="id" label="เลขที่ใบแจ้งซ่อม" sort={sort} toggle={toggle} className="py-3 px-4" />
+              <Th k="systemTime" label="วัน-เวลาระบบ" sort={sort} toggle={toggle} className="py-3 px-4" />
+              <Th k="customer" label="ลูกค้า" sort={sort} toggle={toggle} className="py-3 px-4" />
+              <Th k="product" label="สินค้า" sort={sort} toggle={toggle} className="py-3 px-4" />
+              <Th k="branch" label="สาขา" sort={sort} toggle={toggle} className="py-3 px-4" />
+              <Th k="channel" label="ช่องทาง" sort={sort} toggle={toggle} className="py-3 px-4" />
+              <Th k="status" label="สถานะ" sort={sort} toggle={toggle} className="py-3 px-4" />
+              <Th k="owner" label="ส่วนงานรับผิดชอบ" sort={sort} toggle={toggle} className="py-3 px-4" />
+              <Th k="hours" label="อยู่ใน step นี้มา" sort={sort} toggle={toggle} className="py-3 px-4" />
+              <th className="py-3 px-4">หมายเหตุ</th>
             </tr>
           </thead>
-          <tbody>
-            {loading && <tr><td colSpan={10} className="empty">กำลังโหลด…</td></tr>}
-            {!loading && jobs.length === 0 && <tr><td colSpan={10} className="empty">ไม่พบรายการที่ตรงกับตัวกรอง</td></tr>}
-            {!loading && jobs.map(j => (
-              <tr key={j.id} className="clickable" onClick={() => onOpenJob(j.id)}>
-                <td>
-                  <div className={`jobid ${j.overdue ? 'overdue' : ''}`}>{j.jobNo}</div>
+          <tbody className="divide-y divide-slate-100">
+            {loading && (
+              <tr>
+                <td colSpan={10} className="py-12 text-center text-slate-400">
+                  <div className="inline-flex items-center gap-2">
+                    <span className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                    <span>กำลังโหลดข้อมูล…</span>
+                  </div>
                 </td>
-                <td>
-                  <div style={{ fontWeight: 500 }}>{fmtDateTime(j.stageEnteredAt)}</div>
-                  <div className="sub-mute">เปิด {new Date(j.openedAt).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: '2-digit' })}</div>
-                </td>
-                <td>
-                  {j.type === 'STOCK' ? <span className="sub-mute">สต็อกสาขา</span> : j.customerName}
-                  <div className="sub-mute">{j.customerPhone && !j.customerPhone.includes('x') ? fmtPhone(j.customerPhone) : j.customerPhone}</div>
-                </td>
-                <td>
-                  {j.productName}
-                  <div className="sub-mute">{j.brandName}</div>
-                </td>
-                <td>{j.branch.name}</td>
-                <td>{j.channel ? CHANNEL_LABELS[j.channel] : '-'}</td>
-                <td><StageBadge stage={j.stage} intakeUnpaid={j.intakeUnpaid} /></td>
-                <td>{OWNER_LABELS[ownerOf(j) ?? ''] ?? '-'}</td>
-                <td>{j.sla ? <>{j.sla.hoursInStep} ชม.<div className="sub-mute">SLA {j.sla.slaHours} ชม.</div></> : '-'}</td>
-                <td>{flags(j).length ? <span className="flag">{flags(j).join(', ')}</span> : '-'}</td>
               </tr>
-            ))}
+            )}
+            {!loading && jobs.length === 0 && (
+              <tr>
+                <td colSpan={10} className="py-12 text-center text-slate-400">
+                  ไม่พบรายการที่ตรงกับตัวกรอง
+                </td>
+              </tr>
+            )}
+            {!loading && jobs.map(j => {
+              const jobFlags = flags(j)
+              return (
+                <tr
+                  key={j.id}
+                  onClick={() => onOpenJob(j.id)}
+                  className="hover:bg-slate-50/80 transition-colors cursor-pointer group"
+                >
+                  <td className="py-3 px-4 align-middle">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-semibold font-mono text-slate-800 group-hover:text-red-600 transition-colors">
+                        {j.jobNo}
+                      </span>
+                      {j.overdue && (
+                        <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" title="เกินกำหนด SLA" />
+                      )}
+                    </div>
+                  </td>
+                  <td className="py-3 px-4 align-middle">
+                    <div className="font-medium text-slate-800">{fmtDateTime(j.stageEnteredAt)}</div>
+                    <div className="text-[11px] text-slate-400 mt-0.5">
+                      เปิด {new Date(j.openedAt).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: '2-digit' })}
+                    </div>
+                  </td>
+                  <td className="py-3 px-4 align-middle">
+                    {j.type === 'STOCK' ? (
+                      <span className="inline-block px-1.5 py-0.5 text-[11px] bg-slate-100 text-slate-600 rounded">สต็อกสาขา</span>
+                    ) : (
+                      <div className="font-medium text-slate-800">{j.customerName}</div>
+                    )}
+                    <div className="text-[11px] text-slate-400 font-mono mt-0.5">
+                      {j.customerPhone && !j.customerPhone.includes('x') ? fmtPhone(j.customerPhone) : j.customerPhone}
+                    </div>
+                  </td>
+                  <td className="py-3 px-4 align-middle max-w-[220px]">
+                    <div className="font-medium text-slate-800 truncate" title={j.productName}>
+                      {j.productName}
+                    </div>
+                    <div className="text-[11px] text-slate-400 mt-0.5">{j.brandName}</div>
+                  </td>
+                  <td className="py-3 px-4 align-middle text-slate-700">{j.branch.name}</td>
+                  <td className="py-3 px-4 align-middle">
+                    {j.channel ? (
+                      <span className="inline-block px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-600 border border-slate-200/60">
+                        {CHANNEL_LABELS[j.channel] ?? j.channel}
+                      </span>
+                    ) : (
+                      <span className="text-slate-300">-</span>
+                    )}
+                  </td>
+                  <td className="py-3 px-4 align-middle">
+                    <StageBadge stage={j.stage} intakeUnpaid={j.intakeUnpaid} />
+                  </td>
+                  <td className="py-3 px-4 align-middle text-slate-700">
+                    {OWNER_LABELS[ownerOf(j) ?? ''] ?? '-'}
+                  </td>
+                  <td className="py-3 px-4 align-middle">
+                    {j.sla ? (
+                      <div>
+                        <span className={`font-semibold ${j.sla.overdue ? 'text-rose-600' : 'text-slate-700'}`}>
+                          {j.sla.hoursInStep} ชม.
+                        </span>
+                        <div className="text-[11px] text-slate-400 mt-0.5">SLA {j.sla.slaHours} ชม.</div>
+                      </div>
+                    ) : (
+                      <span className="text-slate-300">-</span>
+                    )}
+                  </td>
+                  <td className="py-3 px-4 align-middle">
+                    {jobFlags.length ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {jobFlags.map((f, idx) => {
+                          const isOver = f.startsWith('เกิน SLA')
+                          const isUnpaid = f.includes('ค้างชำระ') || f.includes('รอชำระ')
+                          return (
+                            <span
+                              key={idx}
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border ${
+                                isOver
+                                  ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                  : isUnpaid
+                                  ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                  : 'bg-slate-100 text-slate-700 border-slate-200'
+                              }`}
+                            >
+                              {f}
+                            </span>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <span className="text-slate-300">-</span>
+                    )}
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
