@@ -1,0 +1,1164 @@
+[
+  {
+    "vendorId": "620236",
+    "name": "WIN FAVOUR COMPANY LIMITED",
+    "active": false,
+    "isBrandAuthorized": false,
+    "slaDays": 7,
+    "dropPoint": "-",
+    "address": null,
+    "postalCode": null,
+    "deliveryMethod": "DC",
+    "brands": [
+      "WIN FAVOUR",
+      "LUZINO"
+    ]
+  },
+  {
+    "vendorId": "620163",
+    "name": "BUNTANAPHAN ELECTRIC CO.LTD.",
+    "active": false,
+    "isBrandAuthorized": false,
+    "slaDays": 7,
+    "dropPoint": "-",
+    "address": null,
+    "postalCode": null,
+    "deliveryMethod": "DC",
+    "brands": [
+      "BEC",
+      "DELIXI",
+      "BLITE"
+    ]
+  },
+  {
+    "vendorId": "600299",
+    "name": "HISO TECH CO.LTD.",
+    "active": false,
+    "isBrandAuthorized": false,
+    "slaDays": 7,
+    "dropPoint": "-",
+    "address": null,
+    "postalCode": null,
+    "deliveryMethod": "DC",
+    "brands": [
+      "HISO",
+      "KIKAWA",
+      "PENTAIR",
+      "FROG",
+      "แพนเทกซ์",
+      "PENTAX",
+      "HCP"
+    ]
+  },
+  {
+    "vendorId": "601311",
+    "name": "AEI INDUSTRY CO.LTD.",
+    "active": false,
+    "isBrandAuthorized": false,
+    "slaDays": 7,
+    "dropPoint": "-",
+    "address": null,
+    "postalCode": null,
+    "deliveryMethod": "DC",
+    "brands": [
+      "GALAXY"
+    ]
+  },
+  {
+    "vendorId": "620246",
+    "name": "WAVE PRODUCT CO.LTD.",
+    "active": false,
+    "isBrandAuthorized": false,
+    "slaDays": 7,
+    "dropPoint": "-",
+    "address": null,
+    "postalCode": null,
+    "deliveryMethod": "DC",
+    "brands": [
+      "WAVE",
+      "EBARA",
+      "3M",
+      "GIANT KINGKONG PRO",
+      "DANFOSS",
+      "NITTO",
+      "TORQUE"
+    ]
+  },
+  {
+    "vendorId": "650012",
+    "name": "SOLEX INTERNATIONAL(THAILAND)CO.LTD.",
+    "active": false,
+    "isBrandAuthorized": false,
+    "slaDays": 7,
+    "dropPoint": "-",
+    "address": null,
+    "postalCode": null,
+    "deliveryMethod": "DC",
+    "brands": [
+      "SOLEX",
+      "POLO"
+    ]
+  },
+  {
+    "vendorId": "602000",
+    "name": "JONG PHROM SUP PERM POON CO.LTD.",
+    "active": false,
+    "isBrandAuthorized": false,
+    "slaDays": 7,
+    "dropPoint": "-",
+    "address": null,
+    "postalCode": null,
+    "deliveryMethod": "DC",
+    "brands": [
+      "JP",
+      "EUROE"
+    ]
+  },
+  {
+    "vendorId": "602463",
+    "name": "NINGBO DAYE GARDEN INDUSTRY CO.LTD.",
+    "active": false,
+    "isBrandAuthorized": false,
+    "slaDays": 7,
+    "dropPoint": "-",
+    "address": null,
+    "postalCode": null,
+    "deliveryMethod": "DC",
+    "brands": [
+      "KARTEN"
+    ]
+  },
+  {
+    "vendorId": "630145",
+    "name": "CENTRAL TRADING CO.LTD.",
+    "active": false,
+    "isBrandAuthorized": false,
+    "slaDays": 7,
+    "dropPoint": "-",
+    "address": null,
+    "postalCode": null,
+    "deliveryMethod": "DC",
+    "brands": [
+      "CASIO",
+      "NEOCAL",
+      "TANITA",
+      "Shaper"
+    ]
+  },
+  {
+    "vendorId": "620090",
+    "name": "SONEPAR (THAILAND) LIMITED",
+    "active": false,
+    "isBrandAuthorized": false,
+    "slaDays": 7,
+    "dropPoint": "-",
+    "address": null,
+    "postalCode": null,
+    "deliveryMethod": "DC",
+    "brands": [
+      "CLIPSAL",
+      "SCHNEIDER",
+      "SQUARE D",
+      "SQUARED",
+      "CTW",
+      "SEHEIDER",
+      "SONEPAR"
+    ]
+  },
+  {
+    "vendorId": "601553",
+    "name": "TRANSPOWER TECHNOLOGY CO.LTD.",
+    "active": false,
+    "isBrandAuthorized": false,
+    "slaDays": 7,
+    "dropPoint": "-",
+    "address": null,
+    "postalCode": null,
+    "deliveryMethod": "DC",
+    "brands": [
+      "TRANSPOWER",
+      "SUNTREE"
+    ]
+  },
+  {
+    "vendorId": "610162",
+    "name": "J.R.M.JAREONMITR GROUP.CO.LTD.",
+    "active": false,
+    "isBrandAuthorized": false,
+    "slaDays": 7,
+    "dropPoint": "-",
+    "address": null,
+    "postalCode": null,
+    "deliveryMethod": "DC",
+    "brands": [
+      "MARTON",
+      "J.R.M",
+      "นกสิงห์",
+      "JRM",
+      "MARATHON"
+    ]
+  },
+  {
+    "vendorId": "600627",
+    "name": "ISON IMPORT-EXPORT CO.LTD.",
+    "active": false,
+    "isBrandAuthorized": false,
+    "slaDays": 7,
+    "dropPoint": "-",
+    "address": null,
+    "postalCode": null,
+    "deliveryMethod": "DC",
+    "brands": [
+      "SUNNY"
+    ]
+  },
+  {
+    "vendorId": "630014",
+    "name": "HATARI ELECTRIC CO.LTD.",
+    "active": false,
+    "isBrandAuthorized": false,
+    "slaDays": 7,
+    "dropPoint": "-",
+    "address": null,
+    "postalCode": null,
+    "deliveryMethod": "DC",
+    "brands": [
+      "HATARI"
+    ]
+  },
+  {
+    "vendorId": "620001",
+    "name": "MAZUMA (THAILAND)CO.LTD",
+    "active": false,
+    "isBrandAuthorized": false,
+    "slaDays": 7,
+    "dropPoint": "-",
+    "address": null,
+    "postalCode": null,
+    "deliveryMethod": "DC",
+    "brands": [
+      "MAZUMA",
+      "AQUAFRESH",
+      "NR",
+      "ARISTON",
+      "ZAGIO",
+      "HONEYWELL",
+      "WILO",
+      "TORAY",
+      "ANGEL"
+    ]
+  },
+  {
+    "vendorId": "650180",
+    "name": "SL HOMEPRODUCTS CO.LTD.",
+    "active": false,
+    "isBrandAuthorized": false,
+    "slaDays": 7,
+    "dropPoint": "-",
+    "address": null,
+    "postalCode": null,
+    "deliveryMethod": "DC",
+    "brands": [
+      "SL",
+      "ELEGANCE",
+      "FIRENZE",
+      "TSL",
+      "FOHLER",
+      "KRUKER",
+      "WSP",
+      "CASINO",
+      "RED SHIELD",
+      "ELEGENCE",
+      "KASSA",
+      "GIAVANI",
+      "SL HOME"
+    ]
+  },
+  {
+    "vendorId": "620204",
+    "name": "STIEBEL ELTRON ASIA LTD.",
+    "active": false,
+    "isBrandAuthorized": false,
+    "slaDays": 7,
+    "dropPoint": "-",
+    "address": null,
+    "postalCode": null,
+    "deliveryMethod": "DC",
+    "brands": [
+      "STIEBEL ELTRON",
+      "AEG"
+    ]
+  },
+  {
+    "vendorId": "650179",
+    "name": "TIRAWAT AIR COMPRESSORS LIMITED",
+    "active": false,
+    "isBrandAuthorized": false,
+    "slaDays": 7,
+    "dropPoint": "-",
+    "address": null,
+    "postalCode": null,
+    "deliveryMethod": "DC",
+    "brands": [
+      "PUMA",
+      "REXON",
+      "CHIPEN",
+      "TIGER",
+      "TOSHIBA",
+      "ABLE",
+      "HITACHI",
+      "ELE",
+      "JET",
+      "EARLEX",
+      "BANDO",
+      "LEONE",
+      "KEN",
+      "AEROPRO",
+      "THUNDER POWER",
+      "SMART",
+      "KAMPF",
+      "AVA"
+    ]
+  },
+  {
+    "vendorId": "620005",
+    "name": "LAMPTAN LIGHTING (2001) CO.LTD.",
+    "active": false,
+    "isBrandAuthorized": false,
+    "slaDays": 7,
+    "dropPoint": "-",
+    "address": null,
+    "postalCode": null,
+    "deliveryMethod": "DC",
+    "brands": [
+      "LAMPTAN"
+    ]
+  },
+  {
+    "vendorId": "610185",
+    "name": "KINGBANGKOK INTERTRADE CO.LTD.",
+    "active": false,
+    "isBrandAuthorized": false,
+    "slaDays": 7,
+    "dropPoint": "-",
+    "address": null,
+    "postalCode": null,
+    "deliveryMethod": "DC",
+    "brands": [
+      "KING",
+      "EUROX",
+      "RED KING",
+      "EUROX GOLD",
+      "HIUP",
+      "ONE TOUCH",
+      "GFS",
+      "HKS",
+      "D-MAX",
+      "HAMMER",
+      "OKURA",
+      "PROTON",
+      "TOSE TURBO",
+      "ASHUN",
+      "KINGBANGKOK",
+      "BANDO"
+    ]
+  },
+  {
+    "vendorId": "600912",
+    "name": "THAI SAMSUNG ELECTRONICS CO.LTD.",
+    "active": false,
+    "isBrandAuthorized": false,
+    "slaDays": 7,
+    "dropPoint": "-",
+    "address": null,
+    "postalCode": null,
+    "deliveryMethod": "DC",
+    "brands": [
+      "SAMSUNG"
+    ]
+  },
+  {
+    "vendorId": "600678",
+    "name": "ASSARA ELECTRIC CO.LTD.",
+    "active": false,
+    "isBrandAuthorized": false,
+    "slaDays": 7,
+    "dropPoint": "-",
+    "address": null,
+    "postalCode": null,
+    "deliveryMethod": "DC",
+    "brands": [
+      "DAICHI"
+    ]
+  },
+  {
+    "vendorId": "630211",
+    "name": "ACCORD PREVAIL ELECTRIC 1999 CO.LTD",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 28,
+    "dropPoint": "DC",
+    "address": "70 ถนนริมทางรถไฟสายแม่กลอง แขวงบางค้อ เขตจอมทอง กรุงเทพมหานคร 10150",
+    "postalCode": "10150",
+    "deliveryMethod": "DC",
+    "brands": [
+      "ACCORD",
+      "ACCORD PREVAIL",
+      "PREVAIL",
+      "SERIES"
+    ]
+  },
+  {
+    "vendorId": "601085",
+    "name": "DYNAHOMEPRODUCT CO.LTD.",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 24,
+    "dropPoint": "DC",
+    "address": "12/53-56 หมู่ที่ 10 ตำบลคลองข่อย อำเภอปากเกร็ด จ.นนทบุรี 11120",
+    "postalCode": "11120",
+    "deliveryMethod": "DC",
+    "brands": [
+      "DYNA HOME",
+      "ZAGIO"
+    ]
+  },
+  {
+    "vendorId": "600703",
+    "name": "GRANDLITE DEVELOPMENT CO.LTD.",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 17,
+    "dropPoint": "DC",
+    "address": "10 ซอยอุดมสุข 31 ถนนสุขุมวิท แขวงบางจาก เขตพระโขนง กรุงเทพมหานคร 10260",
+    "postalCode": "10260",
+    "deliveryMethod": "DC",
+    "brands": [
+      "AIKO",
+      "ALTROM SPORT",
+      "G-SPORTS",
+      "G-sports",
+      "G-SPORT",
+      "OMA"
+    ]
+  },
+  {
+    "vendorId": "650027",
+    "name": "HANABISHI ELECTRIC CORPORATION LTD.",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 32,
+    "dropPoint": "DC",
+    "address": "6,8,10 ซอยสุขสวัสดิ์ 14/13 ถนนสุขสวัสดิ์ แขวงจอมทอง เขตจอมทอง กรุงเทพมหานคร 10150",
+    "postalCode": "10150",
+    "deliveryMethod": "DC",
+    "brands": [
+      "HANABISHI"
+    ]
+  },
+  {
+    "vendorId": "610150",
+    "name": "K.T.MAX CO.LTD.(BRANCH 1)",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 58,
+    "dropPoint": "DC",
+    "address": "491/17 อาคารสีลมพลาซ่า ชั้นที่ 4,5 ถนนสีลม แขวงสีลม เขตบางรัก กรุงเทพมหานคร 10500",
+    "postalCode": "10500",
+    "deliveryMethod": "DC",
+    "brands": [
+      "CHAMPION",
+      "DRIP OIL",
+      "KARCHER",
+      "MAKITA",
+      "MAKTEC",
+      "MITSUBISHI",
+      "POLO",
+      "SCOTCH",
+      "SPOT SHOT",
+      "WD-40"
+    ]
+  },
+  {
+    "vendorId": "610236",
+    "name": "KRIENG KAMOL 2009 CO.LTD.",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 58,
+    "dropPoint": "DC",
+    "address": "491/17 อาคารสีลมพลาซ่า ชั้นที่ 4,5 ถนนสีลม แขวงสีลม เขตบางรัก กรุงเทพมหานคร 10500",
+    "postalCode": "10500",
+    "deliveryMethod": "DC",
+    "brands": [
+      "ASADA",
+      "BOYE",
+      "EUROE",
+      "IRWIN",
+      "JASIC",
+      "KT",
+      "LONCIN",
+      "MAKTEC",
+      "MARATHON",
+      "MIKASA",
+      "NOVO",
+      "POLO",
+      "REX",
+      "SHIMGE",
+      "TAIKYOKU",
+      "TYROLIT",
+      "VALU",
+      "WUFU"
+    ]
+  },
+  {
+    "vendorId": "610151",
+    "name": "KRIENG THAI WATTANA GROUP CO.LTD. (BRANCH 1)",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 58,
+    "dropPoint": "DC",
+    "address": "491/17 อาคารสีลมพลาซ่า ชั้นที่ 4,5 ถนนสีลม แขวงสีลม เขตบางรัก กรุงเทพมหานคร 10500",
+    "postalCode": "10500",
+    "deliveryMethod": "DC",
+    "brands": [
+      "MAKITA"
+    ]
+  },
+  {
+    "vendorId": "610152",
+    "name": "KRIENG THAI WATTANA INTERTRADE CO.LTD.(BRANCH 1)",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 58,
+    "dropPoint": "DC",
+    "address": "491/17 อาคารสีลมพลาซ่า ชั้นที่ 4,5 ถนนสีลม แขวงสีลม เขตบางรัก กรุงเทพมหานคร 10500",
+    "postalCode": "10500",
+    "deliveryMethod": "DC",
+    "brands": [
+      "3M",
+      "KUANI",
+      "MAKITA",
+      "MAKTEC",
+      "MITSUBISHI"
+    ]
+  },
+  {
+    "vendorId": "630005",
+    "name": "LUCKY FLAME CO.LTD.",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 27,
+    "dropPoint": "DC",
+    "address": "19 ซอยบางนา-ตราด 34 แขวงบางนาใต้ เขตบางนา กรุงเทพมหานคร 10260",
+    "postalCode": "10260",
+    "deliveryMethod": "DC",
+    "brands": [
+      "ACONATIC",
+      "HOAM",
+      "LUCKY FLAME",
+      "RINNAI",
+      "STRONGA"
+    ]
+  },
+  {
+    "vendorId": "620271",
+    "name": "SIAM GLOBAL GROUP CO.LTD.",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 27,
+    "dropPoint": "DC",
+    "address": "3/1038 ซอยเคหะร่มเกล้า 64 แขวงคลองสองต้นนุ่น เขตลาดกระบัง กรุงเทพมหานคร 10520",
+    "postalCode": "10520",
+    "deliveryMethod": "DC",
+    "brands": [
+      "BOXING",
+      "CEM",
+      "M1",
+      "MAXICUT",
+      "Siam Commercial",
+      "SUMO",
+      "TWD",
+      "YAMADA"
+    ]
+  },
+  {
+    "vendorId": "600848",
+    "name": "THAI CITY ELECTRIC CO.LTD.",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 20,
+    "dropPoint": "DC",
+    "address": "1643/4 ถนนเพชรบุรีตัดใหม่ แขวงมักกะสัน เขตราชเทวี กรุงเทพมหานคร 10400",
+    "postalCode": "10400",
+    "deliveryMethod": "DC",
+    "brands": [
+      "HI-TEK",
+      "SHARP"
+    ]
+  },
+  {
+    "vendorId": "630130",
+    "name": "THE SIGNATURE BRAND CO.LTD.",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 39,
+    "dropPoint": "DC",
+    "address": "771 ถนนประชาอุทิศ แขวงสามเสนนอก เขตห้วยขวาง กรุงเทพมหานคร 10310",
+    "postalCode": "10310",
+    "deliveryMethod": "DC",
+    "brands": [
+      "CAMARCIO",
+      "ELICA",
+      "ELLICI",
+      "GLEM",
+      "TECHNOPLUS",
+      "TECNOPLUS",
+      "TECNO STAR",
+      "TECNOGAS"
+    ]
+  },
+  {
+    "vendorId": "630004",
+    "name": "LIXIL (THAILAND) PUBLIC COMPANY LIMITED",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 33,
+    "dropPoint": "DC / ส่ง 3PL",
+    "address": "1/6 หมู่ที่ 1 ถนนพหลโยธิน กม.32 ตำบลคลองหนึ่ง อำเภอคลองหลวง จังหวัด ปทุมธานี",
+    "postalCode": null,
+    "deliveryMethod": "DC_DSD",
+    "brands": [
+      "AMERICAN STANDARD"
+    ]
+  },
+  {
+    "vendorId": "630011",
+    "name": "N.L.SANITARY FITTINGS CO.LTD.",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 31,
+    "dropPoint": "DC / ส่ง 3PL",
+    "address": "103 หมู่ที่ 2 ถนนเทพารักษ์ ตำบลบางเสาธง อำเภอบางเสาธง จ.สมุทรปราการ 10570",
+    "postalCode": "10570",
+    "deliveryMethod": "DC_DSD",
+    "brands": [
+      "FLOWER SERIES",
+      "HANG",
+      "HOP"
+    ]
+  },
+  {
+    "vendorId": "650196",
+    "name": "BLACK&DECKER (THAILAND) LTD.",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 45,
+    "dropPoint": "Store",
+    "address": "29 อาคารบางกอก บิสซิเนส เซ็นเตอร์ ชั้นที่ 28 ยูนิต 2802 ถนนสุขุมวิท 63 แขวงคลองตันเหนือ เขตวัฒนา กรุงเทพมหานคร 10110",
+    "postalCode": "10110",
+    "deliveryMethod": "DSD",
+    "brands": [
+      "BLACK AND DECKER",
+      "BLACK&DECKER",
+      "DEWALT",
+      "IRWIN",
+      "LENOX",
+      "STANLEY"
+    ]
+  },
+  {
+    "vendorId": "610392",
+    "name": "D.G.M. LIMITED PARTNERSHIP",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 28,
+    "dropPoint": "Store",
+    "address": "6 ซอยรามคำแหง 164 แยก 14 แขวงมีนบุรี เขตมีนบุรี กรุงเทพมหานคร 10510",
+    "postalCode": "10510",
+    "deliveryMethod": "DSD",
+    "brands": [
+      "APPLE",
+      "ATC",
+      "D-MAX",
+      "HI-TOP",
+      "SUPER",
+      "HI-UPHI-TOP",
+      "INTER",
+      "KING",
+      "KT",
+      "SCORPION",
+      "SPEEDY"
+    ]
+  },
+  {
+    "vendorId": "600429",
+    "name": "KOREA POWER PRODUCTS (THAILAND) CO.LTD.",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 28,
+    "dropPoint": "Store",
+    "address": "9 หมู่ที่ 7 ตำบลละหาร อำเภอบางบัวทอง จังหวัดนนทบุรี 11110",
+    "postalCode": "11110",
+    "deliveryMethod": "DSD",
+    "brands": [
+      "ARC WELDER",
+      "GIANTTECH",
+      "HYUNDAI",
+      "IKEDA",
+      "IT MAX",
+      "LG-PRO",
+      "LG-STAR",
+      "MITSU",
+      "MITSU HEAVYDUTY",
+      "MITSUBISHI",
+      "MR PUMP",
+      "Mr.Pump",
+      "P-STAR",
+      "ROLAND",
+      "ROWEL",
+      "MINI",
+      "PRO",
+      "PROFESSIONAL",
+      "ROWELFESSIONAL",
+      "STARKE",
+      "TIGGER",
+      "TORQUE",
+      "WORKWELD"
+    ]
+  },
+  {
+    "vendorId": "620082",
+    "name": "LUCKY STAR INTERNATIONAL (THAILAND) CO.LTD",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 28,
+    "dropPoint": "Store",
+    "address": "75 หมู่ที่ 5 ถนนบางกรวย-ไทรน้อย ตำบลบางกร่าง อำเภอเมืองนนทบุรี จังหวัด นนทบุรี 11000",
+    "postalCode": "11000",
+    "deliveryMethod": "DSD",
+    "brands": [
+      "DANFOSS",
+      "ITAL TECNICA",
+      "LUCKY PRO",
+      "LUCKY STAR",
+      "SIX TEAM",
+      "SMILE",
+      "WILO"
+    ]
+  },
+  {
+    "vendorId": "600536",
+    "name": "PUMPKIN CORPORATION CO.LTD.",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 42,
+    "dropPoint": "Store",
+    "address": "4 ซอยพระรามที่ 2 ซอย 54 แยก 4-13 แขวงแสมดำ เขตบางขุนเทียน กรุงเทพมหานคร 10150",
+    "postalCode": "10150",
+    "deliveryMethod": "DSD",
+    "brands": [
+      "GIANT KINGKONG PRO",
+      "ISHII",
+      "ISHIL",
+      "JETECH",
+      "JITOOL",
+      "MATSUMOTO",
+      "NAGOYA",
+      "NETTO",
+      "ORP",
+      "PUMPKIN",
+      "PUMKIN",
+      "PUMPKIN PRO",
+      "TEXAS BULL",
+      "XINYUAN"
+    ]
+  },
+  {
+    "vendorId": "650011",
+    "name": "ROBERT BOSCH LIMITED",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 40,
+    "dropPoint": "Store",
+    "address": "อาคารเอฟวายไอ เซ็นเตอร์ อาคาร 1 ห้องเลขที่ - ชั้นที่ 4 เลขที่ 2525 ถนนพระราม 4  แขวงคลองเตย เขตคลองเตย กรุงเทพมหานคร 10110",
+    "postalCode": "10110",
+    "deliveryMethod": "DSD",
+    "brands": [
+      "BOSCH",
+      "DREMEL",
+      "SKIL"
+    ]
+  },
+  {
+    "vendorId": "601985",
+    "name": "SURAZINSANO CO.LTD.",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 13,
+    "dropPoint": "Store",
+    "address": "130 หมู่ที่ 2 ถนนรถรางเก่า ตำบลสำโรงใต้ อำเภอพระประแดง จังหวัดสมุทรปราการ 10130",
+    "postalCode": "10130",
+    "deliveryMethod": "DSD",
+    "brands": [
+      "3M",
+      "EINHELL",
+      "GIANTTECH",
+      "IWELD",
+      "WEL-D",
+      "IWELD/WEL-D",
+      "WELPRO",
+      "ZINSANO",
+      "เชื่อม-ดี"
+    ]
+  },
+  {
+    "vendorId": "620086",
+    "name": "TOYOBO (THAILAND) COMPANY LIMITED.",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 28,
+    "dropPoint": "Store",
+    "address": "944 อาคารมิตรทาวน์ ออฟฟิศ ทาวเวอร์ ชั้น 11 ห้องเลขที่ 1103-1106 ถนนพระราม 4 แขวงวังใหม่ เขตปทุมวัน กรุงเทพมหานคร",
+    "postalCode": null,
+    "deliveryMethod": "DSD",
+    "brands": [
+      "GT",
+      "HITACHI"
+    ]
+  },
+  {
+    "vendorId": "630120",
+    "name": "MITSUBISHI ELECTRIC KANG YONG WATANA CO.LTD.",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 28,
+    "dropPoint": "Store",
+    "address": "28 ถนนกรุงเทพกรีฑา แขวงหัวหมาก เขตบางกะปิ กรุงเทพมหานคร",
+    "postalCode": null,
+    "deliveryMethod": "DSD",
+    "brands": [
+      "MITSUBISHI",
+      "MITSUBISHI ELECTRIC"
+    ]
+  },
+  {
+    "vendorId": "630056",
+    "name": "SIAM EIDOSA CO.LTD",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 34,
+    "dropPoint": "ตจว.ส่ง 3PL / กทม.ส่งสาขา",
+    "address": "662/61-62 ถนนพระราม 3 แขวงบางโพงพาง เขตยานนาวา กรุงเทพมหานคร 10120",
+    "postalCode": "10120",
+    "deliveryMethod": "DC_DSD",
+    "brands": [
+      "ASTL",
+      "WSP",
+      "EIDOSA"
+    ]
+  },
+  {
+    "vendorId": "630067",
+    "name": "SIAM SANITECH (1995) CO.LTD.",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 17,
+    "dropPoint": "ตจว.ส่ง 3PL / กทม.ส่งสาขา",
+    "address": "8 ซอยอุดมสุข 60 แขวงหนองบอน เขตประเวศ กรุงเทพมหานคร 10250",
+    "postalCode": "10250",
+    "deliveryMethod": "DC_DSD",
+    "brands": [
+      "VEGARR",
+      "(ไม่มีระบุแบรนด์)"
+    ]
+  },
+  {
+    "vendorId": "650020",
+    "name": "HAFELE (THAILAND) LIMITED",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 24,
+    "dropPoint": "ตจว.ส่ง DC / กทม.ส่งสาขา",
+    "address": "57 ซอยสุขุมวิท 64 ถนนสุขุมวิท แขวงพระโขนงใต้ เขตพระโขนง กรุงเทพมหานคร 10260",
+    "postalCode": "10260",
+    "deliveryMethod": "DC_DSD",
+    "brands": [
+      "AQUA LINE",
+      "AQUASYS BY HAFELE",
+      "BLANCO",
+      "GORENJE",
+      "HAFELE",
+      "HANSGROHE",
+      "KESSEBOHMER"
+    ]
+  },
+  {
+    "vendorId": "601363",
+    "name": "OCEAN FITTING COMPANY LIMITED",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 20,
+    "dropPoint": "ตจว.ส่ง DC / กทม.ส่งสาขา",
+    "address": "148/1 ซอยรามอินทรา 14 แขวงท่าแร้ง เขตบางเขน กรุงเทพมหานคร",
+    "postalCode": null,
+    "deliveryMethod": "DC_DSD",
+    "brands": [
+      "3P",
+      "DUSS",
+      "ICON",
+      "KASSA"
+    ]
+  },
+  {
+    "vendorId": "630055",
+    "name": "THAI WELLTEX INTERPRODUCTS CO.LTD",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 17,
+    "dropPoint": "ตจว.ส่ง DC / กทม.ส่งสาขา",
+    "address": "71/97-99 ซอยวิภาวดีรังสิต 64 ถนนวิภาวดีรังสิต แขวงตลาดบางเขน เขตหลักสี่ กรุงเทพมหานคร 10210",
+    "postalCode": "10210",
+    "deliveryMethod": "DC_DSD",
+    "brands": [
+      "DREAMTEX",
+      "HOME-FIX",
+      "BY SHOWERPRO",
+      "HOMEFLEX",
+      "SHOWER PRO",
+      "SHOWERPRO",
+      "SOFT TEX",
+      "SUPERCARPET",
+      "THAI WELLTEX",
+      "WELLTEX SHOWER PRO"
+    ]
+  },
+  {
+    "vendorId": "630039",
+    "name": "ELECTROLUX THAILAND CO.LTD.",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 7,
+    "dropPoint": "ส่งซ่อมที่ศูนย์บริการแบรนด์",
+    "address": "1910 อาคารอีเลคโทรลักซ์ ถนนเพชรบุรีตัดใหม่ แขวงบางกะปิ เขตห้วยขวาง กรุงเทพมหานคร 10310",
+    "postalCode": "10310",
+    "deliveryMethod": "DSD",
+    "brands": [
+      "ELECTRIC",
+      "ELECTROLUX",
+      "ZANUSSI"
+    ]
+  },
+  {
+    "vendorId": "600800",
+    "name": "FRESHER COMPANY LIMITED",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 7,
+    "dropPoint": "ส่งซ่อมที่ศูนย์บริการแบรนด์",
+    "address": "68 หมู่ที่ 3 ตำบลบางพลีใหญ่ อำเภอบางพลี จ.สมุทรปราการ 10540",
+    "postalCode": "10540",
+    "deliveryMethod": "DSD",
+    "brands": [
+      "FRESHER"
+    ]
+  },
+  {
+    "vendorId": "640532-1",
+    "name": "GROUPE SEB (THAILAND) LTD.",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 7,
+    "dropPoint": "ส่งซ่อมที่ศูนย์บริการแบรนด์",
+    "address": "2034/66 อาคารอิตัลไทย ทาวเวอร์ ชั้น 14 ห้องเลขที่ 14-02 ถนนเพชรบุรีตัดใหม่ แขวงบางกะปิ เขตห้วยขวาง กรุงเทพมหานคร 10310",
+    "postalCode": "10310",
+    "deliveryMethod": "DSD",
+    "brands": [
+      "KRUPS",
+      "MEYER",
+      "SUPOR-ELEGANT",
+      "SUPOR-EVERYDAY",
+      "TEFAL"
+    ]
+  },
+  {
+    "vendorId": "600950",
+    "name": "HAIER ELECTRICAL APPLIANCES (THAILAND) CO.LTD",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 23,
+    "dropPoint": "ส่งซ่อมที่ศูนย์บริการแบรนด์",
+    "address": "90 อาคารซีดับเบิ้ลยู ทาวเวอร์ (ตึก เอ) ชั้นที่ 42-43 ถนนรัชดาภิเษก แขวงห้วยขวาง เขตห้วยขวาง กรุงเทพมหานคร 10310",
+    "postalCode": "10310",
+    "deliveryMethod": "DSD",
+    "brands": [
+      "CANDY",
+      "HAIER"
+    ]
+  },
+  {
+    "vendorId": "630129",
+    "name": "PEN K INTERTRADING CO.LTD.",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 7,
+    "dropPoint": "ส่งซ่อมที่ศูนย์บริการแบรนด์",
+    "address": "1000/63-64 อาคารพี.บี.ทาวเวอร์ ชั้น16 ถนนสุขุมวิท 71 แขวงคลองตันเหนือ เขตวัฒนา กรุงเทพมหานคร 10110",
+    "postalCode": "10110",
+    "deliveryMethod": "DSD",
+    "brands": [
+      "AO SMITH",
+      "BEST",
+      "CUCKOO",
+      "ELVIRA",
+      "EVERPURE",
+      "GE",
+      "MASTER",
+      "MESTER",
+      "METRIX",
+      "MEX",
+      "AO SMLTH",
+      "SMEG",
+      "TAP",
+      "MINIMEX",
+      "PEN K",
+      "PENTAIR",
+      "ZUCCHETTI"
+    ]
+  },
+  {
+    "vendorId": "630066",
+    "name": "SIAM SANITARY WARE INDUSTRY CO.LTD.",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 24,
+    "dropPoint": "ส่งซ่อมที่ศูนย์บริการแบรนด์",
+    "address": "36/11 ถนนวิภาวดีรังสิต แขวงสนามบิน เขตดอนเมือง กรุงเทพมหานคร 10210",
+    "postalCode": "10210",
+    "deliveryMethod": "DSD",
+    "brands": [
+      "KASSA",
+      "MIRKO",
+      "COTCO",
+      "COTTO",
+      "JUPITER",
+      "PREMA",
+      "TOTO",
+      "VEGARR"
+    ]
+  },
+  {
+    "vendorId": "600801",
+    "name": "TCL ELECTRONICS (THAILAND) CO.LTD.",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 7,
+    "dropPoint": "ส่งซ่อมที่ศูนย์บริการแบรนด์",
+    "address": "46/7 อาคารรุ่งโรจน์ธนกุล ชั้น 9 ถนนรัชดาภิเษก แขวงห้วยขวาง เขตห้วยขวาง กรุงเทพมหานคร 10310",
+    "postalCode": "10310",
+    "deliveryMethod": "DSD",
+    "brands": [
+      "IFFALCON",
+      "TCL"
+    ]
+  },
+  {
+    "vendorId": "630133",
+    "name": "TEKA (THAILAND) CO.LTD.",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 7,
+    "dropPoint": "ส่งซ่อมที่ศูนย์บริการแบรนด์",
+    "address": "364/8 ถนนศรีอยุธยา แขวงถนนพญาไท เขตราชเทวี กรุงเทพมหานคร 10400",
+    "postalCode": "10400",
+    "deliveryMethod": "DSD",
+    "brands": [
+      "CHROME",
+      "KUPPERSBUCH",
+      "TEKA",
+      "TEKA LINEA"
+    ]
+  },
+  {
+    "vendorId": "630075",
+    "name": "THIPTANAPORN CO.LTD.",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 7,
+    "dropPoint": "ส่งซ่อมที่ศูนย์บริการแบรนด์",
+    "address": "46 ซอยบางนา-ตราด 25 แขวงบางนาเหนือ เขตบางนา กรุงเทพมหานคร 10260",
+    "postalCode": "10260",
+    "deliveryMethod": "DSD",
+    "brands": [
+      "ARISTON",
+      "AXIA",
+      "BRAUN",
+      "CENTON",
+      "DE LONGHI",
+      "ELBA",
+      "FRANKE",
+      "KENWOOD"
+    ]
+  },
+  {
+    "vendorId": "600308",
+    "name": "TOSHIBA THAILAND COMPANY LIMITED",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 7,
+    "dropPoint": "ส่งซ่อมที่ศูนย์บริการแบรนด์",
+    "address": "201 ถนนวิภาวดีรังสิต แขวงจตุจักร เขตจตุจักร กรุงเทพมหานคร 10900",
+    "postalCode": "10900",
+    "deliveryMethod": "DSD",
+    "brands": [
+      "COMFEE",
+      "TOSHIBA"
+    ]
+  },
+  {
+    "vendorId": "600621",
+    "name": "V.R.UNION CO.LTD.",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 16,
+    "dropPoint": "ส่งซ่อมที่ศูนย์บริการแบรนด์",
+    "address": "137/16 หมู่ที่ 9 ซอยเพชรเกษม 91 ถนนเพชรเกษม ตำบลสวนหลวง อำเภอกระทุ่มแบน จ.สมุทรสาคร 74110",
+    "postalCode": "74110",
+    "deliveryMethod": "DSD",
+    "brands": [
+      "AXENT",
+      "HOY",
+      "KASSA",
+      "KASSA HOME",
+      "VRH",
+      "WATERTEC"
+    ]
+  },
+  {
+    "vendorId": "601654",
+    "name": "VERSUNI (THAILAND) LTD.",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 7,
+    "dropPoint": "ส่งซ่อมที่ศูนย์บริการแบรนด์",
+    "address": "1818 อาคารรสาทู ห้องเลขที่ 1207-1208 ชั้น 12 ถนนเพชรบุรี แขวงมักกะสัน เขตราชเทวี กรุงเทพมหานคร 10400",
+    "postalCode": "10400",
+    "deliveryMethod": "DSD",
+    "brands": [
+      "PHILIPS"
+    ]
+  },
+  {
+    "vendorId": "640532-2",
+    "name": "Service Center-Tefal",
+    "active": true,
+    "isBrandAuthorized": true,
+    "slaDays": 7,
+    "dropPoint": "ส่งซ่อมที่ศูนย์บริการแบรนด์",
+    "address": "ส่งซ่อมที่ศูนย์บริการแบรนด์",
+    "postalCode": null,
+    "deliveryMethod": "DSD",
+    "brands": [
+      "Tefal"
+    ]
+  }
+]

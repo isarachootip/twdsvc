@@ -2,6 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import { PrismaClient, Role, SiteType, Channel, JobStage, JobType, QuoteDecision, QuoteStatus } from '@prisma/client'
 import bcrypt from 'bcryptjs'
+import { resolveBranchChannel } from '../src/lib/parsers/vendor-matching-parser'
 
 const prisma = new PrismaClient()
 
@@ -213,6 +214,140 @@ async function main() {
     skipDuplicates: true,
   })
   console.log('  ✓ Branch-Vendor routes')
+
+  // ─── Vendor Matching & Historical Route Seeding ───────────────────────────
+  const vmPath = path.join(__dirname, 'vendor_matching.json')
+  if (fs.existsSync(vmPath)) {
+    const rawVm = fs.readFileSync(vmPath, 'utf-8')
+    const vList: Array<{
+      vendorId: string
+      name: string
+      active: boolean
+      isBrandAuthorized: boolean
+      slaDays: number
+      dropPoint: string
+      address: string | null
+      postalCode: string | null
+      deliveryMethod: string
+      brands: string[]
+    }> = JSON.parse(rawVm)
+
+    const allBranches = await prisma.site.findMany({ where: { type: SiteType.BRANCH, active: true } })
+    const activeDc = await prisma.site.findFirst({ where: { type: SiteType.DC, active: true } })
+
+    const existingRoutes = await prisma.branchVendorRoute.findMany({
+      select: { id: true, branchId: true, primaryCenterId: true, standardChannel: true },
+    })
+    const routeMap = new Map<string, { id: string; standardChannel: string }>()
+    for (const r of existingRoutes) {
+      if (r.primaryCenterId) {
+        routeMap.set(`${r.branchId}_${r.primaryCenterId}`, { id: r.id, standardChannel: r.standardChannel })
+      }
+    }
+
+    const toCreateRoutes: Array<{
+      branchId: string
+      primaryCenterId: string
+      dcSiteId?: string | null
+      standardChannel: Channel
+      priority: number
+    }> = []
+
+    for (const v of vList) {
+      const parent = await prisma.vendorParent.upsert({
+        where: { code: v.vendorId },
+        update: {
+          name: v.name,
+          defaultRepairSlaDays: v.slaDays,
+          active: v.active,
+          isBrandAuthorized: v.isBrandAuthorized,
+        },
+        create: {
+          code: v.vendorId,
+          name: v.name,
+          defaultRepairSlaDays: v.slaDays,
+          active: v.active,
+          isBrandAuthorized: v.isBrandAuthorized,
+        },
+      })
+
+      const centerCode = `${v.vendorId}-1`
+      const center = await prisma.vendorCenter.upsert({
+        where: { code: centerCode },
+        update: {
+          address: v.address,
+          deliveryMethod: v.deliveryMethod,
+          active: v.active,
+        },
+        create: {
+          code: centerCode,
+          vendorParentId: parent.id,
+          address: v.address,
+          deliveryMethod: v.deliveryMethod,
+          active: v.active,
+        },
+      })
+
+      for (const bName of v.brands) {
+        const brand = await prisma.brand.upsert({
+          where: { name: bName },
+          update: { active: true },
+          create: { name: bName, active: true },
+        })
+        await prisma.vendorBrand.upsert({
+          where: { vendorParentId_brandId: { vendorParentId: parent.id, brandId: brand.id } },
+          update: {},
+          create: { vendorParentId: parent.id, brandId: brand.id },
+        })
+      }
+
+      if (v.active) {
+        for (const b of allBranches) {
+          const ch = resolveBranchChannel(v.dropPoint, b.province, b.postalCode)
+          const standardChannel = ch === 'DSD' ? Channel.DSD : ch === 'TPL' ? Channel.TPL : Channel.DC
+          const key = `${b.id}_${center.id}`
+          const existing = routeMap.get(key)
+
+          if (existing) {
+            if (existing.standardChannel !== standardChannel) {
+              await prisma.branchVendorRoute.update({
+                where: { id: existing.id },
+                data: { standardChannel, dcSiteId: activeDc?.id },
+              })
+            }
+          } else {
+            toCreateRoutes.push({
+              branchId: b.id,
+              primaryCenterId: center.id,
+              dcSiteId: activeDc?.id,
+              standardChannel,
+              priority: 1,
+            })
+          }
+        }
+      }
+    }
+
+    if (toCreateRoutes.length > 0) {
+      await prisma.branchVendorRoute.createMany({ data: toCreateRoutes, skipDuplicates: true })
+    }
+    console.log(`  ✓ Loaded ${vList.length} vendors, brands & routes from vendor_matching.json`)
+  }
+
+  // ─── SKU Vendor Enrichment Seeding ─────────────────────────────────────────
+  const skuPath = path.join(__dirname, 'sku_vendors.json')
+  if (fs.existsSync(skuPath)) {
+    const skuTuples: Array<[string, string, string]> = JSON.parse(fs.readFileSync(skuPath, 'utf-8'))
+    const sql = `UPDATE commodities SET "vendorNo" = data.vno, "vendorName" = data.vname
+      FROM (SELECT unnest($1::text[]) AS sku, unnest($2::text[]) AS vno, unnest($3::text[]) AS vname) AS data
+      WHERE commodities.sku = data.sku`
+    const batchSize = 2500
+    for (let i = 0; i < skuTuples.length; i += batchSize) {
+      const chunk = skuTuples.slice(i, i + batchSize)
+      await prisma.$executeRawUnsafe(sql, chunk.map(c => c[0]), chunk.map(c => c[1]), chunk.map(c => c[2]))
+    }
+    console.log(`  ✓ Enriched ${skuTuples.length} SKUs from sku_vendors.json`)
+  }
 
   // ─── SLA Steps (16 steps from 05_business_rules.md) ───────────────────────
   const slaSteps = [
