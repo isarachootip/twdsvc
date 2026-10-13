@@ -10,11 +10,10 @@ COPY package.json package-lock.json ./
 COPY prisma ./prisma
 RUN npm ci --no-audit --maxsockets=3
 
-FROM base AS builder
+FROM deps AS builder
 # Cap Node memory to avoid OOM killer on small VPS instances
 ENV NODE_OPTIONS="--max-old-space-size=1536"
 ENV NEXT_TELEMETRY_DISABLED=1
-COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npx prisma generate
 RUN npm run build
