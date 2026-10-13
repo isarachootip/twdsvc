@@ -48,12 +48,12 @@ export function ProductDetailModal({ product, onClose }: ProductDetailModalProps
                 SKU: {product.sku}
               </span>
               {product.active ? (
-                <span className="inline-flex items-center gap-1 text-xs font-semibold text-green-700 bg-green-50 px-2 py-0.5 rounded-full border border-green-200">
-                  <CheckCircle2 size={12} /> Active
+                <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
+                  <CheckCircle2 size={13} className="text-emerald-600" /> Active
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 text-xs font-semibold text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full border border-gray-200">
-                  <XCircle size={12} /> In-active
+                <span className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500">
+                  <XCircle size={13} className="text-slate-400" /> In-active
                 </span>
               )}
             </div>

@@ -22,7 +22,7 @@ export default function CustomerProfileCard({ profile, canCreateJob }: Props) {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-base font-bold text-gray-900">{profile.name}</h2>
-              <span className="font-mono text-xs font-semibold px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-700">
+              <span className="font-mono text-xs font-medium text-slate-600">
                 {fmtPhone(profile.phone)}
               </span>
             </div>

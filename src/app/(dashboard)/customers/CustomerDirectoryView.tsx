@@ -118,11 +118,12 @@ export default function CustomerDirectoryView({ role }: { role: string }) {
                       {c.name}
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full font-semibold bg-gray-100 text-gray-700 text-[11px]">
+                      <span className="text-[11px] font-medium text-slate-700">
                         {c.jobCount} งาน
                       </span>
                       {c.activeJobCount > 0 && (
-                        <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded-full font-medium bg-amber-50 text-amber-700 text-[10px]">
+                        <span className="ml-2 inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
                           กำลังซ่อม {c.activeJobCount}
                         </span>
                       )}

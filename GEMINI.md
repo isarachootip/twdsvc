@@ -51,3 +51,11 @@
 ## 5. Safe Git Operations
 - **Forbidden Commands**: NEVER run destructive git commands automatically (`git push --force`, `git reset --hard`, `git checkout .`, `git clean -fd`) without explicit user permission.
 - **Feature Branching**: When working on large features or breaking changes, suggest creating an isolated branch or worktree.
+
+---
+
+## 6. UI & Design System Standards (Borderless Status & Remarks)
+- **Zero Pill / Bordered Box Policy**: ห้ามใส่กรอบสี่เหลี่ยมหรือกรอบวงรี (No border, rounded-full border, box shadow, or pill background) ล้อมรอบสถานะ (Status), หมายเหตุ (Remarks), หรือแท็กข้อความในทุกหน้าจอของระบบ
+- **Typography & Semantic Color First**: แสดงความแตกต่างของสถานะและความเร่งด่วนด้วยสีตัวอักษรโดยตรง (Colored Typography เช่น `text-emerald-700`, `text-amber-700`, `text-rose-600`, `text-slate-600`) และสามารถใช้จุดสีสัญลักษณ์ขนาดเล็ก (`w-1.5 h-1.5 rounded-full`) ประกอบได้ โดยไม่มีกรอบกล่องครอบ
+- **System-Wide Uniformity**: เงื่อนไขนี้บังคับใช้กับทุกหน้าจอและทุกโมดูลในระบบ (CS, GR, DC, VD, S2, Jobs, Admin, Customer Portal) เพื่อความสะอาดตา เรียบหรู และอ่านง่ายตามหลัก Ergonomic UI
+

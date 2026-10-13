@@ -141,12 +141,13 @@ export function ProductToolbar({
       <div className="flex items-center justify-between text-xs text-gray-500 pt-1 border-t" style={{ borderColor: 'var(--border)' }}>
         <div className="flex items-center gap-2">
           <span>พบสินค้าทั้งหมด</span>
-          <span className="font-semibold text-gray-900 bg-gray-100 px-2 py-0.5 rounded-full border text-xs">
+          <span className="font-bold text-slate-800 text-xs">
             {total.toLocaleString()} SKU
           </span>
         </div>
         {hasActiveFilters && (
-          <span className="text-amber-700 bg-amber-50 px-2 py-0.5 rounded font-medium">
+          <span className="inline-flex items-center gap-1 text-amber-700 font-semibold text-xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
             กำลังกรองข้อมูล
           </span>
         )}

@@ -97,16 +97,16 @@ export function ProductTable({ items, loading, onSelect }: ProductTableProps) {
                   {p.unitName && <div className="text-[11px] text-gray-500 font-normal">/{p.unitName}</div>}
                 </td>
 
-                {/* Status Badge */}
+                {/* Status */}
                 <td className="py-3 px-4 align-top text-center">
                   {p.active ? (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-green-700 bg-green-50 px-2 py-0.5 rounded-full border border-green-200">
-                      <CheckCircle2 size={12} />
+                    <span className="inline-flex items-center justify-center gap-1 text-[11px] font-semibold text-emerald-700">
+                      <CheckCircle2 size={13} className="text-emerald-600" />
                       Active
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full border border-gray-200">
-                      <XCircle size={12} />
+                    <span className="inline-flex items-center justify-center gap-1 text-[11px] font-semibold text-slate-500">
+                      <XCircle size={13} className="text-slate-400" />
                       In-active
                     </span>
                   )}

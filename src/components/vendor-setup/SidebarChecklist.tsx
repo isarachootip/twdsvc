@@ -27,11 +27,11 @@ export function SidebarChecklist({ form, tierInfo, currentStep, onSelectStep }: 
     { step: 5, title: 'ข้อตกลง & ลายเซ็น', done: isStep5Done, info: isStep5Done ? 'ครบถ้วน' : 'รอดำเนินการ' },
   ]
 
-  const tierBadgeColor = tierInfo.tier === 'VIP'
-    ? 'bg-purple-100 text-purple-800 border-purple-300'
+  const tierColor = tierInfo.tier === 'VIP'
+    ? 'text-purple-700'
     : tierInfo.tier === 'PRO'
-    ? 'bg-amber-100 text-amber-800 border-amber-300'
-    : 'bg-slate-100 text-slate-800 border-slate-300'
+    ? 'text-amber-700'
+    : 'text-slate-700'
 
   return (
     <div className="space-y-4">
@@ -39,7 +39,7 @@ export function SidebarChecklist({ form, tierInfo, currentStep, onSelectStep }: 
       <div className="p-4 rounded-2xl border bg-white space-y-3" style={{ borderColor: 'var(--border)' }}>
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold" style={{ color: 'var(--text-2)' }}>ระดับคู่ค้าคาดการณ์</span>
-          <span className={`text-xs px-2.5 py-0.5 rounded-full border font-bold ${tierBadgeColor}`}>
+          <span className={`text-xs font-bold ${tierColor}`}>
             {tierInfo.tierLabel}
           </span>
         </div>

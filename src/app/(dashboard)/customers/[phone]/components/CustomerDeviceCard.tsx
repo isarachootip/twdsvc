@@ -46,12 +46,12 @@ export default function CustomerDeviceCard({ device, phone, canCreateJob }: Prop
 
         <div className="flex items-center gap-2.5">
           {isRepeated ? (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700">
               <AlertTriangle size={13} className="text-amber-600" />
               <span>ส่งซ่อมซ้ำ ({device.repairCount} ครั้ง)</span>
             </span>
           ) : (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+            <span className="inline-flex items-center text-xs font-medium text-slate-500">
               ส่งซ่อม 1 ครั้ง
             </span>
           )}

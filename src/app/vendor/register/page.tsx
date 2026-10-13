@@ -25,7 +25,8 @@ export default function VendorRegisterPage() {
           </div>
         </div>
         <div className="hidden sm:block text-right">
-          <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             เปิดรับสมัครคู่ค้าใหม่
           </span>
         </div>

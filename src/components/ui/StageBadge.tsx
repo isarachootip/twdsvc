@@ -18,39 +18,39 @@ type BadgeTheme = {
 
 const THEME_MAP: Record<string, BadgeTheme> = {
   'b-gray': {
-    bg: 'bg-slate-100',
-    text: 'text-slate-700',
-    border: 'border-slate-200',
+    bg: '',
+    text: 'text-slate-600',
+    border: '',
     dot: 'bg-slate-400',
   },
   'b-amber': {
-    bg: 'bg-amber-50',
-    text: 'text-amber-800',
-    border: 'border-amber-200',
+    bg: '',
+    text: 'text-amber-600',
+    border: '',
     dot: 'bg-amber-500',
   },
   'b-blue': {
-    bg: 'bg-sky-50',
-    text: 'text-sky-800',
-    border: 'border-sky-200',
+    bg: '',
+    text: 'text-sky-600',
+    border: '',
     dot: 'bg-sky-500',
   },
   'b-green': {
-    bg: 'bg-emerald-50',
-    text: 'text-emerald-800',
-    border: 'border-emerald-200',
+    bg: '',
+    text: 'text-emerald-600',
+    border: '',
     dot: 'bg-emerald-500',
   },
   'b-coral': {
-    bg: 'bg-orange-50',
-    text: 'text-orange-800',
-    border: 'border-orange-200',
+    bg: '',
+    text: 'text-orange-600',
+    border: '',
     dot: 'bg-orange-500',
   },
   'b-red': {
-    bg: 'bg-rose-50',
-    text: 'text-rose-800',
-    border: 'border-rose-200',
+    bg: '',
+    text: 'text-rose-600',
+    border: '',
     dot: 'bg-rose-500',
   },
 }
@@ -76,11 +76,11 @@ export default function StageBadge({
     )
   }
 
-  const sz = size === 'sm' ? 'text-[11px] px-2 py-0.5' : 'text-xs px-2.5 py-1'
+  const sz = size === 'sm' ? 'text-[11px]' : 'text-xs'
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 font-medium rounded-full border shadow-2xs whitespace-nowrap transition-colors ${sz} ${theme.bg} ${theme.text} ${theme.border} ${className}`}
+      className={`inline-flex items-center gap-1.5 font-medium whitespace-nowrap ${sz} ${theme.text} ${className}`}
     >
       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${theme.dot}`} />
       <span>{label}</span>

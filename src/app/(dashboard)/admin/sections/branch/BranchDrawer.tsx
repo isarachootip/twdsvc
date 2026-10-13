@@ -49,19 +49,19 @@ export function BranchDrawer({ site, onClose, onEdit }: BranchDrawerProps) {
                   {site.code}
                 </span>
                 <span
-                  className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                    site.type === 'BRANCH'
-                      ? 'bg-blue-100 text-blue-800'
-                      : 'bg-amber-100 text-amber-800'
+                  className={`inline-flex items-center gap-1 text-xs font-semibold ${
+                    site.type === 'BRANCH' ? 'text-sky-700' : 'text-amber-700'
                   }`}
                 >
+                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${site.type === 'BRANCH' ? 'bg-sky-500' : 'bg-amber-500'}`} />
                   {site.type === 'BRANCH' ? 'สาขาไทวัสดุ' : 'คลังกระจายสินค้า DC'}
                 </span>
                 <span
-                  className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                    site.active ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'
+                  className={`inline-flex items-center gap-1 text-xs font-semibold ${
+                    site.active ? 'text-emerald-700' : 'text-slate-500'
                   }`}
                 >
+                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${site.active ? 'bg-emerald-500' : 'bg-slate-400'}`} />
                   {site.active ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}
                 </span>
               </div>

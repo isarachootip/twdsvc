@@ -14,7 +14,8 @@ export default function TrainingKitViewer() {
       {/* Header Info */}
       <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700 mb-1.5">
+          <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-700 mb-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
             หลักสูตรรับรองสำหรับพนักงานใหม่
           </div>
           <h2 className="text-xl font-bold text-gray-800">{kit.roleName}</h2>

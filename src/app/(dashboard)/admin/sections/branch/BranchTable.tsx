@@ -91,7 +91,7 @@ export function BranchTable({ sites, onSelectSite, onEditSite, onDeleteSite }: B
                 </td>
                 <td className="py-3 px-3 text-center">
                   {(s.openJobsCount ?? 0) > 0 ? (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                    <span className="text-[11px] font-bold text-rose-600">
                       {s.openJobsCount} งาน
                     </span>
                   ) : (
@@ -100,12 +100,12 @@ export function BranchTable({ sites, onSelectSite, onEditSite, onDeleteSite }: B
                 </td>
                 <td className="py-3 px-3 text-center">
                   {s.active ? (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      <CheckCircle2 className="w-3 h-3" />
+                    <span className="inline-flex items-center justify-center gap-1 text-[11px] font-medium text-emerald-700">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                       ใช้งาน
                     </span>
                   ) : (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                    <span className="inline-flex items-center justify-center text-[11px] font-medium text-slate-500">
                       ปิดใช้งาน
                     </span>
                   )}

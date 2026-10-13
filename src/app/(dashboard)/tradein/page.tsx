@@ -381,7 +381,8 @@ export default function TradeInPage() {
             <h1 className="text-2xl font-bold" style={{ color: 'var(--text)' }}>
               Trade-in / คูปอง
             </h1>
-            <span className="text-xs bg-[#E6F1FB] text-[#185FA5] px-2.5 py-1 rounded-full font-medium">
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-sky-700">
+              <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0" />
               สิทธิ์: CS & Admin
             </span>
           </div>

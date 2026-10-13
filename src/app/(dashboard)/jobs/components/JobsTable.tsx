@@ -89,7 +89,10 @@ export default function JobsTable({ jobs, sort, toggle, loading, onOpenJob }: Jo
                   </td>
                   <td className="py-3 px-4 align-middle">
                     {j.type === 'STOCK' ? (
-                      <span className="inline-block px-1.5 py-0.5 text-[11px] bg-slate-100 text-slate-600 rounded">สต็อกสาขา</span>
+                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600">
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
+                        สต็อกสาขา
+                      </span>
                     ) : (
                       <div className="font-medium text-slate-800">{j.customerName}</div>
                     )}
@@ -106,7 +109,7 @@ export default function JobsTable({ jobs, sort, toggle, loading, onOpenJob }: Jo
                   <td className="py-3 px-4 align-middle text-slate-700">{j.branch.name}</td>
                   <td className="py-3 px-4 align-middle">
                     {j.channel ? (
-                      <span className="inline-block px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-600 border border-slate-200/60">
+                      <span className="inline-block text-[11px] font-medium text-slate-600">
                         {CHANNEL_LABELS[j.channel] ?? j.channel}
                       </span>
                     ) : (
@@ -133,22 +136,31 @@ export default function JobsTable({ jobs, sort, toggle, loading, onOpenJob }: Jo
                   </td>
                   <td className="py-3 px-4 align-middle">
                     {jobFlags.length ? (
-                      <div className="flex flex-wrap gap-1.5">
+                      <div className="flex flex-col gap-1.5">
                         {jobFlags.map((f, idx) => {
                           const isOver = f.startsWith('เกิน SLA')
                           const isUnpaid = f.includes('ค้างชำระ') || f.includes('รอชำระ')
                           return (
                             <span
                               key={idx}
-                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border ${
+                              className={`inline-flex items-center gap-1.5 text-[11px] font-medium whitespace-nowrap ${
                                 isOver
-                                  ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                  ? 'text-rose-600 font-semibold'
                                   : isUnpaid
-                                  ? 'bg-amber-50 text-amber-800 border-amber-200'
-                                  : 'bg-slate-100 text-slate-700 border-slate-200'
+                                  ? 'text-amber-600 font-semibold'
+                                  : 'text-slate-600'
                               }`}
                             >
-                              {f}
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                  isOver
+                                    ? 'bg-rose-500'
+                                    : isUnpaid
+                                    ? 'bg-amber-500'
+                                    : 'bg-slate-400'
+                                }`}
+                              />
+                              <span>{f}</span>
                             </span>
                           )
                         })}

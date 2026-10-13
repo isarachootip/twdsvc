@@ -340,7 +340,8 @@ export default function PublicTrackingPage({ params }: { params: Promise<{ token
                           {STAGE_LABELS[st]}
                         </span>
                         {isCurrent && (
-                          <span className="ml-auto text-[10px] bg-[#FBE7E9] text-[#9C0C22] px-2 py-0.5 rounded-full font-semibold">
+                          <span className="ml-auto inline-flex items-center gap-1 text-[11px] text-[#9C0C22] font-semibold">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#C8102E] shrink-0 animate-pulse" />
                             กำลังดำเนินการ
                           </span>
                         )}

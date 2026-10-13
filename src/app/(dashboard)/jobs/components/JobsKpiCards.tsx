@@ -114,7 +114,7 @@ export default function JobsKpiCards({ jobs, flag, onToggleFlag }: JobsKpiCardsP
                 {val}
               </span>
               {k.key !== null && val > 0 && (
-                <span className="text-[10px] font-semibold text-rose-700 bg-rose-50 border border-rose-200/80 px-1.5 py-0.5 rounded-full">
+                <span className="text-[11px] font-semibold text-rose-600">
                   เร่งด่วน
                 </span>
               )}

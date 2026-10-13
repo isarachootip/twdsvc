@@ -127,7 +127,7 @@ export default function JobsClient({ role: initialRole, user, initialJobs }: Job
           <div className="flex items-center gap-2.5 flex-wrap">
             <h1 className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight">งานซ่อมทั้งหมด</h1>
             {sysTime && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs">
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 <span>วันและเวลาระบบ: {sysTime}</span>
               </span>
