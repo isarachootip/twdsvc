@@ -302,6 +302,19 @@ table.tbl.compact td { padding: 8px 10px; font-size: 12.5px; }
   body:has(.print-area) .print-area, body:has(.print-area) .print-area * { visibility: visible; }
   body:has(.print-area) .print-area { position: absolute; left: 0; top: 0; width: 100%; }
   .modal-overlay { background: none !important; }
+  .shipping-label-modal .modal-box {
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+  }
+  .thaiwasadu-shipping-label,
+  .kex-shipping-label,
+  .shipping-label-3pl {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
 }
 
 @media print {

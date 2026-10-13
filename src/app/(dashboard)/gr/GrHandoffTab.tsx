@@ -16,15 +16,44 @@ function truckStatus(j: JobView) {
   return { ready: true, badge: <span className="badge b-green">ขนส่งรับแล้ว</span> }
 }
 
-export default function GrHandoffTab({ ctx, rows, onPrint3Pl }: { ctx: GrRowCtx; rows: JobView[]; onPrint3Pl?: (j: JobView) => void }) {
+export default function GrHandoffTab({
+  ctx,
+  rows,
+  onPrintShippingLabel,
+  onPrint3Pl,
+}: {
+  ctx: GrRowCtx
+  rows: JobView[]
+  onPrintShippingLabel?: (j: JobView) => void
+  onPrint3Pl?: (j: JobView) => void
+}) {
+  const handlePrint = onPrintShippingLabel ?? onPrint3Pl
   return (
     <div className="tcard">
-      {HANDOFF_GROUPS.map(g => <HandoffSection key={g.ch} g={g} ctx={ctx} rows={rows.filter(j => j.channel === g.ch)} onPrint3Pl={onPrint3Pl} />)}
+      {HANDOFF_GROUPS.map(g => (
+        <HandoffSection
+          key={g.ch}
+          g={g}
+          ctx={ctx}
+          rows={rows.filter(j => j.channel === g.ch)}
+          onPrintLabel={handlePrint}
+        />
+      ))}
     </div>
   )
 }
 
-function HandoffSection({ g, ctx, rows, onPrint3Pl }: { g: HandoffGroup; ctx: GrRowCtx; rows: JobView[]; onPrint3Pl?: (j: JobView) => void }) {
+function HandoffSection({
+  g,
+  ctx,
+  rows,
+  onPrintLabel,
+}: {
+  g: HandoffGroup
+  ctx: GrRowCtx
+  rows: JobView[]
+  onPrintLabel?: (j: JobView) => void
+}) {
   const s = useSort(rows, SORT)
   const pendingN = rows.filter(j => !ctx.done[j.id]).length
   return (
@@ -49,15 +78,15 @@ function HandoffSection({ g, ctx, rows, onPrint3Pl }: { g: HandoffGroup; ctx: Gr
                 <td><PhotoCell ctx={ctx} job={j} /></td>
                 <td>
                   <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                    {g.ch === 'TPL' && onPrint3Pl && (
+                    {onPrintLabel && (
                       <button
                         type="button"
                         className="btn"
                         style={{ padding: '5px 8px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}
-                        onClick={() => onPrint3Pl(j)}
-                        title="พิมพ์ใบปะหน้าส่ง 3PL"
+                        onClick={() => onPrintLabel(j)}
+                        title="พิมพ์ใบปะหน้า"
                       >
-                        🖨️ ใบปะหน้า 3PL
+                        🖨️ {g.ch === 'TPL' ? 'ใบปะหน้า 3PL' : 'ใบปะหน้า'}
                       </button>
                     )}
                     <ActionCell ctx={ctx} job={j} text="สแกนยืนยันส่งมอบ" disabled={!(t.ready && hasPhoto)} reason={reason}

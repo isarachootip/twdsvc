@@ -5,7 +5,7 @@ import { resolveOwner } from './sla-engine'
 
 export const JOB_LIST_INCLUDE = {
   branch: { select: { id: true, name: true, nickname: true, address: true } },
-  vendorCenter: { select: { id: true, code: true, deliveryMethod: true, vendorParent: { select: { id: true, code: true, name: true, defaultGpPct: true, inspectionFeeCovered: true, inspectionFeeNotCovered: true, repairWarrantyDays: true } } } },
+  vendorCenter: { select: { id: true, code: true, deliveryMethod: true, address: true, phone: true, vendorParent: { select: { id: true, code: true, name: true, defaultGpPct: true, inspectionFeeCovered: true, inspectionFeeNotCovered: true, repairWarrantyDays: true } } } },
   slaClocks: { include: { slaStep: { select: { id: true, seq: true, code: true, name: true, ownerDept: true, hours: true } } } },
   charges: { select: { amount: true, type: true } },
   payments: { select: { amount: true, status: true, chargeType: true, method: true } },
@@ -131,6 +131,7 @@ export function serializeJob(job: JobWithList, role: string, opts?: { preferSla?
     productName: job.productName,
     brandName: job.brandName,
     sku: job.sku,
+    serialNo: job.serialNo ?? null,
     symptom: job.symptom,
     hasWarranty: job.hasWarranty,
     shippingMethod: job.shippingMethod,
@@ -139,6 +140,8 @@ export function serializeJob(job: JobWithList, role: string, opts?: { preferSla?
     vendor: job.vendorCenter ? {
       centerId: job.vendorCenter.id, centerCode: job.vendorCenter.code, code: job.vendorCenter.vendorParent.code, name: job.vendorCenter.vendorParent.name,
       deliveryMethod: job.vendorCenter.deliveryMethod,
+      address: job.vendorCenter.address ?? null,
+      phone: job.vendorCenter.phone ?? null,
       inspectionFee: job.hasWarranty ? job.vendorCenter.vendorParent.inspectionFeeCovered : job.vendorCenter.vendorParent.inspectionFeeNotCovered,
       repairWarrantyDays: job.vendorCenter.vendorParent.repairWarrantyDays,
     } : null,

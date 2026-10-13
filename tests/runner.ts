@@ -19,6 +19,7 @@ import './unit/commodities_api.test'
 import './unit/relative-redirect.test'
 import './unit/job-sort-system-time.test'
 import './unit/threepl-label.test'
+import './unit/shipping-label-builder.test'
 import './unit/barcode-scanner.test'
 
 // Tier 2: Boundary & Corner Cases
