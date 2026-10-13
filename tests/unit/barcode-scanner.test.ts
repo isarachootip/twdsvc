@@ -11,9 +11,8 @@ describe('Unit: Universal Barcode Scanner & Fallback', () => {
     expect(result).toBe(null)
   })
 
-  it('BC-02: ZXing Browser & Library packages are properly resolvable and loaded', async () => {
-    const { BrowserMultiFormatReader } = await import('@zxing/browser')
-    const { DecodeHintType, BarcodeFormat } = await import('@zxing/library')
+  it('BC-02: ZXing Library package is properly resolvable and loaded', async () => {
+    const { BrowserMultiFormatReader, DecodeHintType, BarcodeFormat } = await import('@zxing/library')
 
     expect(typeof BrowserMultiFormatReader).toBe('function')
     expect(typeof DecodeHintType.TRY_HARDER).toBe('number')

@@ -59,8 +59,7 @@ async function tryNativeDetect(img: HTMLImageElement): Promise<string | null> {
 
 async function tryZxingDetect(img: HTMLImageElement): Promise<string | null> {
   try {
-    const { BrowserMultiFormatReader } = await import('@zxing/browser')
-    const { DecodeHintType, BarcodeFormat } = await import('@zxing/library')
+    const { BrowserMultiFormatReader, DecodeHintType, BarcodeFormat } = await import('@zxing/library')
 
     const hints = new Map<DecodeHintType, unknown>()
     hints.set(DecodeHintType.TRY_HARDER, true)
