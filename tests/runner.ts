@@ -19,6 +19,7 @@ import './unit/commodities_api.test'
 import './unit/relative-redirect.test'
 import './unit/job-sort-system-time.test'
 import './unit/threepl-label.test'
+import './unit/barcode-scanner.test'
 
 // Tier 2: Boundary & Corner Cases
 import './e2e/tier2-boundaries/boundary_financial_satang.test'
