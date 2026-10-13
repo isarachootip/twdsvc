@@ -2,7 +2,31 @@ import fs from 'fs'
 import path from 'path'
 import { PrismaClient, Role, SiteType, Channel, JobStage, JobType, QuoteDecision, QuoteStatus } from '@prisma/client'
 import bcrypt from 'bcryptjs'
-import { resolveBranchChannel } from '../src/lib/parsers/vendor-matching-parser'
+const BKK_VICINITY_PROVINCES = new Set([
+  'กรุงเทพมหานคร',
+  'กรุงเทพฯ',
+  'นนทบุรี',
+  'ปทุมธานี',
+  'สมุทรปราการ',
+  'สมุทรสาคร',
+  'นครปฐม',
+])
+const BKK_ZIP_PREFIXES = ['10', '11', '12', '73', '74']
+
+function resolveBranchChannel(dropPoint: string, province?: string | null, postalCode?: string | null): Channel {
+  const norm = (dropPoint || '').trim()
+  const isBkk =
+    (province && BKK_VICINITY_PROVINCES.has(province.trim())) ||
+    (postalCode && BKK_ZIP_PREFIXES.some(prefix => postalCode.trim().startsWith(prefix)))
+  if (norm.includes('กทม.ส่งสาขา') || norm.includes('กทม. ส่งสาขา')) {
+    if (isBkk) return Channel.DSD
+    if (norm.includes('3PL')) return Channel.TPL
+    return Channel.DC
+  }
+  if (norm === 'Store' || norm === 'ส่งซ่อมที่ศูนย์บริการแบรนด์') return Channel.DSD
+  if (norm.includes('3PL') && !norm.includes('DC')) return Channel.TPL
+  return Channel.DC
+}
 
 const prisma = new PrismaClient()
 
