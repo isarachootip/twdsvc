@@ -48,7 +48,8 @@
 
 ---
 
-## 5. Safe Git Operations
+## 5. Safe Git Operations & Automatic Remote Sync
+- **Always Commit & Push After Verification**: ทุกครั้งหลังทดสอบโค้ดเสร็จสมบูรณ์ (`npx tsc --noEmit` และ `npm test` ผ่าน 100%) ให้ทำการ `git add`, `git commit` ด้วยข้อความที่สื่อความหมายชัดเจน และ `git push origin main` ขึ้น GitHub ทันที เพื่อให้เซิร์ฟเวอร์ CI/CD (Coolify / Production) ทำการ Build & Deploy ต่อเนื่องเสมอ
 - **Forbidden Commands**: NEVER run destructive git commands automatically (`git push --force`, `git reset --hard`, `git checkout .`, `git clean -fd`) without explicit user permission.
 - **Feature Branching**: When working on large features or breaking changes, suggest creating an isolated branch or worktree.
 
