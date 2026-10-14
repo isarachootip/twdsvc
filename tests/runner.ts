@@ -21,6 +21,7 @@ import './unit/job-sort-system-time.test'
 import './unit/threepl-label.test'
 import './unit/shipping-label-builder.test'
 import './unit/barcode-scanner.test'
+import './unit/eordering.test'
 
 // Tier 2: Boundary & Corner Cases
 import './e2e/tier2-boundaries/boundary_financial_satang.test'

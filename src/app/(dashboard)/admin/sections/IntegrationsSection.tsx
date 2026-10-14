@@ -19,6 +19,7 @@ type Edits = Partial<Record<IntegrationKey, string | null>>
 const GROUP_TITLE: Record<IntegrationGroup, string> = {
   line: 'LINE Official Account (Messaging API)',
   smtp: 'อีเมล (SMTP)',
+  eordering: 'ระบบชำระเงิน E-ordering (QR Payment)',
   general: 'ทั่วไป',
 }
 
@@ -67,7 +68,7 @@ export function IntegrationsSection() {
         </div>
       )}
 
-      {(['line', 'smtp', 'general'] as const).map(group => (
+      {(['line', 'smtp', 'eordering', 'general'] as const).map(group => (
         <div key={group} style={{ marginTop: 16 }}>
           <h4>{GROUP_TITLE[group]}</h4>
           <div className="grid3" style={{ marginTop: 8 }}>
@@ -84,7 +85,7 @@ export function IntegrationsSection() {
             ))}
           </div>
           {group === 'line' && <WebhookUrlBox baseUrl={baseUrl} />}
-          {group !== 'general' && <ConnectionTestButtons group={group} disabled={dirty} />}
+          {(group === 'line' || group === 'smtp') && <ConnectionTestButtons group={group} disabled={dirty} />}
         </div>
       ))}
 

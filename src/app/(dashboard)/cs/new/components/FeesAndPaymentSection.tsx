@@ -137,12 +137,18 @@ export function FeesAndPaymentSection({
             )}
           </div>
           {saved && (
-            <p style={{ marginTop: 10, fontSize: 13 }}>
-              สถานะ:{' '}
+            <p style={{ marginTop: 10, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span>สถานะ:</span>
               {paid ? (
-                <span className="badge b-green">ชำระเงินสำเร็จ</span>
+                <span className="inline-flex items-center gap-1.5 text-emerald-700 font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 inline-block" />
+                  ชำระเงินสำเร็จ
+                </span>
               ) : (
-                <span className="badge b-amber">รอชำระ {fmtBaht(fees.total)}</span>
+                <span className="inline-flex items-center gap-1.5 text-amber-700 font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-600 inline-block" />
+                  รอชำระ {fmtBaht(fees.total)}
+                </span>
               )}
             </p>
           )}

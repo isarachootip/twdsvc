@@ -11,11 +11,14 @@ export const INTEGRATION_KEYS = [
   'SMTP_USER',
   'SMTP_PASS',
   'SMTP_FROM',
+  'EORDERING_API_URL',
+  'EORDERING_API_KEY',
+  'EORDERING_WEBHOOK_SECRET',
   'APP_BASE_URL',
 ] as const
 
 export type IntegrationKey = (typeof INTEGRATION_KEYS)[number]
-export type IntegrationGroup = 'line' | 'smtp' | 'general'
+export type IntegrationGroup = 'line' | 'smtp' | 'eordering' | 'general'
 
 export interface IntegrationFieldDef {
   key: IntegrationKey
@@ -40,6 +43,12 @@ export const INTEGRATION_FIELDS: IntegrationFieldDef[] = [
   { key: 'SMTP_USER', label: 'SMTP User', group: 'smtp', secret: false, schema: z.string().trim().min(1).max(254) },
   { key: 'SMTP_PASS', label: 'SMTP Password', group: 'smtp', secret: true, schema: z.string().min(1).max(512) },
   { key: 'SMTP_FROM', label: 'อีเมลผู้ส่ง (From)', group: 'smtp', secret: false, schema: z.string().trim().min(3).max(254) },
+  {
+    key: 'EORDERING_API_URL', label: 'E-ordering API Endpoint URL', group: 'eordering', secret: false,
+    schema: z.string().trim().url('ต้องเป็น URL เช่น https://eordering.example.com/api/qr').refine(v => /^https?:\/\//.test(v), 'ต้องขึ้นต้นด้วย http:// หรือ https://'),
+  },
+  { key: 'EORDERING_API_KEY', label: 'E-ordering API Key / Token', group: 'eordering', secret: true, schema: noSpaces },
+  { key: 'EORDERING_WEBHOOK_SECRET', label: 'E-ordering Webhook Secret', group: 'eordering', secret: true, schema: noSpaces },
   {
     key: 'APP_BASE_URL', label: 'Base URL ของระบบ', group: 'general', secret: false,
     schema: z.string().trim().url('ต้องเป็น URL เช่น https://svc.example.com').refine(v => /^https?:\/\//.test(v), 'ต้องขึ้นต้นด้วย http:// หรือ https://').transform(v => v.replace(/\/+$/, '')),
