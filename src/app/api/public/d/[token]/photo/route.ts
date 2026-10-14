@@ -1,10 +1,7 @@
-import crypto from 'crypto'
 import path from 'path'
-import { promises as fs } from 'fs'
 import { NextRequest, NextResponse } from 'next/server'
 import { findToken, rateLimited } from '@/lib/public-token'
-
-const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads')
+import { saveUploadedFile } from '@/lib/services/file-storage.service'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   if (await rateLimited(req)) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
@@ -21,12 +18,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
   }
 
   const ext = (path.extname(file.name) || '.jpg').toLowerCase().replace(/[^.a-z0-9]/g, '')
-  const name = `${Date.now().toString(36)}-${crypto.randomBytes(8).toString('hex')}${ext}`
-  await fs.mkdir(UPLOAD_DIR, { recursive: true })
-  await fs.writeFile(path.join(UPLOAD_DIR, name), Buffer.from(await file.arrayBuffer()))
+  const saved = await saveUploadedFile(Buffer.from(await file.arrayBuffer()), { ext, mimeType: file.type })
 
   return NextResponse.json({
-    fileUrl: `/api/files/${name}`,
+    fileUrl: saved.fileUrl,
     fileName: file.name,
     mimeType: file.type,
     fileSize: file.size,

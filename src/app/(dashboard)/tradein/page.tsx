@@ -249,7 +249,7 @@ export default function TradeInPage() {
     try {
       const fd = new FormData()
       fd.append('file', file)
-      const res = await fetch('/api/upload', { method: 'POST', body: fd })
+      const res = await fetch('/api/uploads', { method: 'POST', body: fd })
       if (!res.ok) {
         // Fallback simulate URL
         const mockUrl = URL.createObjectURL(file)

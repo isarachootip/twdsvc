@@ -1,10 +1,7 @@
-import crypto from 'crypto'
-import path from 'path'
-import { promises as fs } from 'fs'
 import { NextRequest, NextResponse } from 'next/server'
 import { rateLimited } from '@/lib/public-token'
+import { saveUploadedFile } from '@/lib/services/file-storage.service'
 
-const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads')
 const MAX = 10 * 1024 * 1024
 /** MIME → stored extension. Extension is derived from MIME, never from the client filename. */
 const EXT_BY_MIME: Record<string, string> = {
@@ -31,12 +28,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'รองรับเฉพาะไฟล์รูปภาพ (jpg/png) หรือ PDF' }, { status: 400 })
     }
 
-    const name = `vd-${Date.now().toString(36)}-${crypto.randomBytes(6).toString('hex')}${ext}`
-    await fs.mkdir(UPLOAD_DIR, { recursive: true })
-    await fs.writeFile(path.join(UPLOAD_DIR, name), Buffer.from(await file.arrayBuffer()))
+    const saved = await saveUploadedFile(Buffer.from(await file.arrayBuffer()), {
+      prefix: 'vd',
+      ext,
+      mimeType: file.type,
+    })
 
     return NextResponse.json({
-      fileUrl: `/api/files/${name}`,
+      fileUrl: saved.fileUrl,
       fileName: file.name,
       fileSize: file.size,
     }, { status: 201 })

@@ -787,3 +787,14 @@ model VendorApplication {
 
   @@map("vendor_applications")
 }
+
+model StoredFile {
+  name      String   @id
+  mimeType  String
+  size      Int
+  data      Bytes
+  createdAt DateTime @default(now())
+
+  @@map("stored_files")
+}
+

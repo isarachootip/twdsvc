@@ -1,22 +1,21 @@
-import path from 'path'
-import crypto from 'crypto'
-import { promises as fs } from 'fs'
 import { NextRequest, NextResponse } from 'next/server'
 import { fullVendorApplicationSchema } from '@/lib/validations/vendor-setup.schema'
 import { createVendorApplication } from '@/lib/services/vendor-application.service'
 import { rateLimited } from '@/lib/public-token'
+import { saveUploadedFile } from '@/lib/services/file-storage.service'
 
-const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads')
-
-/** Persists a validated PNG/JPEG data-URL signature to disk and returns its file URL. */
+/** Persists a validated PNG/JPEG data-URL signature to DB and returns its file URL. */
 async function saveSignature(dataUrl: string): Promise<string> {
   const match = /^data:image\/(png|jpeg);base64,(.+)$/.exec(dataUrl)
   if (!match) return dataUrl // already a file path (validated by Zod)
-  const ext = match[1] === 'png' ? 'png' : 'jpg'
-  const name = `sig-${Date.now().toString(36)}-${crypto.randomBytes(4).toString('hex')}.${ext}`
-  await fs.mkdir(UPLOAD_DIR, { recursive: true })
-  await fs.writeFile(path.join(UPLOAD_DIR, name), Buffer.from(match[2], 'base64'))
-  return `/api/files/${name}`
+  const ext = match[1] === 'png' ? '.png' : '.jpg'
+  const mimeType = match[1] === 'png' ? 'image/png' : 'image/jpeg'
+  const saved = await saveUploadedFile(Buffer.from(match[2], 'base64'), {
+    prefix: 'sig',
+    ext,
+    mimeType,
+  })
+  return saved.fileUrl
 }
 
 // POST /api/vendors/apply — public vendor self-registration

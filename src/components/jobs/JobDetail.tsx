@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import Modal from '@/components/ui/Modal'
 import StageBadge from '@/components/ui/StageBadge'
+import AttachmentGallery from '@/components/ui/AttachmentGallery'
 import { useToast } from '@/components/ui/Toast'
 import QuoteDoc from './QuoteDoc'
 import PaymentModal from './PaymentModal'
@@ -149,14 +150,7 @@ export default function JobDetailModal({
                       <div className="step-meta">{fmtDateTime(e.createdAt)} — {e.actor ?? e.actorRole ?? '-'}{e.location ? ` · Location ${e.location}` : ''}</div>
                       {e.note && <div className="step-meta">{e.note}</div>}
                       {e.attachments && e.attachments.length > 0 && (
-                        <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
-                          {e.attachments.map((a: any) => (
-                            <a key={a.id} href={a.fileUrl} target="_blank" rel="noreferrer">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={a.fileUrl} alt={a.kind} style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--border)' }} />
-                            </a>
-                          ))}
-                        </div>
+                        <AttachmentGallery attachments={e.attachments} />
                       )}
                     </div>
                   </div>
