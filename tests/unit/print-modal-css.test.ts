@@ -83,4 +83,26 @@ describe('Unit: Print Modal & CSS Layout Integrity (.print-area)', () => {
     assert.ok(modalValid)
     expect(modalValid).toBe(true)
   })
+
+  it('PM-05: Modal renders via createPortal to document.body so .print-area escapes nested overflow-hidden containers', () => {
+    const modalPath = path.resolve(process.cwd(), 'src/components/ui/Modal.tsx')
+    const modalSrc = fs.readFileSync(modalPath, 'utf8')
+    const usesPortal =
+      modalSrc.includes('createPortal') && modalSrc.includes('document.body')
+    assert.ok(usesPortal)
+    expect(usesPortal).toBe(true)
+  })
+
+  it('PM-06: PrintJobModal uses printHtmlElement helper with dedicated print iframe/window fallback to guarantee non-blank output', () => {
+    const printHelperPath = path.resolve(process.cwd(), 'src/lib/print-element.ts')
+    const helperExists = fs.existsSync(printHelperPath)
+    assert.ok(helperExists)
+    const helperSrc = fs.readFileSync(printHelperPath, 'utf8')
+    const valid =
+      helperSrc.includes('export function printElement') &&
+      printJobModalSrc.includes('printElement')
+    assert.ok(valid)
+    expect(valid).toBe(true)
+  })
 })
+

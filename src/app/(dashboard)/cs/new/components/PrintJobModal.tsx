@@ -1,9 +1,11 @@
 'use client'
 
+import { useRef } from 'react'
 import Modal from '@/components/ui/Modal'
 import QrImage from '@/components/ui/QrImage'
 import { absUrl } from '@/lib/client'
 import { fmtBaht } from '@/lib/constants'
+import { printElement } from '@/lib/print-element'
 
 export interface SavedRouting {
   centerCode: string
@@ -55,6 +57,8 @@ export function PrintJobModal({
   totalFee,
   paid,
 }: PrintJobModalProps) {
+  const printRef = useRef<HTMLDivElement>(null)
+
   if (!open || !saved) return null
 
   const items: [string, string][] = [
@@ -75,7 +79,7 @@ export function PrintJobModal({
 
   return (
     <Modal open={open} onClose={onClose}>
-      <div className="print-area">
+      <div ref={printRef} className="print-area">
         <div
           style={{
             textAlign: 'center',
@@ -114,9 +118,16 @@ export function PrintJobModal({
         </div>
       </div>
       <div className="modal-actions no-print">
-        <button className="btn" onClick={onClose}>ปิด</button>
-        <button className="btn btn-primary" onClick={() => window.print()}>พิมพ์ (Print)</button>
+        <button type="button" className="btn" onClick={onClose}>ปิด</button>
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => printElement(printRef.current, `ใบแจ้งซ่อม ${saved.jobNo}`)}
+        >
+          พิมพ์ (Print)
+        </button>
       </div>
     </Modal>
   )
 }
+
