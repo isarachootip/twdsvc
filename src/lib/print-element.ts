@@ -37,22 +37,41 @@ export function printElement(element: HTMLElement | null, title = 'ใบแจ�
 
   const printOverrideStyles = `
     <style>
-      @page { size: A4 portrait; margin: 10mm 12mm; }
+      @page { size: A4 portrait; margin: 0mm; }
       html, body {
         margin: 0 !important;
         padding: 0 !important;
+        width: 210mm !important;
         background: #ffffff !important;
-        color: #1e293b !important;
+        color: #111827 !important;
         font-family: var(--font-sarabun), 'Sarabun', sans-serif !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
       .print-area {
-        width: 100% !important;
-        max-width: 100% !important;
-        margin: 0 !important;
-        padding: 4mm !important;
+        width: 210mm !important;
+        max-width: 210mm !important;
+        margin: 0 auto !important;
+        padding: 5mm 8mm !important;
         box-sizing: border-box !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+      .repair-receipt-a4 {
+        width: 100% !important;
+        max-height: 286mm !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+      .receipt-half {
+        max-height: 138mm !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
       }
       .info-row {
         display: flex !important;

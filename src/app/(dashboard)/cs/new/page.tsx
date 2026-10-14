@@ -14,7 +14,19 @@ export default async function CsNewPage({
   const branches = await prisma.site.findMany({
     where: { type: 'BRANCH', active: true },
     orderBy: { code: 'asc' },
-    select: { id: true, code: true, name: true },
+    select: {
+      id: true,
+      code: true,
+      stCode: true,
+      name: true,
+      legalName: true,
+      address: true,
+      subdistrict: true,
+      district: true,
+      province: true,
+      postalCode: true,
+      phone: true,
+    },
   })
   return (
     <CsNewForm

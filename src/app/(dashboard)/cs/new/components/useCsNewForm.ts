@@ -192,7 +192,9 @@ export function useCsNewForm({
     payOpen, setPayOpen, paid, setPaid, lon, setLon, printDoc, setPrintDoc, onSku, pickSku, onTaxCheckbox, closeTax, save,
     readOnly: role !== 'CS' && role !== 'ADMIN',
     sizeName: sizes.find(s => s.id === sizeId)?.name ?? '',
+    activeBranch: branchList.find(b => b.id === selectedBranchId) || branchList.find(b => b.name === branchName) || null,
     activeBranchName: branchName || branchList.find(b => b.id === selectedBranchId)?.name || '',
     customerFullName: [firstName.trim(), lastName.trim()].filter(Boolean).join(' '),
+    customerAddressText: formatAddress(addr) || '',
   }
 }

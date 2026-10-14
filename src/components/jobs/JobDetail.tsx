@@ -9,6 +9,7 @@ import { useToast } from '@/components/ui/Toast'
 import QuoteDoc from './QuoteDoc'
 import PaymentModal from './PaymentModal'
 import ShippingLabel3PLModal from '@/components/ui/ShippingLabel3PLModal'
+import { JobRepairReceiptModal } from '@/components/ui/repair-receipt/JobRepairReceiptModal'
 import { buildCaseA3PlLabel } from '@/lib/threepl-label'
 import { JobNextActionCard } from './JobNextActionCard'
 import { api, absUrl } from '@/lib/client'
@@ -42,6 +43,7 @@ export default function JobDetailModal({
   const [err, setErr] = useState<string | null>(null)
   const [showQuote, setShowQuote] = useState(false)
   const [show3PlLabel, setShow3PlLabel] = useState(false)
+  const [showReceipt, setShowReceipt] = useState<'INTAKE' | 'RETURN' | null>(null)
   const [assign, setAssign] = useState<{ centers: any[]; centerId: string; channel: string } | null>(null)
   const [payOpen, setPayOpen] = useState(false)
   const { toast, prompt } = useToast()
@@ -56,7 +58,7 @@ export default function JobDetailModal({
     }
   }, [jobId])
 
-  useEffect(() => { setD(null); setShowQuote(false); setShow3PlLabel(false); setAssign(null); setPayOpen(false); load() }, [load])
+  useEffect(() => { setD(null); setShowQuote(false); setShow3PlLabel(false); setShowReceipt(null); setAssign(null); setPayOpen(false); load() }, [load])
 
   if (!jobId) return null
 
@@ -210,6 +212,29 @@ export default function JobDetailModal({
                 <div className="info-row" style={{ marginTop: 8 }}><span className="info-label">ใบเสนอราคา</span><span>ยังไม่ถึงขั้นตอนเสนอราคา</span></div>
               ))}
 
+              {d.type === 'CUSTOMER' && (
+                <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="btn"
+                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                    onClick={() => setShowReceipt('INTAKE')}
+                  >
+                    <span>🖨️ ใบรับแจ้งซ่อมสินค้า</span>
+                  </button>
+                  {['READY_FOR_CUSTOMER_PICKUP', 'CLOSED_REPAIRED', 'CLOSED_NOT_REPAIRED'].includes(d.stage) && (
+                    <button
+                      type="button"
+                      className="btn btn-outline"
+                      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                      onClick={() => setShowReceipt('RETURN')}
+                    >
+                      <span>🖨️ ใบส่งคืนสินค้าซ่อม</span>
+                    </button>
+                  )}
+                </div>
+              )}
+
               {(d.channel === 'TPL' || d.shippingMethod === 'EXPRESS' || d.shipments?.some((s: any) => s.carrier === 'TPL')) && (
                 <button
                   type="button"
@@ -307,6 +332,50 @@ export default function JobDetailModal({
                 trackingNo: d.shipments?.find((s: any) => s.carrier === 'TPL' && s.trackingNo)?.trackingNo ?? null,
               })}
               onClose={() => setShow3PlLabel(false)}
+            />
+          )}
+
+          {showReceipt && d && (
+            <JobRepairReceiptModal
+              open={!!showReceipt}
+              onClose={() => setShowReceipt(null)}
+              data={{
+                docType: showReceipt,
+                jobNo: d.jobNo,
+                dateText: fmtDate(d.openedAt),
+                branch: {
+                  code: d.branch?.code,
+                  stCode: d.branch?.stCode,
+                  name: d.branch?.name ?? 'ไทวัสดุ',
+                  legalName: d.branch?.legalName,
+                  address: d.branch?.address,
+                  subdistrict: d.branch?.subdistrict,
+                  district: d.branch?.district,
+                  province: d.branch?.province,
+                  postalCode: d.branch?.postalCode,
+                  phone: d.branch?.phone,
+                },
+                customerName: d.customerName ?? '-',
+                customerPhone: d.customerPhone ? (d.customerPhone.includes('x') ? d.customerPhone : fmtPhone(d.customerPhone)) : '-',
+                customerAddress: [info.customerAddress, info.customerZip].filter(Boolean).join(' ') || '-',
+                sku: d.sku ?? '-',
+                serialNo: d.serialNo ?? '-',
+                productName: d.productName,
+                brandName: d.brandName,
+                hasWarranty: Boolean(d.hasWarranty),
+                symptom: d.symptom ?? '-',
+                defect: info.defectNote ?? '-',
+                sizeName: info.sizeName ?? null,
+                shippingMethodText: d.shippingMethod === 'EXPRESS' ? 'ส่งด่วน (3PL)' : `มาตรฐาน (${d.channel ? CHANNEL_LABELS[d.channel] : '-'})`,
+                vendorLabel: d.vendor ? `${d.vendor.name} (${d.vendor.centerCode})` : (d.vendorCenter ? `${d.vendorCenter.vendorParent?.name} (${d.vendorCenter.code})` : 'รอกำหนดศูนย์ซ่อม'),
+                quoteNo: quote?.quoteNo ?? null,
+                posReceiptNo: info.posReceiptNo ?? null,
+                repairDays: quote?.repairDays ?? null,
+                repairedSummary: quote?.lines?.map((l: any) => l.description).join(', ') || d.symptom || '-',
+                amountBaht: showReceipt === 'RETURN' ? (m?.repair ?? 0) : (m?.intakeCharges ?? 0),
+                paid: showReceipt === 'RETURN' ? (m?.balance ?? 0) <= 0 : !d.intakeUnpaid,
+                trackingUrl: d.links?.TRACKING ? absUrl(String(d.links.TRACKING)) : null,
+              }}
             />
           )}
 

@@ -104,5 +104,31 @@ describe('Unit: Print Modal & CSS Layout Integrity (.print-area)', () => {
     assert.ok(valid)
     expect(valid).toBe(true)
   })
+
+  it('PM-07: RepairReceiptDocument renders 2 copies per A4 page (สำหรับลูกค้า & สำหรับบริษัท) with Thai Watsadu logo and tax ID 0105555021215', () => {
+    const receiptDocPath = path.resolve(
+      process.cwd(),
+      'src/components/ui/repair-receipt/RepairReceiptDocument.tsx'
+    )
+    assert.ok(fs.existsSync(receiptDocPath))
+    const receiptDocSrc = fs.readFileSync(receiptDocPath, 'utf8')
+    const logoPath = path.resolve(process.cwd(), 'public/images/thaiwatsadu-logo.png')
+    assert.ok(fs.existsSync(logoPath))
+
+    const hasOfficialHeader =
+      receiptDocSrc.includes('/images/thaiwatsadu-logo.png') &&
+      receiptDocSrc.includes('0105555021215') &&
+      receiptDocSrc.includes('บริษัท ซีอาร์ซี ไทวัสดุ จำกัด')
+    const hasTwoCopies =
+      receiptDocSrc.includes('สำหรับลูกค้า') &&
+      receiptDocSrc.includes('สำหรับบริษัท')
+    const hasDocTypes =
+      receiptDocSrc.includes('ใบรับแจ้งซ่อมสินค้า') &&
+      receiptDocSrc.includes('ใบส่งคืนสินค้าซ่อม')
+
+    assert.ok(hasOfficialHeader && hasTwoCopies && hasDocTypes)
+    expect(hasOfficialHeader && hasTwoCopies && hasDocTypes).toBe(true)
+  })
 })
+
 

@@ -144,11 +144,15 @@ export default function CsNewForm({
       <PrintJobModal
         open={form.printDoc && !!form.saved} onClose={() => form.setPrintDoc(false)}
         saved={form.saved} activeBranchName={form.activeBranchName}
+        branch={form.activeBranch}
         customerName={form.customerFullName} phone={form.phone}
+        customerAddress={form.customerAddressText}
         product={form.product} brandName={form.brandName}
-        sku={form.sku} symptom={form.symptom} defect={form.defect}
+        sku={form.sku} serialNo={form.serialNo}
+        symptom={form.symptom} defect={form.defect}
         warranty={form.warranty} sizeName={form.sizeName} method={form.method}
         totalFee={form.fees.total} paid={form.paid}
+        posReceiptNo={form.pos}
       />
     </div>
   )

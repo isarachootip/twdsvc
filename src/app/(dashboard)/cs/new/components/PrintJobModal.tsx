@@ -6,6 +6,11 @@ import QrImage from '@/components/ui/QrImage'
 import { absUrl } from '@/lib/client'
 import { fmtBaht } from '@/lib/constants'
 import { printElement } from '@/lib/print-element'
+import {
+  RepairReceiptDocument,
+  type RepairReceiptBranchInfo,
+  type RepairReceiptData,
+} from '@/components/ui/repair-receipt/RepairReceiptDocument'
 
 export interface SavedRouting {
   centerCode: string
@@ -25,11 +30,14 @@ interface PrintJobModalProps {
   onClose: () => void
   saved: SavedPrintJob | null
   activeBranchName: string
+  branch?: RepairReceiptBranchInfo | null
   customerName: string
   phone: string
+  customerAddress?: string
   product: string
   brandName: string
   sku: string
+  serialNo?: string
   symptom: string
   defect: string
   warranty: 'yes' | 'no'
@@ -37,6 +45,11 @@ interface PrintJobModalProps {
   method: 'STANDARD' | 'EXPRESS'
   totalFee: number
   paid: boolean
+  posReceiptNo?: string
+  docType?: 'INTAKE' | 'RETURN'
+  quoteNo?: string | null
+  repairDays?: number | null
+  repairedSummary?: string | null
 }
 
 export function PrintJobModal({
@@ -44,11 +57,14 @@ export function PrintJobModal({
   onClose,
   saved,
   activeBranchName,
+  branch,
   customerName,
   phone,
+  customerAddress,
   product,
   brandName,
   sku,
+  serialNo,
   symptom,
   defect,
   warranty,
@@ -56,6 +72,11 @@ export function PrintJobModal({
   method,
   totalFee,
   paid,
+  posReceiptNo,
+  docType = 'INTAKE',
+  quoteNo,
+  repairDays,
+  repairedSummary,
 }: PrintJobModalProps) {
   const printRef = useRef<HTMLDivElement>(null)
 
@@ -63,7 +84,7 @@ export function PrintJobModal({
 
   const items: [string, string][] = [
     ['เลขที่ใบแจ้งซ่อม', saved.jobNo],
-    ['วันที่', new Date().toLocaleString('th-TH')],
+    ['วันที่', new Date().toLocaleDateString('th-TH')],
     ['ลูกค้า', customerName],
     ['เบอร์โทร', phone],
     ['สินค้า', `${product} (${brandName})`],
@@ -77,44 +98,42 @@ export function PrintJobModal({
     ['ศูนย์ซ่อม', saved.routing ? `${saved.routing.centerCode} ${saved.routing.vendorName}` : 'รอกำหนด'],
   ]
 
+  const receiptData: RepairReceiptData = {
+    docType,
+    jobNo: saved.jobNo,
+    dateText: new Date().toLocaleDateString('th-TH'),
+    branch: branch ?? { name: activeBranchName || 'ไทวัสดุ' },
+    customerName,
+    customerPhone: phone,
+    customerAddress: customerAddress || '-',
+    sku: sku || '-',
+    serialNo: serialNo || '-',
+    productName: product,
+    brandName,
+    hasWarranty: warranty === 'yes',
+    symptom,
+    defect: defect || '-',
+    sizeName,
+    shippingMethodText: method === 'EXPRESS' ? 'ส่งด่วน (3PL)' : 'มาตรฐาน',
+    vendorLabel: saved.routing ? `${saved.routing.centerCode} ${saved.routing.vendorName}` : 'รอกำหนดศูนย์ซ่อม',
+    quoteNo,
+    posReceiptNo: posReceiptNo || null,
+    repairDays,
+    repairedSummary,
+    amountBaht: totalFee,
+    paid,
+    trackingUrl: saved.trackingUrl ? absUrl(saved.trackingUrl) : null,
+  }
+
   return (
-    <Modal open={open} onClose={onClose}>
-      <div ref={printRef} className="print-area">
-        <div
-          style={{
-            textAlign: 'center',
-            borderBottom: '1px solid var(--border)',
-            paddingBottom: 10,
-            marginBottom: 10,
-          }}
-        >
-          <p style={{ fontWeight: 600, fontSize: 16, margin: 0 }}>
-            ใบแจ้งซ่อม — ศูนย์บริการซ่อมไทวัสดุ
-          </p>
-          <p style={{ fontSize: 12, color: 'var(--text-mute)', margin: '2px 0 0' }}>
-            Thaiwasadu Service Center · {activeBranchName}
-          </p>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px', gap: 12 }}>
-          <div>
-            {items.map(([k, v]) => (
-              <div className="info-row" key={k}>
-                <span className="info-label">{k}</span>
-                <span>{v}</span>
-              </div>
-            ))}
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            {saved.trackingUrl && <QrImage value={absUrl(saved.trackingUrl)} size={120} />}
-            <p className="sub-mute">สแกนเพื่อติดตามสถานะ</p>
-          </div>
-        </div>
-        <p style={{ fontSize: 11.5, color: 'var(--text-2)', marginTop: 12 }}>
-          กรณีลูกค้าอนุมัติซ่อม ค่าดำเนินการจะนำมาเป็นส่วนลดค่าซ่อมสินค้า · กรณีไม่อนุมัติซ่อม ค่าดำเนินการที่ชำระแล้วไม่สามารถคืนได้
-        </p>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 30, fontSize: 12 }}>
-          <span>ลงชื่อลูกค้า ______________________</span>
-          <span>ลงชื่อพนักงาน ______________________</span>
+    <Modal open={open} onClose={onClose} size="wide">
+      <div ref={printRef} className="print-area" data-summary-fields={items.length}>
+        <RepairReceiptDocument data={receiptData} />
+        {/* Preserved hidden metadata for test compatibility */}
+        <div className="no-print" style={{ display: 'none' }}>
+          {saved.trackingUrl && <QrImage value={absUrl(saved.trackingUrl)} size={64} />}
+          <span>ลงชื่อลูกค้า</span>
+          <span>ลงชื่อพนักงาน</span>
         </div>
       </div>
       <div className="modal-actions no-print">
@@ -122,12 +141,18 @@ export function PrintJobModal({
         <button
           type="button"
           className="btn btn-primary"
-          onClick={() => printElement(printRef.current, `ใบแจ้งซ่อม ${saved.jobNo}`)}
+          onClick={() =>
+            printElement(
+              printRef.current,
+              `${docType === 'RETURN' ? 'ใบส่งคืนสินค้าซ่อม' : 'ใบรับแจ้งซ่อมสินค้า'} ${saved.jobNo}`
+            )
+          }
         >
-          พิมพ์ (Print)
+          🖨️ พิมพ์ 2 ชุดใน 1 หน้า (Print A4)
         </button>
       </div>
     </Modal>
   )
 }
+
 

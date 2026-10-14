@@ -7,7 +7,15 @@ import { type TaxInfo } from './TaxInvoiceModal'
 export interface BranchOption {
   id: string
   code: string
+  stCode?: string | null
   name: string
+  legalName?: string | null
+  address?: string | null
+  subdistrict?: string | null
+  district?: string | null
+  province?: string | null
+  postalCode?: string | null
+  phone?: string | null
 }
 
 export interface CustomerLookupResult {
