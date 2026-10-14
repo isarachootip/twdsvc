@@ -296,11 +296,55 @@ table.tbl.compact td { padding: 8px 10px; font-size: 12.5px; }
   .grid2, .grid3, .grid4, .detail-cols { grid-template-columns: 1fr; }
 }
 
-/* ─── Print: ถ้ามี .print-area (ใบปะหน้า/สติ๊กเกอร์/ใบเสนอราคา) พิมพ์เฉพาะส่วนนั้น ─── */
+/* ─── Print: ถ้ามี .print-area (ใบแจ้งซ่อม/ใบปะหน้า/สติ๊กเกอร์/ใบเสนอราคา) พิมพ์เฉพาะส่วนนั้น ─── */
 @media print {
-  body:has(.print-area) * { visibility: hidden; }
-  body:has(.print-area) .print-area, body:has(.print-area) .print-area * { visibility: visible; }
-  body:has(.print-area) .print-area { position: absolute; left: 0; top: 0; width: 100%; }
+  @page { size: A4 portrait; margin: 0; }
+  html, body {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  aside, header.no-print, .no-print { display: none !important; }
+  main, .h-screen { height: auto !important; overflow: visible !important; }
+
+  body:has(.print-area) *:not(:has(.print-area)):not(.print-area):not(.print-area *) {
+    display: none !important;
+  }
+  body:has(.print-area) *:has(.print-area) {
+    position: static !important;
+    display: block !important;
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+    max-width: none !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+  body:has(.print-area) .print-area {
+    position: static !important;
+    visibility: visible !important;
+    width: 100% !important;
+    max-width: 190mm !important;
+    margin: 0 auto !important;
+    padding: 12mm 15mm !important;
+    box-sizing: border-box !important;
+    background: #ffffff !important;
+    color: var(--text) !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  body:has(.print-area) .print-area * {
+    visibility: visible !important;
+  }
   .modal-overlay { background: none !important; }
   .shipping-label-modal .modal-box {
     box-shadow: none !important;
@@ -315,10 +359,4 @@ table.tbl.compact td { padding: 8px 10px; font-size: 12.5px; }
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
-}
-
-@media print {
-  @page { size: A4 landscape; margin: 10mm; }
-  aside, header.no-print { display: none !important; }
-  html, body, main, .h-screen { height: auto !important; overflow: visible !important; }
 }

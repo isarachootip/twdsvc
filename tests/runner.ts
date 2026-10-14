@@ -20,6 +20,7 @@ import './unit/relative-redirect.test'
 import './unit/job-sort-system-time.test'
 import './unit/threepl-label.test'
 import './unit/shipping-label-builder.test'
+import './unit/print-modal-css.test'
 import './unit/barcode-scanner.test'
 import './unit/eordering.test'
 

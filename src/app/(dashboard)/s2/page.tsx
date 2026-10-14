@@ -98,7 +98,7 @@ function StickerModal({
 
         {/* Sticker preview (A4 4-col grid) */}
         <div className="overflow-y-auto p-6 flex-1 bg-gray-50">
-          <div id="sticker-print-area" className="grid grid-cols-4 gap-3 bg-white p-6 rounded-xl border shadow-sm">
+          <div id="sticker-print-area" className="print-area grid grid-cols-4 gap-3 bg-white p-6 rounded-xl border shadow-sm">
             {job.items.map((item, idx) =>
               Array.from({ length: item.quantity }).map((_, qIdx) => (
                 <div
