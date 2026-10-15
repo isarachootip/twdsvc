@@ -139,7 +139,7 @@ export function UserEditModal({
         </div>
         <div className="field">
           <label>
-            {edit.isNew ? 'รหัสผ่าน (≥10 ตัวอักษร)' : 'ตั้งรหัสผ่านใหม่ (เว้นว่าง = ไม่เปลี่ยน)'}
+            {edit.isNew ? 'รหัสผ่าน (≥4 ตัวอักษร)' : 'ตั้งรหัสผ่านใหม่ (เว้นว่าง = ไม่เปลี่ยน)'}
           </label>
           <input
             className="inp"

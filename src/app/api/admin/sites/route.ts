@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db'
 import { requireUser, handleError, HttpError } from '@/lib/api'
 import { getJsonSetting, setSetting } from '@/lib/settings'
 import { siteInputSchema, toSitePrismaData } from '@/lib/validations/site-schema'
+import { ensureBranchUsersForSite } from '@/lib/branch-users'
 
 const TERMINAL_STAGES = ['CLOSED_REPAIRED', 'CLOSED_NOT_REPAIRED', 'CANCELLED'] as const
 
@@ -62,6 +63,8 @@ export async function POST(req: NextRequest) {
     const created = await prisma.site.create({
       data: siteData,
     })
+
+    await ensureBranchUsersForSite(prisma, created)
 
     if (parsed.districtManager) {
       const managers = (await getJsonSetting<Record<string, string>>('DISTRICT_MANAGERS')) || {}

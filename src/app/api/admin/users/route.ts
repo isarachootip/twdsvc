@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
         vendorCenterId: true,
         lockedUntil: true,
         createdAt: true,
-        site: { select: { code: true, name: true } },
+        site: { select: { code: true, nickname: true, name: true } },
         vendorCenter: { select: { code: true } },
       },
     })
@@ -44,8 +44,8 @@ async function save(req: NextRequest, create: boolean) {
   if (b.role === 'VD' && !b.vendorCenterId) {
     throw new HttpError(400, 'Role VD ต้องผูกกับศูนย์ซ่อม')
   }
-  if (b.password && String(b.password).length < 10) {
-    throw new HttpError(400, 'รหัสผ่านต้องมีอย่างน้อย 10 ตัวอักษร')
+  if (b.password && String(b.password).length < 4) {
+    throw new HttpError(400, 'รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร')
   }
 
   const data = {

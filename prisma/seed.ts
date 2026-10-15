@@ -2,6 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import { PrismaClient, Role, SiteType, Channel, JobStage, JobType, QuoteDecision, QuoteStatus } from '@prisma/client'
 import bcrypt from 'bcryptjs'
+import { syncAllBranchUsers, DEFAULT_BRANCH_USER_PASSWORD } from '../src/lib/branch-users'
 const BKK_VICINITY_PROVINCES = new Set([
   'กรุงเทพมหานคร',
   'กรุงเทพฯ',
@@ -491,7 +492,10 @@ async function main() {
       create: { username: u.username, password: hash, fullName: u.fullName, role: u.role, siteId: u.siteId, vendorCenterId: u.vendorCenterId ?? null },
     })
   }
-  console.log('  ✓ Users (7)')
+  console.log('  ✓ Users (7 default accounts)')
+
+  const branchSync = await syncAllBranchUsers(prisma, DEFAULT_BRANCH_USER_PASSWORD)
+  console.log(`  ✓ Branch CS & GR users (${branchSync.userCount} accounts across ${branchSync.branchCount} branches, password: ${DEFAULT_BRANCH_USER_PASSWORD})`)
 
   // ─── Sample Job ────────────────────────────────────────────────────────────
   const sampleJob = await prisma.job.upsert({

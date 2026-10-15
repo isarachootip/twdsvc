@@ -26,6 +26,7 @@ import './unit/eordering.test'
 import './unit/branding-config.test'
 import './unit/quote-signature.test'
 import './unit/quotation-format.test'
+import './unit/branch-users.test'
 
 // Tier 2: Boundary & Corner Cases
 import './e2e/tier2-boundaries/boundary_financial_satang.test'

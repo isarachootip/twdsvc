@@ -11,15 +11,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'กรุณากรอกชื่อผู้ใช้และรหัสผ่าน' }, { status: 400 })
     }
 
-    const user = await prisma.user.findUnique({
-      where: { username },
-      select: {
-        id: true, username: true, fullName: true, role: true,
-        siteId: true, vendorCenterId: true,
-        password: true, active: true, mustChangePassword: true,
-        failedLoginCount: true, lockedUntil: true,
-      },
-    })
+    const cleanUsername = String(username).trim()
+    const userSelect = {
+      id: true, username: true, fullName: true, role: true,
+      siteId: true, vendorCenterId: true,
+      password: true, active: true, mustChangePassword: true,
+      failedLoginCount: true, lockedUntil: true,
+    } as const
+
+    const user =
+      (await prisma.user.findUnique({ where: { username: cleanUsername }, select: userSelect })) ??
+      (await prisma.user.findFirst({
+        where: { username: { equals: cleanUsername, mode: 'insensitive' } },
+        select: userSelect,
+      }))
 
     if (!user || !user.active) {
       return NextResponse.json({ error: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' }, { status: 401 })
