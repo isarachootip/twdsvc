@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { fmtDate } from '@/lib/constants'
+import { formatThaiShortDate } from '@/lib/quotation-format'
 
 export interface QuoteSignatureData {
   customer?: string | null
@@ -21,62 +21,23 @@ export default function QuoteSignatureSection({ data }: { data: QuoteSignatureDa
   return (
     <div
       style={{
-        marginTop: 28,
-        paddingTop: 16,
-        borderTop: '1px solid var(--border)',
+        marginTop: 18,
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
-        gap: 32,
+        gap: 36,
       }}
     >
-      {/* ฝั่งผู้จัดการสาขา */}
+      {/* ฝั่งซ้าย: ลูกค้าอนุมัติใบเสนอราคา (ลงชื่อ/วันที่) */}
       <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-1)', marginBottom: 6 }}>
-          ผู้มีอำนาจอนุมัติ ({managerTitle})
-        </div>
         <div
           style={{
-            minHeight: 56,
+            minHeight: 48,
             display: 'flex',
-            alignItems: 'center',
+            alignItems: 'flex-end',
             justifyContent: 'center',
             width: '100%',
-          }}
-        >
-          {data.managerSignatureUrl ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src={data.managerSignatureUrl}
-              alt="Manager Signature"
-              style={{ maxHeight: 52, maxWidth: 180, objectFit: 'contain' }}
-            />
-          ) : (
-            <div style={{ borderBottom: '1px dotted #94a3b8', width: '75%', height: 36, marginTop: 12 }} />
-          )}
-        </div>
-        <div style={{ fontSize: 11.5, marginTop: 6, color: 'var(--text-1)' }}>
-          (&nbsp;{managerDisplayName || '...................................................'} &nbsp;)
-        </div>
-        <div style={{ fontSize: 10.5, color: 'var(--text-mute)', marginTop: 2 }}>
-          {managerTitle}
-        </div>
-        <div style={{ fontSize: 10.5, color: 'var(--text-mute)', marginTop: 2 }}>
-          วันที่:&nbsp;{data.managerSignedAt ? fmtDate(data.managerSignedAt) : '....... / ....... / ...........'}
-        </div>
-      </div>
-
-      {/* ฝั่งลูกค้า */}
-      <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-1)', marginBottom: 6 }}>
-          ลูกค้า / ผู้มีอำนาจสั่งซ่อม
-        </div>
-        <div
-          style={{
-            minHeight: 56,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '100%',
+            borderBottom: '1px solid #374151',
+            paddingBottom: 4,
           }}
         >
           {data.customerSignatureUrl ? (
@@ -84,21 +45,52 @@ export default function QuoteSignatureSection({ data }: { data: QuoteSignatureDa
             <img
               src={data.customerSignatureUrl}
               alt="Customer Signature"
-              style={{ maxHeight: 52, maxWidth: 180, objectFit: 'contain' }}
+              style={{ maxHeight: 44, maxWidth: 170, objectFit: 'contain' }}
             />
-          ) : (
-            <div style={{ borderBottom: '1px dotted #94a3b8', width: '75%', height: 36, marginTop: 12 }} />
-          )}
+          ) : null}
         </div>
-        <div style={{ fontSize: 11.5, marginTop: 6, color: 'var(--text-1)' }}>
-          (&nbsp;{data.customer || '...................................................'} &nbsp;)
+        <div style={{ fontSize: 11.5, fontWeight: 600, color: '#111827', marginTop: 6 }}>
+          ลูกค้าอนุมัติใบเสนอราคา (ลงชื่อ/วันที่)
         </div>
-        <div style={{ fontSize: 10.5, color: 'var(--text-mute)', marginTop: 2 }}>
-          ผู้สั่งซ่อม / เจ้าของสินค้า
+        {(data.customer || data.customerSignedAt) && (
+          <div style={{ fontSize: 10.5, color: '#4b5563', marginTop: 2 }}>
+            {data.customer ? `(${data.customer})` : ''}
+            {data.customerSignedAt ? ` · วันที่ ${formatThaiShortDate(data.customerSignedAt)}` : ''}
+          </div>
+        )}
+      </div>
+
+      {/* ฝั่งขวา: เจ้าหน้าที่ศูนย์บริการ / ผู้จัดการสาขา */}
+      <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div
+          style={{
+            minHeight: 48,
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
+            width: '100%',
+            borderBottom: '1px solid #374151',
+            paddingBottom: 4,
+          }}
+        >
+          {data.managerSignatureUrl ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={data.managerSignatureUrl}
+              alt="Manager Signature"
+              style={{ maxHeight: 44, maxWidth: 170, objectFit: 'contain' }}
+            />
+          ) : null}
         </div>
-        <div style={{ fontSize: 10.5, color: 'var(--text-mute)', marginTop: 2 }}>
-          วันที่:&nbsp;{data.customerSignedAt ? fmtDate(data.customerSignedAt) : '....... / ....... / ...........'}
+        <div style={{ fontSize: 11.5, fontWeight: 600, color: '#111827', marginTop: 6 }}>
+          เจ้าหน้าที่ศูนย์บริการ ({managerTitle})
         </div>
+        {(managerDisplayName || data.managerSignedAt) && (
+          <div style={{ fontSize: 10.5, color: '#4b5563', marginTop: 2 }}>
+            {managerDisplayName ? `(${managerDisplayName})` : ''}
+            {data.managerSignedAt ? ` · วันที่ ${formatThaiShortDate(data.managerSignedAt)}` : ''}
+          </div>
+        )}
       </div>
     </div>
   )

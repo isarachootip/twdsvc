@@ -1,14 +1,29 @@
 'use client'
 
-import { fmtBaht } from '@/lib/constants'
+import { fmtPhone } from '@/lib/constants'
 import { useBranding } from '@/lib/hooks/useBranding'
-import QuoteSignatureSection from './QuoteSignatureSection'
+import {
+  computeQuotationFinancials,
+  resolveQuoteDates,
+} from '@/lib/quotation-format'
+import QuotePricingAndFooter from './QuotePricingAndFooter'
 
 export interface QuoteDocData {
   quoteNo: string
   jobNo: string
   customer: string | null
+  customerPhone?: string | null
+  customerAddress?: string | null
+  customerZip?: string | null
+  taxInvoiceName?: string | null
+  taxInvoiceId?: string | null
+  taxInvoiceAddr?: string | null
   product: string
+  brandName?: string | null
+  serialNo?: string | null
+  hasWarranty?: boolean
+  shippingMethod?: string | null
+  symptom?: string | null
   branchName?: string | null
   branchAddress?: string | null
   storeManagerName?: string | null
@@ -16,7 +31,20 @@ export interface QuoteDocData {
   logoUrl?: string | null
   companyName?: string | null
   taxId?: string | null
-  lines: Array<{ description: string; amount: number; type?: string; partWarrantyDays?: number; partWaitDays?: number }>
+  sentAt?: string | Date | null
+  expiresAt?: string | Date | null
+  openedAt?: string | Date | null
+  inspectedAt?: string | Date | null
+  operationFeePaid?: number | null
+  quoteUrl?: string | null
+  lines: Array<{
+    description: string
+    amount: number
+    quantity?: number
+    type?: string
+    partWarrantyDays?: number
+    partWaitDays?: number
+  }>
   subtotal: number
   vatAmount: number
   total: number
@@ -32,73 +60,207 @@ export interface QuoteDocData {
   customerSignedAt?: string | Date | null
 }
 
-/** เอกสารใบเสนอราคา (05 §2.3) — หัว "ศูนย์บริการซ่อมไทวัสดุ" + โลโก้ + ที่อยู่สาขาที่เปิดงาน */
+/**
+ * เอกสารใบเสนอราคาซ่อมมาตรฐานไทวัสดุ (REPAIR QUOTATION)
+ */
 export default function QuoteDoc({ q }: { q: QuoteDocData }) {
   const { branding } = useBranding()
-  const logoSrc = q.logoUrl || branding.logoUrl
+  const logoSrc = q.logoUrl || branding.logoUrl || '/images/thaiwatsadu-logo.png'
   const company = q.companyName || branding.companyName
-  const taxId = q.taxId || branding.taxId
+
+  const dates = resolveQuoteDates({
+    sentAt: q.sentAt,
+    expiresAt: q.expiresAt,
+    openedAt: q.openedAt,
+    inspectedAt: q.inspectedAt,
+  })
+
+  const fin = computeQuotationFinancials({
+    lines: q.lines,
+    subtotal: q.subtotal,
+    vatAmount: q.vatAmount,
+    total: q.total,
+    operationFeePaid: q.operationFeePaid,
+    hasWarranty: q.hasWarranty,
+  })
+
+  const branchDisplay = q.branchName
+    ? q.branchName.startsWith('ไทวัสดุ')
+      ? q.branchName
+      : `ไทวัสดุ ${q.branchName}`
+    : 'ไทวัสดุ ศูนย์บริการ'
+
+  const customerAddrFull = [q.customerAddress, q.customerZip].filter(Boolean).join(' ').trim() || '-'
+  const productDisplay = [q.product, q.brandName && !q.product.includes(q.brandName) ? q.brandName : null]
+    .filter(Boolean)
+    .join(' ')
+
+  const taxName = q.taxInvoiceName || q.customer || '-'
+  const taxIdText = q.taxInvoiceId || '-'
+  const taxAddrText = q.taxInvoiceAddr || (q.customerAddress ? 'ตามที่อยู่ลูกค้าด้านบน' : '-')
+  const methodLabel =
+    q.shippingMethod === 'EXPRESS'
+      ? '🚚 Express · จัดส่งด่วนพิเศษ'
+      : '🏬 Carry In · นำสินค้าเข้าซ่อม'
 
   return (
-    <div className="print-area">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border)', paddingBottom: 12, marginBottom: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+    <div
+      className="print-area quote-doc-a4"
+      style={{
+        color: '#111827',
+        fontSize: 12,
+        lineHeight: 1.4,
+        backgroundColor: '#ffffff',
+      }}
+    >
+      {/* ─── 1. Header: Logo, Service Center & Title ─── */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          borderBottom: '3px solid #dc2626',
+          paddingBottom: 10,
+          marginBottom: 10,
+          gap: 12,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={logoSrc}
             alt={company}
-            style={{ width: 120, height: 'auto', maxHeight: 42, objectFit: 'contain' }}
+            style={{ width: 118, height: 'auto', maxHeight: 42, objectFit: 'contain', display: 'block' }}
           />
           <div>
-            <p style={{ fontWeight: 600, fontSize: 15, margin: 0 }}>ศูนย์บริการซ่อมไทวัสดุ</p>
-            <p style={{ fontSize: 11.5, color: 'var(--text-mute)', margin: '1px 0 0' }}>{company} · เลขผู้เสียภาษี {taxId}</p>
-            {(q.branchName || q.branchAddress) && (
-              <p style={{ fontSize: 11, color: 'var(--text-mute)', margin: '2px 0 0' }}>
-                {[q.branchName, q.branchAddress].filter(Boolean).join(' — ')}
-              </p>
-            )}
+            <div style={{ fontWeight: 800, fontSize: 15.5, color: '#111827' }}>ไทวัสดุ Service Center</div>
+            <div style={{ fontSize: 11.5, color: '#475569' }}>ศูนย์บริการซ่อมไทวัสดุ · โทร 1308</div>
           </div>
         </div>
+
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontWeight: 700, fontSize: 15, color: 'inherit' }}>ใบเสนอราคา</div>
-          <div style={{ fontSize: 11.5, color: 'var(--text-mute)' }}>Quotation</div>
+          <div style={{ fontWeight: 800, fontSize: 20, color: '#111827', lineHeight: 1.15 }}>
+            ใบเสนอราคาซ่อม
+          </div>
+          <div style={{ fontSize: 10.5, letterSpacing: 0.8, color: '#64748b', fontWeight: 600 }}>
+            REPAIR QUOTATION
+          </div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: '#1d4ed8', marginTop: 3 }}>
+            {methodLabel}
+          </div>
         </div>
       </div>
-      <div className="grid2" style={{ fontSize: 12.5, marginBottom: 10 }}>
-        <div><span style={{ color: 'var(--text-2)' }}>เลขที่ใบเสนอราคา:</span> <b>{q.quoteNo}</b></div>
-        <div><span style={{ color: 'var(--text-2)' }}>เลขที่ใบแจ้งซ่อม:</span> <b>{q.jobNo}</b></div>
-        <div><span style={{ color: 'var(--text-2)' }}>ลูกค้า:</span> {q.customer ?? '-'}</div>
-        <div><span style={{ color: 'var(--text-2)' }}>สินค้า:</span> {q.product}</div>
-        {q.vendorLabel && <div style={{ gridColumn: '1 / -1' }}><span style={{ color: 'var(--text-2)' }}>ศูนย์บริการ:</span> {q.vendorLabel}</div>}
+
+      {/* ─── 2. 6-Cell Metadata Grid (3 cols × 2 rows) ─── */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr 1fr',
+          rowGap: 6,
+          columnGap: 16,
+          marginBottom: 10,
+          fontSize: 12,
+        }}
+      >
+        <div>
+          <div style={{ fontSize: 10.5, color: '#64748b' }}>เลขที่ใบเสนอราคา</div>
+          <div style={{ fontWeight: 700 }}>{q.quoteNo}</div>
+        </div>
+        <div>
+          <div style={{ fontSize: 10.5, color: '#64748b' }}>เลขที่ใบแจ้งซ่อม</div>
+          <div style={{ fontWeight: 700 }}>{q.jobNo}</div>
+        </div>
+        <div>
+          <div style={{ fontSize: 10.5, color: '#64748b' }}>สาขาที่รับเรื่อง</div>
+          <div style={{ fontWeight: 700 }}>{branchDisplay}</div>
+        </div>
+        <div>
+          <div style={{ fontSize: 10.5, color: '#64748b' }}>วันที่เสนอราคา</div>
+          <div>{dates.quoteDateText}</div>
+        </div>
+        <div>
+          <div style={{ fontSize: 10.5, color: '#64748b' }}>ใช้ได้ถึงวันที่</div>
+          <div style={{ fontWeight: 700 }}>{dates.validUntilText}</div>
+        </div>
+        <div>
+          <div style={{ fontSize: 10.5, color: '#64748b' }}>วันที่ตรวจสินค้า</div>
+          <div>{dates.inspectedDateText}</div>
+        </div>
       </div>
-      <table style={{ width: '100%', fontSize: 12.5, borderCollapse: 'collapse' }}>
-        <thead>
-          <tr>
-            <th style={{ textAlign: 'left', padding: '6px 0', borderBottom: '1px solid var(--border)', color: 'var(--text-2)', fontWeight: 500 }}>รายการ</th>
-            <th style={{ textAlign: 'right', padding: '6px 0', borderBottom: '1px solid var(--border)', color: 'var(--text-2)', fontWeight: 500 }}>ราคา</th>
-          </tr>
-        </thead>
-        <tbody>
-          {q.lines.map((l, i) => (
-            <tr key={i}>
-              <td style={{ padding: '5px 0', borderBottom: '1px solid var(--border)' }}>
-                {l.description}
-                {(l.partWaitDays ?? 0) > 0 && <span className="sub-mute"> · รออะไหล่ {l.partWaitDays} วัน</span>}
-                {(l.partWarrantyDays ?? 0) > 0 && <span className="sub-mute"> · รับประกันอะไหล่ {l.partWarrantyDays} วัน</span>}
-              </td>
-              <td style={{ textAlign: 'right', padding: '5px 0', borderBottom: '1px solid var(--border)' }}>{fmtBaht(l.amount)}</td>
-            </tr>
-          ))}
-          <tr><td style={{ padding: '6px 0', color: 'var(--text-2)' }}>รวมก่อน VAT</td><td style={{ textAlign: 'right' }}>{fmtBaht(q.subtotal)}</td></tr>
-          <tr><td style={{ padding: '6px 0', color: 'var(--text-2)' }}>VAT 7%</td><td style={{ textAlign: 'right' }}>{fmtBaht(q.vatAmount)}</td></tr>
-          <tr><td style={{ padding: '8px 0', fontWeight: 600 }}>รวมทั้งสิ้น</td><td style={{ textAlign: 'right', fontWeight: 600 }}>{fmtBaht(q.total)}</td></tr>
-        </tbody>
-      </table>
-      <p style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 10 }}>
-        ระยะเวลาซ่อมโดยประมาณ: {q.repairDays} วัน &nbsp;|&nbsp; รับประกันงานซ่อม: {q.repairWarrantyDays} วัน
-      </p>
-      {q.vendorNote && <div className="note">หมายเหตุจาก VD: {q.vendorNote}</div>}
-      <QuoteSignatureSection data={q} />
+
+      {/* ─── 3. Customer Info & Product Info (2 Columns) ─── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 8 }}>
+        <div style={{ border: '1px solid #cbd5e1', borderRadius: 6, padding: '8px 12px' }}>
+          <div style={{ fontWeight: 700, fontSize: 11.5, color: '#b91c1c', marginBottom: 4 }}>ข้อมูลลูกค้า</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '56px 1fr', rowGap: 2, fontSize: 11.5 }}>
+            <span style={{ color: '#64748b' }}>ชื่อ</span>
+            <span style={{ fontWeight: 700 }}>{q.customer || '-'}</span>
+            <span style={{ color: '#64748b' }}>โทร</span>
+            <span>{q.customerPhone ? fmtPhone(q.customerPhone) : '-'}</span>
+            <span style={{ color: '#64748b' }}>ที่อยู่</span>
+            <span>{customerAddrFull}</span>
+          </div>
+        </div>
+
+        <div style={{ border: '1px solid #cbd5e1', borderRadius: 6, padding: '8px 12px' }}>
+          <div style={{ fontWeight: 700, fontSize: 11.5, color: '#b91c1c', marginBottom: 4 }}>ข้อมูลสินค้า</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '76px 1fr', rowGap: 2, fontSize: 11.5 }}>
+            <span style={{ color: '#64748b' }}>สินค้า</span>
+            <span style={{ fontWeight: 700 }}>{productDisplay}</span>
+            <span style={{ color: '#64748b' }}>S/N</span>
+            <span>{q.serialNo || '-'}</span>
+            <span style={{ color: '#64748b' }}>การรับประกัน</span>
+            <span>{q.hasWarranty ? 'อยู่ในประกัน' : 'ไม่มีประกัน'}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── 4. Tax Invoice Info ─── */}
+      <div style={{ border: '1px solid #cbd5e1', borderRadius: 6, padding: '8px 12px', marginBottom: 8 }}>
+        <div style={{ fontWeight: 700, fontSize: 11.5, color: '#b91c1c', marginBottom: 4 }}>
+          ข้อมูลสำหรับออกใบกำกับภาษี
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 16, rowGap: 2, fontSize: 11.5 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '56px 1fr' }}>
+            <span style={{ color: '#64748b' }}>ชื่อ</span>
+            <span style={{ fontWeight: 700 }}>{taxName}</span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '96px 1fr' }}>
+            <span style={{ color: '#64748b' }}>เลขผู้เสียภาษี</span>
+            <span>{taxIdText}</span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '56px 1fr', gridColumn: '1 / -1' }}>
+            <span style={{ color: '#64748b' }}>ที่อยู่</span>
+            <span>{taxAddrText}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── 5. Symptom & Inspection Result ─── */}
+      <div style={{ border: '1px solid #cbd5e1', borderRadius: 6, padding: '8px 12px' }}>
+        <div style={{ fontWeight: 700, fontSize: 11.5, color: '#b91c1c', marginBottom: 4 }}>
+          อาการและผลการตรวจ
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '90px 1fr', rowGap: 2, fontSize: 11.5 }}>
+          <span style={{ color: '#64748b' }}>อาการที่แจ้ง</span>
+          <span>{q.symptom || '-'}</span>
+          <span style={{ color: '#64748b' }}>ผลการตรวจ</span>
+          <span>{q.vendorNote || 'ตรวจสอบตามรายการอะไหล่และบริการด้านล่าง'}</span>
+          <span style={{ color: '#64748b' }}>ระยะเวลาซ่อม</span>
+          <span>
+            ประมาณ {q.repairDays} วัน นับจากอนุมัติ · รับประกันงานซ่อม {q.repairWarrantyDays} วัน
+          </span>
+        </div>
+      </div>
+
+      <QuotePricingAndFooter
+        jobNo={q.jobNo}
+        fin={fin}
+        validUntilText={dates.validUntilText}
+        repairWarrantyDays={q.repairWarrantyDays}
+        quoteUrl={q.quoteUrl}
+        signatures={q}
+      />
     </div>
   )
 }

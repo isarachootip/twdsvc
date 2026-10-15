@@ -51,6 +51,14 @@ export interface QuoteDetail {
   repairDays: number
   repairWarrantyDays: number
   vendorNote?: string | null
+  sentAt?: string | null
+  expiresAt?: string | null
+  managerSignatureUrl?: string | null
+  managerSignerName?: string | null
+  isManagerProxy?: boolean
+  managerSignedAt?: string | null
+  customerSignatureUrl?: string | null
+  customerSignedAt?: string | null
   lines: QuoteLineDetail[]
 }
 
@@ -59,13 +67,25 @@ export interface QuoteJobInfo {
   jobNo: string
   productName: string
   brandName?: string | null
+  serialNo?: string | null
   symptom?: string | null
   hasWarranty: boolean
+  shippingMethod?: string | null
   vendorCenterId?: string | null
   version: number
   customerName?: string | null
-  branch?: { name?: string; address?: string } | null
+  customerPhone?: string | null
+  customerAddress?: string | null
+  customerZip?: string | null
+  taxInvoiceName?: string | null
+  taxInvoiceId?: string | null
+  taxInvoiceAddr?: string | null
+  openedAt?: string | null
+  money?: { operationFee?: number } | null
+  links?: Record<string, string> | null
+  branch?: { name?: string; address?: string; storeManagerName?: string | null } | null
   vendor?: { inspectionFee?: number; repairWarrantyDays?: number } | null
   vendorCenter?: VendorCenterOption | null
   quotes?: QuoteDetail[]
 }
+

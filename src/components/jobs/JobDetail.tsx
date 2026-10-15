@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import Modal from '@/components/ui/Modal'
 import StageBadge from '@/components/ui/StageBadge'
@@ -12,6 +12,7 @@ import PaymentModal from './PaymentModal'
 import ShippingLabel3PLModal from '@/components/ui/ShippingLabel3PLModal'
 import { JobRepairReceiptModal } from '@/components/ui/repair-receipt/JobRepairReceiptModal'
 import { buildCaseA3PlLabel } from '@/lib/threepl-label'
+import { printElement } from '@/lib/print-element'
 import { JobNextActionCard } from './JobNextActionCard'
 import { api, absUrl } from '@/lib/client'
 import { CHANNEL_LABELS, OWNER_LABELS, fmtBaht, fmtDate, fmtDateTime, fmtPhone } from '@/lib/constants'
@@ -48,6 +49,7 @@ export default function JobDetailModal({
   const [showReceipt, setShowReceipt] = useState<'INTAKE' | 'RETURN' | null>(null)
   const [assign, setAssign] = useState<{ centers: any[]; centerId: string; channel: string } | null>(null)
   const [payOpen, setPayOpen] = useState(false)
+  const quotePrintRef = useRef<HTMLDivElement>(null)
   const { toast, prompt } = useToast()
 
   const load = useCallback(async () => {
@@ -294,23 +296,62 @@ export default function JobDetailModal({
             </div>
           </div>
 
-          <Modal open={showQuote && !!quote} onClose={() => setShowQuote(false)} zIndex={90}>
+          <Modal open={showQuote && !!quote} onClose={() => setShowQuote(false)} size="wide" zIndex={90}>
             {quote && (
               <>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                   <h3 style={{ margin: 0, fontSize: 16 }}>ใบเสนอราคาซ่อม</h3>
                   <span className="badge b-blue" style={{ marginRight: 28 }}>{d.vendor?.code ?? d.vendorCenter?.code}</span>
                 </div>
-                <QuoteDoc q={{
-                  quoteNo: quote.quoteNo, jobNo: d.jobNo, customer: d.customerName, product: d.productName,
-                  branchName: d.branch?.name, branchAddress: d.branch?.address, storeManagerName: d.branch?.storeManagerName,
-                  vendorLabel: d.vendor ? `${d.vendor.name} (${d.vendor.centerCode})` : (d.vendorCenter ? `${d.vendorCenter.vendorParent?.name} (${d.vendorCenter.code})` : null),
-                  lines: quote.lines.map((l: any) => ({ description: l.description, amount: l.unitPrice * l.quantity, partWaitDays: l.partWaitDays, partWarrantyDays: l.partWarrantyDays })),
-                  subtotal: quote.subtotal, vatAmount: quote.vatAmount, total: quote.total, repairDays: quote.repairDays, repairWarrantyDays: quote.repairWarrantyDays, vendorNote: quote.vendorNote,
-                  managerSignatureUrl: quote.managerSignatureUrl, managerSignerName: quote.managerSignerName, isManagerProxy: quote.isManagerProxy, managerSignedAt: quote.managerSignedAt,
-                  customerSignatureUrl: quote.customerSignatureUrl, customerSignedAt: quote.customerSignedAt,
-                }} />
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, flexWrap: 'wrap', gap: 8 }}>
+                <div ref={quotePrintRef}>
+                  <QuoteDoc q={{
+                    quoteNo: quote.quoteNo,
+                    jobNo: d.jobNo,
+                    customer: d.customerName,
+                    customerPhone: d.customerPhone,
+                    customerAddress: d.customerAddress,
+                    customerZip: d.customerZip,
+                    taxInvoiceName: d.taxInvoiceName,
+                    taxInvoiceId: d.taxInvoiceId,
+                    taxInvoiceAddr: d.taxInvoiceAddr,
+                    product: d.productName,
+                    brandName: d.brandName,
+                    serialNo: d.serialNo,
+                    hasWarranty: d.hasWarranty,
+                    shippingMethod: d.shippingMethod,
+                    symptom: d.symptom,
+                    branchName: d.branch?.name,
+                    branchAddress: d.branch?.address,
+                    storeManagerName: d.branch?.storeManagerName,
+                    vendorLabel: d.vendor ? `${d.vendor.name} (${d.vendor.centerCode})` : (d.vendorCenter ? `${d.vendorCenter.vendorParent?.name} (${d.vendorCenter.code})` : null),
+                    sentAt: quote.sentAt,
+                    expiresAt: quote.expiresAt,
+                    openedAt: d.openedAt,
+                    operationFeePaid: m?.operationFee,
+                    quoteUrl: d.links?.QUOTE,
+                    lines: quote.lines.map((l: any) => ({
+                      type: l.type,
+                      description: l.description,
+                      quantity: l.quantity,
+                      amount: l.unitPrice * l.quantity,
+                      partWaitDays: l.partWaitDays,
+                      partWarrantyDays: l.partWarrantyDays,
+                    })),
+                    subtotal: quote.subtotal,
+                    vatAmount: quote.vatAmount,
+                    total: quote.total,
+                    repairDays: quote.repairDays,
+                    repairWarrantyDays: quote.repairWarrantyDays,
+                    vendorNote: quote.vendorNote,
+                    managerSignatureUrl: quote.managerSignatureUrl,
+                    managerSignerName: quote.managerSignerName,
+                    isManagerProxy: quote.isManagerProxy,
+                    managerSignedAt: quote.managerSignedAt,
+                    customerSignatureUrl: quote.customerSignatureUrl,
+                    customerSignedAt: quote.customerSignedAt,
+                  }} />
+                </div>
+                <div className="no-print" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, flexWrap: 'wrap', gap: 8 }}>
                   <p className="sub-mute" style={{ margin: 0 }}>
                     สถานะ: {({ SENT: 'รอลูกค้าตัดสินใจ', APPROVED: 'อนุมัติแล้ว', REJECTED: 'ไม่อนุมัติ', SUPERSEDED: 'ถูกแทนที่ด้วยฉบับใหม่', EXPIRED: 'หมดอายุ' } as Record<string, string>)[quote.status] ?? quote.status}
                   </p>
@@ -350,7 +391,7 @@ export default function JobDetailModal({
                     </button>
                   )}
                   <button className="btn" onClick={() => setShowQuote(false)}>ปิดหน้าต่างนี้</button>
-                  <button className="btn btn-primary" onClick={() => window.print()}>พิมพ์</button>
+                  <button className="btn btn-primary" onClick={() => printElement(quotePrintRef.current, `ใบเสนอราคาซ่อม ${quote.quoteNo}`)}>🖨️ พิมพ์ใบเสนอราคา</button>
                 </div>
               </>
             )}
