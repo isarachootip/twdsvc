@@ -12,6 +12,10 @@ const sarabun = Sarabun({
 export const metadata: Metadata = {
   title: 'Thaiwasadu Service Center',
   description: 'ระบบบริหารงานศูนย์บริการซ่อม',
+  icons: {
+    icon: '/images/thaiwatsadu-logo.png',
+    apple: '/images/thaiwatsadu-logo.png',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

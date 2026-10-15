@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import { AuthBrandHeader } from '@/components/auth/AuthBrandHeader'
 
 const ROLE_ROUTES: Record<string, string> = {
   ADMIN: '/exec',
@@ -58,18 +59,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
       <div className="w-full max-w-sm">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div
-            className="inline-block px-6 py-3 rounded-xl text-white font-bold text-lg mb-2"
-            style={{ background: 'var(--red)' }}
-          >
-            THAIWASADU
-          </div>
-          <div className="text-sm" style={{ color: 'var(--text-2)' }}>
-            SERVICE CENTER MANAGEMENT
-          </div>
-        </div>
+        <AuthBrandHeader subtitle="SERVICE CENTER MANAGEMENT" />
 
         {/* Login card */}
         <div className="card">

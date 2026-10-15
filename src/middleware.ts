@@ -13,6 +13,7 @@ const PUBLIC_PREFIXES = [
   '/s/',
   '/api/auth/',
   '/api/public/',
+  '/api/settings/branding',
   '/api/webhooks/',
   '/api/files/',
   '/vendor/',        // public vendor onboarding portal (/vendor/register)
