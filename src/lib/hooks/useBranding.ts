@@ -22,6 +22,19 @@ export const DEFAULT_BRANDING: BrandingInfo = {
   ],
 }
 
+export const BRANDING_UPDATED_EVENT = 'svc:branding-updated'
+
+export function resolveBrandLogoUrl(logoUrl?: string | null): string {
+  const trimmed = typeof logoUrl === 'string' ? logoUrl.trim() : ''
+  return trimmed.length > 0 ? trimmed : DEFAULT_BRANDING.logoUrl
+}
+
+export function notifyBrandingUpdated(): void {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(BRANDING_UPDATED_EVENT))
+  }
+}
+
 export function useBranding() {
   const [branding, setBranding] = useState<BrandingInfo>(DEFAULT_BRANDING)
   const [loading, setLoading] = useState(true)
@@ -30,11 +43,11 @@ export function useBranding() {
   const reload = useCallback(async () => {
     try {
       setLoading(true)
-      const res = await fetch('/api/settings/branding')
+      const res = await fetch('/api/settings/branding', { cache: 'no-store' })
       if (!res.ok) throw new Error('Failed to load branding')
       const data: BrandingInfo = await res.json()
       setBranding({
-        logoUrl: data.logoUrl || DEFAULT_BRANDING.logoUrl,
+        logoUrl: resolveBrandLogoUrl(data.logoUrl),
         companyName: data.companyName || DEFAULT_BRANDING.companyName,
         taxId: data.taxId || DEFAULT_BRANDING.taxId,
         footerNotes: Array.isArray(data.footerNotes) && data.footerNotes.length > 0
@@ -51,6 +64,11 @@ export function useBranding() {
 
   useEffect(() => {
     reload()
+    const handleUpdated = () => {
+      reload()
+    }
+    window.addEventListener(BRANDING_UPDATED_EVENT, handleUpdated)
+    return () => window.removeEventListener(BRANDING_UPDATED_EVENT, handleUpdated)
   }, [reload])
 
   return { branding, loading, error, reload }

@@ -4,11 +4,12 @@ import { useState, useRef, ChangeEvent } from 'react'
 import { Upload, RotateCcw, Image as ImageIcon } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import { api } from '@/lib/client'
+import { DEFAULT_BRANDING, notifyBrandingUpdated } from '@/lib/hooks/useBranding'
 import { useSave, SaveButton, Row } from './admin-helpers'
 
-const DEFAULT_LOGO = '/images/thaiwatsadu-logo.png'
-const DEFAULT_COMPANY_NAME = 'บริษัท ซีอาร์ซี ไทวัสดุ จำกัด'
-const DEFAULT_TAX_ID = '0105555021215'
+const DEFAULT_LOGO = DEFAULT_BRANDING.logoUrl
+const DEFAULT_COMPANY_NAME = DEFAULT_BRANDING.companyName
+const DEFAULT_TAX_ID = DEFAULT_BRANDING.taxId
 
 interface BrandingProps {
   initialLogoUrl?: string
@@ -71,8 +72,8 @@ export function BrandingConfigCard({
   }
 
   const handleSave = () => {
-    save(() =>
-      api('/api/admin/settings', {
+    save(async () => {
+      await api('/api/admin/settings', {
         method: 'PUT',
         body: {
           COMPANY_LOGO_URL: logoUrl,
@@ -81,7 +82,8 @@ export function BrandingConfigCard({
           ...(footerNote ? { DOCUMENT_FOOTER_NOTE: JSON.stringify(footerNote.split('\n').filter(Boolean)) } : {}),
         },
       })
-    )
+      notifyBrandingUpdated()
+    })
   }
 
   return (

@@ -1,6 +1,7 @@
 import assert from 'node:assert'
 import { describe, it, expect, setTier } from '../framework/core'
 import { SETTING_DEFAULTS, getBrandingSettings, setSetting, getSetting } from '../../src/lib/settings'
+import { resolveBrandLogoUrl, DEFAULT_BRANDING } from '../../src/lib/hooks/useBranding'
 
 setTier('Tier 1')
 
@@ -47,4 +48,14 @@ describe('Unit: Branding & Document Configuration', () => {
     // Restore original setting
     await setSetting('DOCUMENT_FOOTER_NOTE', originalNotes || SETTING_DEFAULTS.DOCUMENT_FOOTER_NOTE)
   })
+
+  it('BC-05: resolveBrandLogoUrl resolves custom logo URL and falls back to default logo on empty/whitespace', () => {
+    expect(resolveBrandLogoUrl('/uploads/custom-logo.png')).toBe('/uploads/custom-logo.png')
+    expect(resolveBrandLogoUrl('  /uploads/trimmed.png  ')).toBe('/uploads/trimmed.png')
+    expect(resolveBrandLogoUrl('')).toBe(DEFAULT_BRANDING.logoUrl)
+    expect(resolveBrandLogoUrl('   ')).toBe(DEFAULT_BRANDING.logoUrl)
+    expect(resolveBrandLogoUrl(null)).toBe(DEFAULT_BRANDING.logoUrl)
+    expect(resolveBrandLogoUrl(undefined)).toBe(DEFAULT_BRANDING.logoUrl)
+  })
 })
+

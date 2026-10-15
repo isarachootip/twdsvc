@@ -5,10 +5,11 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   ChartBar, BarChart3, ClipboardList, UserPlus, Package, Warehouse, Wrench, RefreshCcw, Truck,
-  CreditCard, Settings, LogOut, BookOpen, X, ChevronDown, ChevronRight, Users,
+  CreditCard, Settings, LogOut, BookOpen, ChevronDown, ChevronRight, Users,
 } from 'lucide-react'
 import { MENU_DEFS, ROLE_LABELS } from '@/lib/constants'
 import { ADMIN_NAV_ITEMS, ADMIN_EXTRA_LINKS } from '@/app/(dashboard)/admin/constants'
+import SidebarBrandHeader from './SidebarBrandHeader'
 
 const ICONS: Record<string, React.ReactNode> = {
   exec: <ChartBar size={18} />, analytics: <BarChart3 size={18} />, jobs: <ClipboardList size={18} />, cs: <UserPlus size={18} />,
@@ -40,19 +41,7 @@ export default function Sidebar({ user, menus, open, onClose }: SidebarProps) {
         className={`fixed md:static z-50 inset-y-0 left-0 flex flex-col shrink-0 border-r overflow-y-auto transition-transform md:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'}`}
         style={{ width: 230, background: 'var(--surface)', borderColor: 'var(--border)' }}
       >
-        <div className="px-4 py-4 border-b flex items-center gap-2.5" style={{ borderColor: 'var(--border)' }}>
-          <div
-            className="rounded-lg px-2.5 py-1.5 text-center font-bold text-xs text-white"
-            style={{ background: 'var(--red)' }}
-          >
-            <div>THAIWASADU</div>
-          </div>
-          <div className="leading-tight">
-            <div className="text-[13px] font-semibold" style={{ color: 'var(--text)' }}>Service Center</div>
-            <div className="text-[11.5px]" style={{ color: 'var(--text-2)' }}>ระบบศูนย์บริการ</div>
-          </div>
-          <button className="ml-auto md:hidden" onClick={onClose} aria-label="ปิดเมนู"><X size={18} /></button>
-        </div>
+        <SidebarBrandHeader onClose={onClose} />
 
         <nav className="flex-1 py-3">
           {items.map(item => {
