@@ -2,6 +2,7 @@
 
 import { fmtBaht } from '@/lib/constants'
 import { useBranding } from '@/lib/hooks/useBranding'
+import QuoteSignatureSection from './QuoteSignatureSection'
 
 export interface QuoteDocData {
   quoteNo: string
@@ -10,6 +11,7 @@ export interface QuoteDocData {
   product: string
   branchName?: string | null
   branchAddress?: string | null
+  storeManagerName?: string | null
   vendorLabel?: string | null
   logoUrl?: string | null
   companyName?: string | null
@@ -22,6 +24,12 @@ export interface QuoteDocData {
   repairWarrantyDays: number
   vendorNote?: string | null
   status?: string
+  managerSignatureUrl?: string | null
+  managerSignerName?: string | null
+  isManagerProxy?: boolean
+  managerSignedAt?: string | Date | null
+  customerSignatureUrl?: string | null
+  customerSignedAt?: string | Date | null
 }
 
 /** เอกสารใบเสนอราคา (05 §2.3) — หัว "ศูนย์บริการซ่อมไทวัสดุ" + โลโก้ + ที่อยู่สาขาที่เปิดงาน */
@@ -90,6 +98,7 @@ export default function QuoteDoc({ q }: { q: QuoteDocData }) {
         ระยะเวลาซ่อมโดยประมาณ: {q.repairDays} วัน &nbsp;|&nbsp; รับประกันงานซ่อม: {q.repairWarrantyDays} วัน
       </p>
       {q.vendorNote && <div className="note">หมายเหตุจาก VD: {q.vendorNote}</div>}
+      <QuoteSignatureSection data={q} />
     </div>
   )
 }

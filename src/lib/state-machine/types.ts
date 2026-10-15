@@ -32,6 +32,7 @@ export interface ActionInput {
   // decision
   decision?: 'approve' | 'reject' | 'APPROVED' | 'REJECTED'
   reason?: string
+  signatureUrl?: string
   // dispatch
   method?: 'PRINT' | 'LINK'
   // payment

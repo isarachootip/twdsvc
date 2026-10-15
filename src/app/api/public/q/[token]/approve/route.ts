@@ -37,6 +37,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
     return NextResponse.json({ error: 'Quote already decided' }, { status: 400 })
   }
 
+  // Gatekeeper check: Store Manager must sign before customer can approve
+  if (!quote.managerSignedAt) {
+    return NextResponse.json({ error: 'ใบเสนอราคายังไม่ได้รับการลงนามอนุมัติจากผู้จัดการสาขา' }, { status: 400 })
+  }
+
   const body = await req.json().catch(() => ({}))
 
   // C1, C4, S7: Delegate to executeAction with optimistic locking (Contract S7)
@@ -45,6 +50,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
     'customer_approve',
     {
       version: body?.version !== undefined ? Number(body.version) : job.version,
+      signatureUrl: typeof body?.signatureUrl === 'string' ? body.signatureUrl : undefined,
       note: body.note ?? (body.payMethod ? `ลูกค้าอนุมัติผ่านลิงก์ (ชำระ: ${body.payMethod})` : 'ลูกค้าอนุมัติผ่านลิงก์'),
     },
     { userId: null, role: 'CUSTOMER' }

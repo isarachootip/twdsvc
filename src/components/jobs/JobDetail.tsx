@@ -7,6 +7,7 @@ import StageBadge from '@/components/ui/StageBadge'
 import AttachmentGallery from '@/components/ui/AttachmentGallery'
 import { useToast } from '@/components/ui/Toast'
 import QuoteDoc from './QuoteDoc'
+import ManagerSignQuoteModal from './ManagerSignQuoteModal'
 import PaymentModal from './PaymentModal'
 import ShippingLabel3PLModal from '@/components/ui/ShippingLabel3PLModal'
 import { JobRepairReceiptModal } from '@/components/ui/repair-receipt/JobRepairReceiptModal'
@@ -42,6 +43,7 @@ export default function JobDetailModal({
   const [d, setD] = useState<Detail | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const [showQuote, setShowQuote] = useState(false)
+  const [showSignManager, setShowSignManager] = useState(false)
   const [show3PlLabel, setShow3PlLabel] = useState(false)
   const [showReceipt, setShowReceipt] = useState<'INTAKE' | 'RETURN' | null>(null)
   const [assign, setAssign] = useState<{ centers: any[]; centerId: string; channel: string } | null>(null)
@@ -301,18 +303,71 @@ export default function JobDetailModal({
                 </div>
                 <QuoteDoc q={{
                   quoteNo: quote.quoteNo, jobNo: d.jobNo, customer: d.customerName, product: d.productName,
-                  branchName: d.branch?.name, branchAddress: d.branch?.address, vendorLabel: d.vendor ? `${d.vendor.name} (${d.vendor.centerCode})` : (d.vendorCenter ? `${d.vendorCenter.vendorParent?.name} (${d.vendorCenter.code})` : null),
+                  branchName: d.branch?.name, branchAddress: d.branch?.address, storeManagerName: d.branch?.storeManagerName,
+                  vendorLabel: d.vendor ? `${d.vendor.name} (${d.vendor.centerCode})` : (d.vendorCenter ? `${d.vendorCenter.vendorParent?.name} (${d.vendorCenter.code})` : null),
                   lines: quote.lines.map((l: any) => ({ description: l.description, amount: l.unitPrice * l.quantity, partWaitDays: l.partWaitDays, partWarrantyDays: l.partWarrantyDays })),
                   subtotal: quote.subtotal, vatAmount: quote.vatAmount, total: quote.total, repairDays: quote.repairDays, repairWarrantyDays: quote.repairWarrantyDays, vendorNote: quote.vendorNote,
+                  managerSignatureUrl: quote.managerSignatureUrl, managerSignerName: quote.managerSignerName, isManagerProxy: quote.isManagerProxy, managerSignedAt: quote.managerSignedAt,
+                  customerSignatureUrl: quote.customerSignatureUrl, customerSignedAt: quote.customerSignedAt,
                 }} />
-                <p className="sub-mute" style={{ marginTop: 8 }}>สถานะ: {({ SENT: 'รอลูกค้าตัดสินใจ', APPROVED: 'อนุมัติแล้ว', REJECTED: 'ไม่อนุมัติ', SUPERSEDED: 'ถูกแทนที่ด้วยฉบับใหม่', EXPIRED: 'หมดอายุ' } as Record<string, string>)[quote.status] ?? quote.status}</p>
-                <div className="modal-actions no-print">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, flexWrap: 'wrap', gap: 8 }}>
+                  <p className="sub-mute" style={{ margin: 0 }}>
+                    สถานะ: {({ SENT: 'รอลูกค้าตัดสินใจ', APPROVED: 'อนุมัติแล้ว', REJECTED: 'ไม่อนุมัติ', SUPERSEDED: 'ถูกแทนที่ด้วยฉบับใหม่', EXPIRED: 'หมดอายุ' } as Record<string, string>)[quote.status] ?? quote.status}
+                  </p>
+                  <div>
+                    {quote.managerSignedAt ? (
+                      <span className="text-emerald-700 font-medium text-xs">
+                        ✓ ผจก. สาขา ({quote.managerSignerName}) ลงนามแล้ว
+                      </span>
+                    ) : (
+                      <span className="text-amber-700 font-medium text-xs">
+                        ⏳ รอผู้จัดการสาขาลงนามอนุมัติ
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="modal-actions no-print" style={{ marginTop: 14 }}>
+                  {['CS', 'ADMIN', 'EXECUTIVE'].includes(role) && !quote.managerSignedAt && quote.status === 'SENT' && (
+                    <button
+                      type="button"
+                      className="btn"
+                      style={{ color: 'var(--red-dark)', borderColor: 'var(--red)' }}
+                      onClick={() => setShowSignManager(true)}
+                    >
+                      ✍️ ลงนามใบเสนอราคา (ผจก. สาขา)
+                    </button>
+                  )}
+                  {quote.managerSignedAt && d.links?.QUOTE && (
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={() => {
+                        navigator.clipboard?.writeText(absUrl(d.links.QUOTE))
+                        toast('คัดลอกลิงก์ใบเสนอราคาส่งลูกค้าแล้ว', 'success')
+                      }}
+                    >
+                      📋 คัดลอกลิงก์ส่งลูกค้า
+                    </button>
+                  )}
                   <button className="btn" onClick={() => setShowQuote(false)}>ปิดหน้าต่างนี้</button>
                   <button className="btn btn-primary" onClick={() => window.print()}>พิมพ์</button>
                 </div>
               </>
             )}
           </Modal>
+
+          {showSignManager && d && quote && (
+            <ManagerSignQuoteModal
+              open={showSignManager}
+              onClose={() => setShowSignManager(false)}
+              jobId={d.id}
+              defaultManagerName={d.branch?.storeManagerName}
+              onSigned={() => {
+                load()
+                onChanged?.()
+              }}
+            />
+          )}
 
           {show3PlLabel && d && (
             <ShippingLabel3PLModal

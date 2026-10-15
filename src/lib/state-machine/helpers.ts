@@ -82,7 +82,15 @@ export async function applyDecision(c: Ctx, approve: boolean) {
     if (quote.expiresAt && quote.expiresAt < c.now && c.actor.role === 'CUSTOMER') {
       throw new ActionError('ใบเสนอราคาหมดอายุแล้ว กรุณาติดต่อสาขา')
     }
-    await c.tx.quote.update({ where: { id: quote.id }, data: { status: QuoteStatus.APPROVED, decidedAt: c.now } })
+    const customerSig = typeof c.input.signatureUrl === 'string' && c.input.signatureUrl ? c.input.signatureUrl : undefined
+    await c.tx.quote.update({
+      where: { id: quote.id },
+      data: {
+        status: QuoteStatus.APPROVED,
+        decidedAt: c.now,
+        ...(customerSig ? { customerSignatureUrl: customerSig, customerSignedAt: c.now } : {}),
+      },
+    })
     await c.tx.job.update({ where: { id: c.job.id }, data: { decision: QuoteDecision.APPROVED } })
 
     await c.tx.jobCharge.create({

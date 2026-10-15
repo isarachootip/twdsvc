@@ -6,6 +6,7 @@ import {
   CheckCircle2, XCircle, AlertCircle, Clock, ShieldCheck,
   ImageIcon, Wrench, ChevronRight, X, ExternalLink
 } from 'lucide-react'
+import CustomerSignModal from './CustomerSignModal'
 
 interface QuoteLine {
   type: string
@@ -24,6 +25,7 @@ interface QuoteData {
     brandName: string
     branchName: string
     branchPhone?: string | null
+    storeManagerName?: string | null
     vendorName?: string | null
     customerName?: string | null
     hasWarranty: boolean
@@ -40,6 +42,12 @@ interface QuoteData {
     repairWarrantyDays: number
     vendorNote?: string | null
     expiresAt?: string | null
+    managerSignatureUrl?: string | null
+    managerSignerName?: string | null
+    isManagerProxy?: boolean
+    managerSignedAt?: string | null
+    customerSignatureUrl?: string | null
+    customerSignedAt?: string | null
     lines: QuoteLine[]
   }
   photos: string[]
@@ -62,6 +70,7 @@ export default function CustomerQuotePage({ params }: { params: Promise<{ token:
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [signModalOpen, setSignModalOpen] = useState(false)
   const [rejectModalOpen, setRejectModalOpen] = useState(false)
   const [rejectReason, setRejectReason] = useState('')
   const [activePhoto, setActivePhoto] = useState<string | null>(null)
@@ -87,18 +96,19 @@ export default function CustomerQuotePage({ params }: { params: Promise<{ token:
     loadQuote()
   }, [token])
 
-  const handleApprove = async () => {
+  const handleApproveConfirm = async (signatureUrl: string) => {
     if (!data) return
     setSubmitting(true)
     try {
       const res = await fetch(`/api/public/q/${token}/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ version: data.job.version }),
+        body: JSON.stringify({ version: data.job.version, signatureUrl }),
       })
       const result = await res.json()
       if (!res.ok) throw new Error(result.error ?? 'เกิดข้อผิดพลาดในการอนุมัติ')
 
+      setSignModalOpen(false)
       setActionDone({
         type: 'APPROVED',
         message: 'อนุมัติการซ่อมเรียบร้อยแล้ว ช่างจะเริ่มดำเนินการซ่อมทันที',
@@ -163,6 +173,7 @@ export default function CustomerQuotePage({ params }: { params: Promise<{ token:
   const { job, quote } = data
   const isApproved = data.decided && data.decision === 'APPROVED'
   const isRejected = data.decided && data.decision === 'REJECTED'
+  const isManagerSigned = Boolean(quote.managerSignedAt)
 
   return (
     <div className="min-h-screen bg-[#F3EEE6] font-sans pb-12">
@@ -220,6 +231,17 @@ export default function CustomerQuotePage({ params }: { params: Promise<{ token:
                 <div className="text-xs text-[#2B2723]">
                   <span className="font-bold text-[#9C0C22] block">ท่านได้ปฏิเสธการซ่อมแล้ว</span>
                   สินค้าอยู่ระหว่างเตรียมจัดส่งคืนสาขาต้นทาง
+                </div>
+              </div>
+            )}
+
+            {/* Gatekeeper banner: Awaiting Store Manager signature */}
+            {!actionDone && !data.decided && !isManagerSigned && (
+              <div className="bg-[#FFF8E6] border border-[#F5C253] p-3.5 rounded-2xl flex items-start gap-3">
+                <Clock size={22} className="text-[#B88700] shrink-0 mt-0.5" />
+                <div className="text-xs text-[#2B2723]">
+                  <span className="font-bold text-[#8A6500] block mb-0.5">อยู่ระหว่างการตรวจสอบโดยผู้จัดการสาขา</span>
+                  ใบเสนอราคานี้กำลังอยู่ระหว่างการตรวจสอบและลงนามโดยผู้จัดการสาขา {job.branchName} เมื่อผู้จัดการสาขาลงนามอนุมัติแล้ว ระบบจะเปิดให้ท่านลงนามยืนยันการซ่อม
                 </div>
               </div>
             )}
@@ -334,18 +356,67 @@ export default function CustomerQuotePage({ params }: { params: Promise<{ token:
               )}
             </div>
 
+            {/* Store Manager Approval Signature Card */}
+            <div className="bg-white rounded-2xl p-4 border border-[#E4DED2] shadow-sm space-y-2 text-xs">
+              <div className="flex justify-between items-center border-b border-[#E4DED2] pb-2">
+                <span className="font-bold text-[#2B2723]">การลงนามตรวจสอบโดยผู้จัดการสาขา</span>
+                {isManagerSigned ? (
+                  <span className="text-emerald-700 font-medium flex items-center gap-1">
+                    <CheckCircle2 size={14} /> อนุมัติแล้ว
+                  </span>
+                ) : (
+                  <span className="text-amber-700 font-medium flex items-center gap-1">
+                    <Clock size={14} /> รอลงนาม
+                  </span>
+                )}
+              </div>
+              {isManagerSigned ? (
+                <div className="pt-1 flex items-center justify-between">
+                  <div>
+                    <div className="font-medium text-[#2B2723]">{quote.managerSignerName || job.storeManagerName}</div>
+                    <div className="text-[11px] text-[#6B6459]">{quote.isManagerProxy ? 'Manager on duty' : 'ผู้จัดการสาขา'}</div>
+                  </div>
+                  {quote.managerSignatureUrl && (
+                    <div className="border border-slate-200 rounded-lg p-1 bg-slate-50">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={quote.managerSignatureUrl}
+                        alt="Manager Signature"
+                        className="h-9 max-w-[120px] object-contain"
+                      />
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-[11px] text-[#6B6459] pt-0.5">
+                  สาขา: {job.branchName} · ผู้จัดการสาขา: {job.storeManagerName || 'ประจำสาขา'}
+                </p>
+              )}
+            </div>
+
             {/* Action Buttons or Pay Link */}
             {!data.decided && !data.expired && (
               <div className="space-y-2.5 pt-1">
-                <button
-                  type="button"
-                  onClick={handleApprove}
-                  disabled={submitting}
-                  className="w-full py-3.5 rounded-xl bg-[#C8102E] text-white font-bold text-sm shadow hover:bg-[#9C0C22] transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
-                >
-                  <CheckCircle2 size={18} />
-                  {submitting ? 'กำลังบันทึก...' : 'อนุมัติการซ่อม'}
-                </button>
+                {isManagerSigned ? (
+                  <button
+                    type="button"
+                    onClick={() => setSignModalOpen(true)}
+                    disabled={submitting}
+                    className="w-full py-3.5 rounded-xl bg-[#C8102E] text-white font-bold text-sm shadow hover:bg-[#9C0C22] transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle2 size={18} />
+                    {submitting ? 'กำลังบันทึก...' : 'ลงนามอนุมัติการซ่อม'}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled
+                    className="w-full py-3.5 rounded-xl bg-slate-200 text-slate-400 font-medium text-xs cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    <Clock size={16} />
+                    รอผู้จัดการสาขาลงนามอนุมัติก่อนเปิดรับการยืนยัน
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setRejectModalOpen(true)}
@@ -444,6 +515,16 @@ export default function CustomerQuotePage({ params }: { params: Promise<{ token:
           </div>
         </div>
       )}
+
+      {/* Customer Signature Modal */}
+      <CustomerSignModal
+        open={signModalOpen}
+        onClose={() => setSignModalOpen(false)}
+        onConfirm={handleApproveConfirm}
+        submitting={submitting}
+        quoteNo={quote.quoteNo}
+        totalBaht={quote.total}
+      />
     </div>
   )
 }

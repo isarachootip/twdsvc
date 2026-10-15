@@ -10,7 +10,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
     include: {
       job: {
         include: {
-          branch: { select: { name: true, phone: true } },
+          branch: { select: { name: true, phone: true, storeManagerName: true } },
           vendorCenter: {
             include: { vendorParent: { select: { name: true } } },
           },
@@ -67,6 +67,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
       brandName: job.brandName,
       branchName: job.branch.name,
       branchPhone: job.branch.phone,
+      storeManagerName: job.branch.storeManagerName,
       vendorName: job.vendorCenter ? `${job.vendorCenter.vendorParent.name} (${job.vendorCenter.code})` : null,
       customerName: job.customerName,
       hasWarranty: job.hasWarranty,
@@ -83,6 +84,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
       repairWarrantyDays: quote.repairWarrantyDays,
       vendorNote: quote.vendorNote,
       expiresAt: quote.expiresAt,
+      managerSignatureUrl: quote.managerSignatureUrl,
+      managerSignerName: quote.managerSignerName,
+      isManagerProxy: quote.isManagerProxy,
+      managerSignedAt: quote.managerSignedAt,
+      customerSignatureUrl: quote.customerSignatureUrl,
+      customerSignedAt: quote.customerSignedAt,
       lines: quote.lines.map(l => ({
         type: l.type,
         description: l.description,

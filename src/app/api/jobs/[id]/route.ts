@@ -33,7 +33,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         },
         charges: true,
         payments: { orderBy: { createdAt: 'asc' } },
-        publicTokens: { where: { type: 'TRACKING' }, take: 1 },
+        publicTokens: { where: { usedAt: null, expiresAt: { gt: new Date() } }, orderBy: { createdAt: 'desc' } },
       },
     })
 
@@ -62,7 +62,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       ownerDept: resolveOwner(activeClock.slaStep.ownerDept, activeClock.slaStep.code, job.channel),
     } : null
 
-    return NextResponse.json({ ...job, balance, money, intakeUnpaid, slaInfo })
+    // Build public links dictionary
+    const links: Record<string, string> = {}
+    job.publicTokens.forEach((t) => {
+      if (!links[t.type]) {
+        if (t.type === 'TRACKING') links.TRACKING = `/t/${t.token}`
+        else if (t.type === 'QUOTE') links.QUOTE = `/q/${t.token}`
+        else if (t.type === 'PAYMENT') links.PAYMENT = `/pay/${t.token}`
+      }
+    })
+
+    return NextResponse.json({ ...job, balance, money, intakeUnpaid, slaInfo, links })
   } catch (e) {
     return NextResponse.json({ error: 'ไม่พบงานนี้' }, { status: 404 })
   }
