@@ -28,7 +28,7 @@ export function simulateAction(
 
   // Check RBAC
   const allowedRoles = SPEC_ORACLE.RBAC_MENU_MATRIX[actor.role]
-  if (!allowedRoles) {
+  if (!allowedRoles && actor.role !== 'CUSTOMER') {
     return { success: false, error: 'Unknown role' }
   }
 

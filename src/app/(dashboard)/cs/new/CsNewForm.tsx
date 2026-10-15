@@ -1,8 +1,10 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import StageBadge from '@/components/ui/StageBadge'
 import PaymentModal from '@/components/jobs/PaymentModal'
+import CsCustomerSignModal from '@/components/jobs/CsCustomerSignModal'
 import {
   CustomerSection,
   ProductSection,
@@ -33,6 +35,8 @@ export default function CsNewForm({
   initialSerialNo?: string
 }) {
   const router = useRouter()
+  const [signOpen, setSignOpen] = useState(false)
+  const [intakeSignatureUrl, setIntakeSignatureUrl] = useState<string | null>(null)
   const form = useCsNewForm({ role, branchName, userBranchId, branches, initialPhone, initialProduct, initialSerialNo })
 
   const handleShowPayment = async () => {
@@ -153,6 +157,26 @@ export default function CsNewForm({
         warranty={form.warranty} sizeName={form.sizeName} method={form.method}
         totalFee={form.fees.total} paid={form.paid}
         posReceiptNo={form.pos}
+        customerSignatureUrl={intakeSignatureUrl}
+        onOpenSignModal={() => setSignOpen(true)}
+      />
+
+      <CsCustomerSignModal
+        open={signOpen}
+        onClose={() => setSignOpen(false)}
+        title={`ลงนามเปิดใบแจ้งซ่อม — ${form.saved?.jobNo ?? ''}`}
+        subtitle={`ลูกค้า: ${form.customerFullName}`}
+        disclaimer="ข้าพเจ้าได้ส่งมอบสินค้าเพื่อส่งซ่อมตามรายการ และรับทราบเงื่อนไขการซ่อมและค่าใช้จ่ายเบื้องต้นแล้ว"
+        onConfirm={async sig => {
+          if (!form.saved) return
+          await fetch(`/api/jobs/${form.saved.id}/action`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'cs_sign_intake', signatureUrl: sig }),
+          })
+          setIntakeSignatureUrl(sig)
+          setSignOpen(false)
+        }}
       />
     </div>
   )

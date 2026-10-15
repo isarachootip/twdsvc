@@ -4,7 +4,7 @@ export interface MockUser {
   id: string
   username: string
   fullName: string
-  role: 'ADMIN' | 'EXECUTIVE' | 'CS' | 'GR' | 'DC' | 'VD' | 'S2'
+  role: 'ADMIN' | 'EXECUTIVE' | 'CS' | 'GR' | 'DC' | 'VD' | 'S2' | 'CUSTOMER'
   siteId?: string
   vendorCenterId?: string
   active: boolean

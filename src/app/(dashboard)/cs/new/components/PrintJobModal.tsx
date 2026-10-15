@@ -50,6 +50,8 @@ interface PrintJobModalProps {
   quoteNo?: string | null
   repairDays?: number | null
   repairedSummary?: string | null
+  customerSignatureUrl?: string | null
+  onOpenSignModal?: () => void
 }
 
 export function PrintJobModal({
@@ -77,6 +79,8 @@ export function PrintJobModal({
   quoteNo,
   repairDays,
   repairedSummary,
+  customerSignatureUrl,
+  onOpenSignModal,
 }: PrintJobModalProps) {
   const printRef = useRef<HTMLDivElement>(null)
 
@@ -123,6 +127,7 @@ export function PrintJobModal({
     amountBaht: totalFee,
     paid,
     trackingUrl: saved.trackingUrl ? absUrl(saved.trackingUrl) : null,
+    customerSignatureUrl,
   }
 
   return (
@@ -138,6 +143,11 @@ export function PrintJobModal({
       </div>
       <div className="modal-actions no-print">
         <button type="button" className="btn" onClick={onClose}>ปิด</button>
+        {onOpenSignModal && (
+          <button type="button" className="btn btn-outline" onClick={onOpenSignModal}>
+            ✍️ {customerSignatureUrl ? 'เซ็นชื่อใหม่' : 'ให้ลูกค้าเซ็นชื่อบนหน้าจอ'}
+          </button>
+        )}
         <button
           type="button"
           className="btn btn-primary"

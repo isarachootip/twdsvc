@@ -10,6 +10,7 @@ import {
 import { STAGE_ORDER, STAGE_LABELS, Stage } from '@/lib/constants'
 import { formatSatang } from '@/lib/fees'
 import { useBranding } from '@/lib/hooks/useBranding'
+import TrackingSignCards from './components/TrackingSignCards'
 
 interface TrackingEvent {
   type: string
@@ -36,6 +37,8 @@ interface TrackingData {
   balance: number
   payUrl?: string | null
   csatUrl?: string | null
+  intakeSignatureUrl?: string | null
+  pickupSignatureUrl?: string | null
   activeQuote: {
     quoteNo: string
     status: string
@@ -61,7 +64,7 @@ export default function PublicTrackingPage({ params }: { params: Promise<{ token
   const [error, setError] = useState('')
   const [showAll19Stages, setShowAll19Stages] = useState(false)
 
-  useEffect(() => {
+  const loadData = () => {
     fetch(`/api/public/t/${token}`)
       .then(async (r) => {
         const j = await r.json()
@@ -71,6 +74,10 @@ export default function PublicTrackingPage({ params }: { params: Promise<{ token
       .then(setData)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    loadData()
   }, [token])
 
   if (loading) {
@@ -179,6 +186,17 @@ export default function PublicTrackingPage({ params }: { params: Promise<{ token
                 </Link>
               </div>
             )}
+
+            {/* Customer Digital Signature Actions & Status */}
+            <TrackingSignCards
+              token={token}
+              stage={data.stage}
+              intakeSignatureUrl={data.intakeSignatureUrl}
+              pickupSignatureUrl={data.pickupSignatureUrl}
+              customerName={data.customerName}
+              jobNo={data.jobNo}
+              onSigned={loadData}
+            />
 
             {/* Current Stage Card */}
             <div className="bg-white rounded-2xl p-4 border border-[#E4DED2] shadow-sm space-y-3">

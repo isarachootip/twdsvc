@@ -149,4 +149,34 @@ export const CLOSE_ACTIONS: Record<string, ActionDef> = {
       c.extra.location = c.input.location
     },
   },
+
+  cs_sign_intake: {
+    roles: ['CS', 'ADMIN', 'CUSTOMER'],
+    event: 'INTAKE_SIGNED',
+    validate: c => {
+      if (c.job.stage === JobStage.CANCELLED) {
+        throw new ActionError('ไม่สามารถลงนามในงานที่ยกเลิกแล้วได้')
+      }
+      if (!c.input.signatureUrl || typeof c.input.signatureUrl !== 'string') {
+        throw new ActionError('กรุณาลงลายมือชื่อก่อนบันทึก')
+      }
+    },
+    effects: async c => {
+      c.extra.signatureUrl = c.input.signatureUrl
+    },
+  },
+
+  cs_sign_pickup: {
+    roles: ['CS', 'ADMIN', 'CUSTOMER'],
+    from: [JobStage.READY_FOR_PICKUP, JobStage.CLOSED_REPAIRED, JobStage.CLOSED_NOT_REPAIRED],
+    event: 'PICKUP_SIGNED',
+    validate: c => {
+      if (!c.input.signatureUrl || typeof c.input.signatureUrl !== 'string') {
+        throw new ActionError('กรุณาลงลายมือชื่อก่อนบันทึก')
+      }
+    },
+    effects: async c => {
+      c.extra.signatureUrl = c.input.signatureUrl
+    },
+  },
 }

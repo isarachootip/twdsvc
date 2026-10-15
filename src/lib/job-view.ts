@@ -103,6 +103,16 @@ export function latestLocation(job: Pick<JobWithList, 'events'>): string | null 
   return null
 }
 
+export function latestSignature(job: Pick<JobWithList, 'events'>, eventTypes: string[]): string | null {
+  for (const e of job.events) {
+    if (eventTypes.includes(e.type)) {
+      const p = e.payload as Record<string, unknown> | null
+      if (p && typeof p.signatureUrl === 'string' && p.signatureUrl) return p.signatureUrl
+    }
+  }
+  return null
+}
+
 const OUTBOUND_LEGS = ['BRANCH_TO_DC', 'DC_TO_VD', 'BRANCH_TO_VD']
 const INBOUND_LEGS = ['VD_TO_DC', 'DC_TO_BRANCH', 'VD_TO_BRANCH']
 
@@ -171,6 +181,8 @@ export function serializeJob(job: JobWithList, role: string, opts?: { preferSla?
     outboundShipment: enrichShipment(outbound[outbound.length - 1], job.events),
     inboundShipment: enrichShipment(inbound[inbound.length - 1], job.events),
     location: latestLocation(job),
+    intakeSignatureUrl: latestSignature(job, ['INTAKE_SIGNED', 'JOB_OPENED']),
+    pickupSignatureUrl: latestSignature(job, ['PICKUP_SIGNED', 'JOB_CLOSED']),
     quote: quote ? { ...quote, total: hideMoney ? null : quote.total, subtotal: hideMoney ? null : quote.subtotal } : null,
     items: job.items,
   }

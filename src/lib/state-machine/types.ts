@@ -12,7 +12,7 @@ export type ActionType =
   | 'vd_start_repair' | 'vd_pause_parts' | 'vd_resume_parts' | 'vd_finish_repair' | 'vd_return_pack'
   | 'customer_approve' | 'customer_reject' | 'cs_record_decision'
   | 'record_repair_payment' | 'cs_close' | 'cancel' | 'add_note'
-  | 'cs_receive' | 'update_location'
+  | 'cs_receive' | 'update_location' | 'cs_sign_intake' | 'cs_sign_pickup'
   | 'cs_receive_payment' | 'cs_close_job' | 'cs_trade_in' | 'cs_return_only'
 
 export interface PhotoInput {

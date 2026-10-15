@@ -37,6 +37,7 @@ export interface RepairReceiptData {
   amountBaht: number
   paid: boolean
   trackingUrl?: string | null
+  customerSignatureUrl?: string | null
   logoUrl?: string | null
   companyName?: string | null
   taxId?: string | null

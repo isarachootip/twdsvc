@@ -4,19 +4,15 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { TabBar, EmptyCard } from '@/components/ui/Queue'
-import JobDetailModal from '@/components/jobs/JobDetail'
-import PaymentModal from '@/components/jobs/PaymentModal'
 import { useQueue, useRowInputs } from '@/components/ui/useQueue'
 import { useToast } from '@/components/ui/Toast'
 import { findJobsByScan } from '@/lib/job-locator'
 import type { JobView } from '@/lib/job-view'
-
 import CsReceiveTable from './components/CsReceiveTable'
 import CsPickupTable from './components/CsPickupTable'
 import CsApprovalTable from './components/CsApprovalTable'
 import CsOpenedTable from './components/CsOpenedTable'
-import CsLocationModal from './components/CsLocationModal'
-import CsReturnReceiptModal from './components/CsReturnReceiptModal'
+import CsModals from './components/CsModals'
 import { PickupPanel, ApprovalPanel } from './components/CsPanels'
 
 const TABS = [
@@ -43,6 +39,7 @@ export default function CsQueue({ role }: { role: string }) {
   const [openId, setOpenId] = useState<string | null>(null)
   const [locJob, setLocJob] = useState<JobView | null>(null)
   const [printJob, setPrintJob] = useState<JobView | null>(null)
+  const [signJob, setSignJob] = useState<JobView | null>(null)
   const [scan, setScan] = useState('')
   const [pay, setPay] = useState<{ job: JobView; kind: 'intake' | 'repair'; amount: number } | null>(null)
   const { toast } = useToast()
@@ -52,11 +49,7 @@ export default function CsQueue({ role }: { role: string }) {
     if (role === 'ADMIN') {
       fetch('/api/sites')
         .then(r => r.json())
-        .then(d => {
-          if (Array.isArray(d)) {
-            setSiteOptions(d.filter(s => s.type === 'BRANCH').map(s => ({ id: s.id, name: s.name })))
-          }
-        })
+        .then(d => Array.isArray(d) && setSiteOptions(d.filter(s => s.type === 'BRANCH').map(s => ({ id: s.id, name: s.name }))))
         .catch(() => {})
     }
   }, [role])
@@ -162,6 +155,7 @@ export default function CsQueue({ role }: { role: string }) {
                 onDetail={() => setOpenId(current.id)}
                 onEditLoc={() => setLocJob(current)}
                 onPrintReturn={() => setPrintJob(current)}
+                onSignPickup={() => setSignJob(current)}
               />
             )}
             {tab === 'approval' && (
@@ -180,10 +174,18 @@ export default function CsQueue({ role }: { role: string }) {
         )}
       </div>
 
-      <PaymentModal job={pay?.job ?? null} kind={pay?.kind ?? 'repair'} amount={pay?.amount ?? 0} onClose={() => setPay(null)} onPaid={() => { setPay(null); reload() }} />
-      <JobDetailModal jobId={openId} role={role} onClose={() => setOpenId(null)} onChanged={() => reload()} />
-      <CsLocationModal job={locJob} onClose={() => setLocJob(null)} onUpdated={() => reload()} run={run} busy={busy} />
-      <CsReturnReceiptModal job={printJob} onClose={() => setPrintJob(null)} />
+      <CsModals
+        role={role} openId={openId} setOpenId={setOpenId}
+        pay={pay} setPay={setPay} locJob={locJob} setLocJob={setLocJob}
+        printJob={printJob} setPrintJob={setPrintJob} signJob={signJob} setSignJob={setSignJob}
+        busy={busy} reload={reload} run={run}
+        onSignConfirm={async sig => {
+          if (!signJob) return
+          if (await run(signJob, 'cs_sign_pickup', { signatureUrl: sig }, 'บันทึกลายมือชื่อรับสินค้าเรียบร้อย')) {
+            setSignJob(null); reload()
+          }
+        }}
+      />
     </div>
   )
 }

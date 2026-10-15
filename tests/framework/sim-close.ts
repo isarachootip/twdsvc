@@ -137,6 +137,26 @@ export function handleCloseSimAction(
       return { handled: true }
     }
 
+    case 'cs_sign_intake': {
+      if (!['CS', 'ADMIN', 'CUSTOMER'].includes(actor.role)) return { handled: true, result: { success: false, error: '403: Forbidden' } }
+      if (updatedJob.stage === 'CANCELLED') return { handled: true, result: { success: false, error: 'Cannot sign cancelled job' } }
+      if (!payload.signatureUrl || typeof payload.signatureUrl !== 'string') {
+        return { handled: true, result: { success: false, error: 'Signature required' } }
+      }
+      return { handled: true }
+    }
+
+    case 'cs_sign_pickup': {
+      if (!['CS', 'ADMIN', 'CUSTOMER'].includes(actor.role)) return { handled: true, result: { success: false, error: '403: Forbidden' } }
+      if (!['READY_FOR_PICKUP', 'CLOSED_REPAIRED', 'CLOSED_NOT_REPAIRED'].includes(updatedJob.stage)) {
+        return { handled: true, result: { success: false, error: `Cannot cs_sign_pickup from ${updatedJob.stage}` } }
+      }
+      if (!payload.signatureUrl || typeof payload.signatureUrl !== 'string') {
+        return { handled: true, result: { success: false, error: 'Signature required' } }
+      }
+      return { handled: true }
+    }
+
     default:
       return { handled: false }
   }

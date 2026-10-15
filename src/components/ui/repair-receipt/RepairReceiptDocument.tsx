@@ -130,8 +130,21 @@ function SingleReceiptHalf({
           <div style={{ marginTop: 10 }}>ลงชื่อ ____________________________ วันที่ ______________</div>
         </div>
         <div>
-          <div style={{ fontWeight: 600 }}>ลูกค้าลงนาม</div>
-          <div style={{ marginTop: 10 }}>ลงชื่อ ____________________________ วันที่ ______________</div>
+          <div style={{ fontWeight: 600 }}>ลูกค้าลงนาม ({isReturn ? 'รับสินค้าคืนเรียบร้อย' : 'รับทราบเงื่อนไข'})</div>
+          {data.customerSignatureUrl ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 2 }}>
+              <img
+                src={data.customerSignatureUrl}
+                alt="Signature"
+                style={{ height: 28, maxWidth: 140, objectFit: 'contain' }}
+              />
+              <div style={{ fontSize: 9.5, color: '#4b5563', borderTop: '1px solid #9ca3af', width: 130, paddingTop: 1 }}>
+                ({data.customerName})
+              </div>
+            </div>
+          ) : (
+            <div style={{ marginTop: 10 }}>ลงชื่อ ____________________________ วันที่ ______________</div>
+          )}
         </div>
       </div>
 

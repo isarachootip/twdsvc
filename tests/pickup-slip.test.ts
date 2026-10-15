@@ -74,6 +74,8 @@ function mockJob(overrides: Partial<JobView> = {}): JobView {
     },
     inboundShipment: null,
     location: 'A-03-02',
+    intakeSignatureUrl: null,
+    pickupSignatureUrl: null,
     quote: null,
     items: [],
     ...overrides,

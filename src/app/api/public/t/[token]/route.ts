@@ -21,6 +21,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
               toStage: true,
               note: true,
               createdAt: true,
+              payload: true,
             },
           },
           quotes: {
@@ -82,6 +83,20 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
     csatUrl = `/s/${csatToken}`
   }
 
+  const getSig = (types: string[]): string | null => {
+    for (let i = job.events.length - 1; i >= 0; i--) {
+      const e = job.events[i]
+      if (types.includes(e.type)) {
+        const p = e.payload as Record<string, unknown> | null
+        if (p && typeof p.signatureUrl === 'string' && p.signatureUrl) return p.signatureUrl
+      }
+    }
+    return null
+  }
+
+  const intakeSignatureUrl = getSig(['INTAKE_SIGNED', 'JOB_OPENED'])
+  const pickupSignatureUrl = getSig(['PICKUP_SIGNED', 'JOB_CLOSED'])
+
   return NextResponse.json({
     jobNo: job.jobNo,
     productName: job.productName,
@@ -99,6 +114,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
     balance,
     payUrl,
     csatUrl,
+    intakeSignatureUrl,
+    pickupSignatureUrl,
     activeQuote: activeQuote
       ? {
           ...activeQuote,

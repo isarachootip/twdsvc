@@ -50,6 +50,7 @@ export default function CsReturnReceiptModal({ job, onClose }: CsReturnReceiptMo
       quoteNo={job.quote?.quoteNo ?? null}
       repairDays={job.quote?.repairDays ?? null}
       repairedSummary={job.decision === 'REJECTED' ? 'ไม่อนุมัติซ่อม — ส่งคืนสภาพเดิม' : 'ซ่อมเสร็จสมบูรณ์'}
+      customerSignatureUrl={job.pickupSignatureUrl ?? job.intakeSignatureUrl}
     />
   )
 }

@@ -15,6 +15,7 @@ interface PickupPanelProps {
   onDetail: () => void
   onEditLoc: () => void
   onPrintReturn: () => void
+  onSignPickup: () => void
 }
 
 export function PickupPanel({
@@ -27,6 +28,7 @@ export function PickupPanel({
   onDetail,
   onEditLoc,
   onPrintReturn,
+  onSignPickup,
 }: PickupPanelProps) {
   const [choice, setChoice] = useState<'TRADEIN' | 'RETURN_ONLY' | null>(null)
   const m = job.money
@@ -71,8 +73,25 @@ export function PickupPanel({
             </span>
           )}
         </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+          <span style={{ fontSize: 13 }}>ลายมือชื่อลูกค้ารับสินค้า</span>
+          {job.pickupSignatureUrl ? (
+            <span className="text-emerald-700 font-medium inline-flex items-center gap-1.5 text-xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+              ลงนามแล้ว
+            </span>
+          ) : (
+            <span className="text-amber-700 font-medium inline-flex items-center gap-1.5 text-xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+              ยังไม่ลงนาม
+            </span>
+          )}
+        </div>
         <button className="link-btn" style={{ marginTop: 10 }} onClick={onDetail}>↗ ดูใบเสนอราคาฉบับเต็มจาก VD</button>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
+          <button type="button" className="btn btn-outline btn-lg" onClick={onSignPickup} disabled={readOnly}>
+            ✍️ {job.pickupSignatureUrl ? 'เซ็นชื่อรับสินค้าใหม่' : 'ให้ลูกค้าเซ็นชื่อรับสินค้า'}
+          </button>
           <button type="button" className="btn btn-outline btn-lg" onClick={onPrintReturn}>
             🖨️ พิมพ์ใบส่งคืนสินค้าซ่อม
           </button>
@@ -112,8 +131,25 @@ export function PickupPanel({
       <div className="note">{m.intakePaid > 0
         ? `ค่าดำเนินการ ${fmtBaht(m.operationFee)}${m.shippingFee ? ` + ค่าขนส่ง 3PL ${fmtBaht(m.shippingFee)}` : ''} ที่ชำระตอนเปิดงาน ไม่สามารถคืนได้`
         : 'กรณีนี้ไม่มีค่าใช้จ่ายที่เรียกเก็บไปตอนเปิดงาน (มีประกัน + ส่งแบบมาตรฐาน)'}</div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+        <span style={{ fontSize: 13 }}>ลายมือชื่อลูกค้ารับสินค้า</span>
+        {job.pickupSignatureUrl ? (
+          <span className="text-emerald-700 font-medium inline-flex items-center gap-1.5 text-xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+            ลงนามแล้ว
+          </span>
+        ) : (
+          <span className="text-amber-700 font-medium inline-flex items-center gap-1.5 text-xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+            ยังไม่ลงนาม
+          </span>
+        )}
+      </div>
       <p style={{ fontSize: 13, margin: '10px 0 0' }}>ต้องการ Trade-in เพื่อรับส่วนลดซื้อสินค้าใหม่ หรือรับสินค้ากลับอย่างเดียว?</p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
+        <button type="button" className="btn btn-outline btn-lg" onClick={onSignPickup} disabled={readOnly}>
+          ✍️ {job.pickupSignatureUrl ? 'เซ็นชื่อรับสินค้าใหม่' : 'ให้ลูกค้าเซ็นชื่อรับสินค้า'}
+        </button>
         <button type="button" className="btn btn-outline btn-lg" onClick={onPrintReturn}>
           🖨️ พิมพ์ใบส่งคืนสินค้าซ่อม
         </button>
