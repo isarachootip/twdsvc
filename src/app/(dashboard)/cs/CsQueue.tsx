@@ -3,20 +3,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { TabBar, JobIdCell, EmptyCard, SlaCell } from '@/components/ui/Queue'
-import StageBadge from '@/components/ui/StageBadge'
+import { TabBar, EmptyCard } from '@/components/ui/Queue'
 import JobDetailModal from '@/components/jobs/JobDetail'
 import PaymentModal from '@/components/jobs/PaymentModal'
-import { useSort, Th } from '@/components/ui/Sortable'
 import { useQueue, useRowInputs } from '@/components/ui/useQueue'
 import { useToast } from '@/components/ui/Toast'
-import { fmtBaht, fmtPhone, CHANNEL_LABELS } from '@/lib/constants'
 import { findJobsByScan } from '@/lib/job-locator'
 import type { JobView } from '@/lib/job-view'
 
 import CsReceiveTable from './components/CsReceiveTable'
 import CsPickupTable from './components/CsPickupTable'
+import CsApprovalTable from './components/CsApprovalTable'
+import CsOpenedTable from './components/CsOpenedTable'
 import CsLocationModal from './components/CsLocationModal'
+import CsReturnReceiptModal from './components/CsReturnReceiptModal'
 import { PickupPanel, ApprovalPanel } from './components/CsPanels'
 
 const TABS = [
@@ -27,14 +27,6 @@ const TABS = [
 ]
 
 const TAB_KEYS = ['receive', 'pickup', 'approval', 'opened']
-
-const SORT = {
-  id: (j: JobView) => j.jobNo,
-  customer: (j: JobView) => j.customerName ?? '',
-  product: (j: JobView) => j.productName,
-  hours: (j: JobView) => j.sla?.hoursInStep ?? 0,
-  total: (j: JobView) => Number(j.quote?.total ?? 0),
-}
 
 export default function CsQueue({ role }: { role: string }) {
   const router = useRouter()
@@ -50,6 +42,7 @@ export default function CsQueue({ role }: { role: string }) {
   const [sel, setSel] = useState<JobView | null>(null)
   const [openId, setOpenId] = useState<string | null>(null)
   const [locJob, setLocJob] = useState<JobView | null>(null)
+  const [printJob, setPrintJob] = useState<JobView | null>(null)
   const [scan, setScan] = useState('')
   const [pay, setPay] = useState<{ job: JobView; kind: 'intake' | 'repair'; amount: number } | null>(null)
   const { toast } = useToast()
@@ -75,8 +68,6 @@ export default function CsQueue({ role }: { role: string }) {
 
   const list = (k: string) => data.tabs[k] ?? []
   const current = sel ? Object.values(data.tabs).flat().find(j => j.id === sel.id) ?? null : null
-  const s2 = useSort(list('approval'), SORT)
-  const s3 = useSort(list('opened'), SORT)
 
   const onScan = (e: React.FormEvent) => {
     e.preventDefault()
@@ -137,64 +128,20 @@ export default function CsQueue({ role }: { role: string }) {
         <div>
           {loading && <EmptyCard text="กำลังโหลด…" />}
           {!loading && tab === 'receive' && (
-            <CsReceiveTable
-              jobs={list('receive')}
-              readOnly={readOnly}
-              busy={busy}
-              inp={inp}
-              onOpen={setOpenId}
-              onReceive={handleReceive}
-            />
+            <CsReceiveTable jobs={list('receive')} readOnly={readOnly} busy={busy} inp={inp} onOpen={setOpenId} onReceive={handleReceive} />
           )}
 
           {!loading && tab === 'pickup' && (
-            <CsPickupTable
-              jobs={list('pickup')}
-              selId={sel?.id ?? null}
-              onSelect={setSel}
-              onEditLoc={setLocJob}
-              readOnly={readOnly}
-            />
+            <CsPickupTable jobs={list('pickup')} selId={sel?.id ?? null} onSelect={setSel} onEditLoc={setLocJob} readOnly={readOnly} />
           )}
 
-          {!loading && tab === 'approval' && (list('approval').length === 0 ? <EmptyCard text="ไม่มีงานรอลูกค้าอนุมัติ" /> : (
-            <div className="tcard"><div className="tbl-wrap"><table className="tbl">
-              <thead><tr><Th k="id" label="เลขที่ใบแจ้งซ่อม" {...s2} /><Th k="customer" label="ลูกค้า" {...s2} /><Th k="product" label="สินค้า" {...s2} /><Th k="total" label="ยอดเสนอราคา" {...s2} /><Th k="hours" label="รอมาแล้ว" {...s2} /></tr></thead>
-              <tbody>{s2.sorted.map(j => {
-                const expired = j.quote?.expiresAt && new Date(j.quote.expiresAt) < new Date()
-                return (
-                  <tr key={j.id} className={`clickable ${sel?.id === j.id ? 'highlight' : ''}`} onClick={() => setSel(j)}>
-                    <td><JobIdCell job={j} /></td>
-                    <td>{j.customerName}<div className="sub-mute">{fmtPhone(j.customerPhone)}</div></td>
-                    <td>{j.productName}<div className="sub-mute">{j.vendor?.name}</div></td>
-                    <td>{fmtBaht(Number(j.quote?.total ?? 0))}{expired && <div><span className="text-rose-600 font-medium text-xs">• ใบเสนอราคาหมดอายุ — โทรติดตาม</span></div>}</td>
-                    <td><SlaCell job={j} /></td>
-                  </tr>
-                )
-              })}</tbody>
-            </table></div></div>
-          ))}
+          {!loading && tab === 'approval' && (
+            <CsApprovalTable jobs={list('approval')} selId={sel?.id ?? null} onSelect={setSel} />
+          )}
 
-          {!loading && tab === 'opened' && (list('opened').length === 0 ? <EmptyCard text="ยังไม่มีงานที่เปิดวันนี้" /> : (
-            <div className="tcard"><div className="tbl-wrap"><table className="tbl">
-              <thead><tr><Th k="id" label="เลขที่ใบแจ้งซ่อม" {...s3} /><Th k="customer" label="ลูกค้า" {...s3} /><Th k="product" label="สินค้า" {...s3} /><th>ช่องทาง</th><th>สถานะ</th><th>ค่าดำเนินการ</th></tr></thead>
-              <tbody>{s3.sorted.map(j => (
-                <tr key={j.id}>
-                  <td><JobIdCell job={j} onOpen={() => setOpenId(j.id)} showDate /></td>
-                  <td>{j.customerName}<div className="sub-mute">{fmtPhone(j.customerPhone)}</div></td>
-                  <td>{j.productName}<div className="sub-mute">{j.brandName}</div></td>
-                  <td>{j.channel ? CHANNEL_LABELS[j.channel] : '-'}</td>
-                  <td><StageBadge stage={j.stage} intakeUnpaid={j.intakeUnpaid} /></td>
-                  <td>{j.money && j.money.intakeBalance > 0 ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
-                      <span className="text-amber-700 font-semibold text-xs">• ค้างชำระ {fmtBaht(j.money.intakeBalance)}</span>
-                      <button className="btn btn-primary" disabled={readOnly} onClick={() => setPay({ job: j, kind: 'intake', amount: j.money!.intakeBalance })}>รับชำระ</button>
-                    </div>
-                  ) : <span className="text-emerald-700 font-medium text-xs">• {(j.money?.intakeCharges ?? 0) > 0 ? 'ชำระเงินสำเร็จ' : 'ไม่มีค่าใช้จ่าย'}</span>}</td>
-                </tr>
-              ))}</tbody>
-            </table></div></div>
-          ))}
+          {!loading && tab === 'opened' && (
+            <CsOpenedTable jobs={list('opened')} readOnly={readOnly} onOpen={setOpenId} onPay={(j, a) => setPay({ job: j, kind: 'intake', amount: a })} />
+          )}
         </div>
 
         {current && (tab === 'pickup' || tab === 'approval') && (
@@ -202,7 +149,7 @@ export default function CsQueue({ role }: { role: string }) {
             <button className="close-btn" style={{ position: 'static', float: 'right' }} onClick={() => setSel(null)}>✕</button>
             <p className="sub-mute" style={{ margin: 0 }}>เลขที่ใบแจ้งซ่อม</p>
             <h3 style={{ fontSize: 17, margin: '2px 0 8px' }}>{current.jobNo}</h3>
-            <div className="info-row"><span className="info-label">ลูกค้า</span><span>{current.customerName} · {fmtPhone(current.customerPhone)}</span></div>
+            <div className="info-row"><span className="info-label">ลูกค้า</span><span>{current.customerName}</span></div>
             <div className="info-row"><span className="info-label">สินค้า</span><span>{current.productName} ({current.brandName})</span></div>
             {tab === 'pickup' && (
               <PickupPanel
@@ -214,6 +161,7 @@ export default function CsQueue({ role }: { role: string }) {
                 onTradein={() => router.push(`/tradein?type=2&jobId=${current.id}`)}
                 onDetail={() => setOpenId(current.id)}
                 onEditLoc={() => setLocJob(current)}
+                onPrintReturn={() => setPrintJob(current)}
               />
             )}
             {tab === 'approval' && (
@@ -235,6 +183,7 @@ export default function CsQueue({ role }: { role: string }) {
       <PaymentModal job={pay?.job ?? null} kind={pay?.kind ?? 'repair'} amount={pay?.amount ?? 0} onClose={() => setPay(null)} onPaid={() => { setPay(null); reload() }} />
       <JobDetailModal jobId={openId} role={role} onClose={() => setOpenId(null)} onChanged={() => reload()} />
       <CsLocationModal job={locJob} onClose={() => setLocJob(null)} onUpdated={() => reload()} run={run} busy={busy} />
+      <CsReturnReceiptModal job={printJob} onClose={() => setPrintJob(null)} />
     </div>
   )
 }

@@ -25,6 +25,7 @@ function mockJob(overrides: Partial<JobView> = {}): JobView {
     decision: 'PENDING',
     customerName: 'คุณสมชาย ใจดี',
     customerPhone: '081-234-5678',
+    customerAddress: 'บางนา กรุงเทพฯ',
     productName: 'เครื่องซักผ้า SAMSUNG WA13',
     brandName: 'SAMSUNG',
     sku: 'SKU-001',

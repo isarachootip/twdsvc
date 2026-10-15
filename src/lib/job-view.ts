@@ -143,6 +143,7 @@ export function serializeJob(job: JobWithList, role: string, opts?: { preferSla?
     decision: job.decision,
     customerName: role === 'S2' ? null : job.customerName,
     customerPhone: maskPhone(job.customerPhone, role),
+    customerAddress: role === 'S2' ? null : (job.customerAddress ?? null),
     productName: job.productName,
     brandName: job.brandName,
     sku: job.sku,

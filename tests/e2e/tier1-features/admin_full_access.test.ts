@@ -944,7 +944,7 @@ describe('Admin Full Access & Operational Flow Integration (R1, R2, R3)', () => 
     // Create job and advance to VD_INSPECTING
     const job = await prisma.job.create({
       data: {
-        jobNo: `JB-2026-${Math.floor(10000 + Math.random() * 90000)}`,
+        jobNo: `JB-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
         customerName: 'ลูกค้าทดสอบ Quote Endpoint',
         customerPhone: '0891112222',
         productName: 'สว่านโรตารี่',
@@ -1018,7 +1018,7 @@ describe('Admin Full Access & Operational Flow Integration (R1, R2, R3)', () => 
     // Create job at WAITING_APPROVAL with an existing initial quote
     const job = await prisma.job.create({
       data: {
-        jobNo: `JB-2026-${Math.floor(10000 + Math.random() * 90000)}`,
+        jobNo: `JB-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
         customerName: 'ลูกค้าทดสอบ Revise Quote',
         customerPhone: '0892223333',
         productName: 'เครื่องเจียร์ 4 นิ้ว',
@@ -1089,7 +1089,7 @@ describe('Admin Full Access & Operational Flow Integration (R1, R2, R3)', () => 
     // Create job in VD_INSPECTING with NO initial vendorCenterId
     const job = await prisma.job.create({
       data: {
-        jobNo: `JB-2026-${Math.floor(10000 + Math.random() * 90000)}`,
+        jobNo: `JB-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
         customerName: 'ลูกค้าทดสอบ Explicit VendorCenter',
         customerPhone: '0894445555',
         productName: 'ปั๊มน้ำอัตโนมัติ',
@@ -1135,7 +1135,7 @@ describe('Admin Full Access & Operational Flow Integration (R1, R2, R3)', () => 
     // Create job with null vendorCenterId
     const job = await prisma.job.create({
       data: {
-        jobNo: `JB-2026-${Math.floor(10000 + Math.random() * 90000)}`,
+        jobNo: `JB-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
         customerName: 'ลูกค้าทดสอบ Fallback VendorCenter',
         customerPhone: '0896667777',
         productName: 'เครื่องขัดกระดาษทราย',

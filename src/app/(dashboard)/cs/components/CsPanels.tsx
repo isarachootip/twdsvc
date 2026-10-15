@@ -14,6 +14,7 @@ interface PickupPanelProps {
   onTradein: () => void
   onDetail: () => void
   onEditLoc: () => void
+  onPrintReturn: () => void
 }
 
 export function PickupPanel({
@@ -25,6 +26,7 @@ export function PickupPanel({
   onTradein,
   onDetail,
   onEditLoc,
+  onPrintReturn,
 }: PickupPanelProps) {
   const [choice, setChoice] = useState<'TRADEIN' | 'RETURN_ONLY' | null>(null)
   const m = job.money
@@ -71,6 +73,9 @@ export function PickupPanel({
         </div>
         <button className="link-btn" style={{ marginTop: 10 }} onClick={onDetail}>↗ ดูใบเสนอราคาฉบับเต็มจาก VD</button>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
+          <button type="button" className="btn btn-outline btn-lg" onClick={onPrintReturn}>
+            🖨️ พิมพ์ใบส่งคืนสินค้าซ่อม
+          </button>
           {m.balance > 0 && <button className="btn btn-outline btn-lg" disabled={readOnly} onClick={onPay}>รับชำระ {fmtBaht(m.balance)}</button>}
           <button
             className="btn btn-primary btn-lg"
@@ -109,6 +114,9 @@ export function PickupPanel({
         : 'กรณีนี้ไม่มีค่าใช้จ่ายที่เรียกเก็บไปตอนเปิดงาน (มีประกัน + ส่งแบบมาตรฐาน)'}</div>
       <p style={{ fontSize: 13, margin: '10px 0 0' }}>ต้องการ Trade-in เพื่อรับส่วนลดซื้อสินค้าใหม่ หรือรับสินค้ากลับอย่างเดียว?</p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
+        <button type="button" className="btn btn-outline btn-lg" onClick={onPrintReturn}>
+          🖨️ พิมพ์ใบส่งคืนสินค้าซ่อม
+        </button>
         <button className={`btn btn-outline ${choice === 'TRADEIN' ? 'active' : ''}`} disabled={readOnly} onClick={() => { setChoice('TRADEIN'); onTradein() }}>ต้องการ Trade-in ↗ ไปหน้า Gen คูปอง</button>
         <button className={`btn ${choice === 'RETURN_ONLY' ? 'btn-outline' : ''}`} disabled={readOnly} onClick={() => setChoice('RETURN_ONLY')}>รับสินค้ากลับอย่างเดียว</button>
         {choice && <div className="note">{choice === 'RETURN_ONLY' ? 'ลูกค้าเลือกรับสินค้ากลับอย่างเดียว' : 'ออกคูปอง Trade-in แล้ว (ถ้ายังไม่ได้ออก ให้กดปุ่มด้านบน)'}</div>}
