@@ -1,6 +1,7 @@
 'use client'
 
 import { fmtBaht } from '@/lib/constants'
+import { useBranding } from '@/lib/hooks/useBranding'
 
 export interface QuoteDocData {
   quoteNo: string
@@ -10,6 +11,9 @@ export interface QuoteDocData {
   branchName?: string | null
   branchAddress?: string | null
   vendorLabel?: string | null
+  logoUrl?: string | null
+  companyName?: string | null
+  taxId?: string | null
   lines: Array<{ description: string; amount: number; type?: string; partWarrantyDays?: number; partWaitDays?: number }>
   subtotal: number
   vatAmount: number
@@ -20,14 +24,37 @@ export interface QuoteDocData {
   status?: string
 }
 
-/** เอกสารใบเสนอราคา (05 §2.3) — หัว "ศูนย์บริการซ่อมไทวัสดุ" + ที่อยู่สาขาที่เปิดงาน */
+/** เอกสารใบเสนอราคา (05 §2.3) — หัว "ศูนย์บริการซ่อมไทวัสดุ" + โลโก้ + ที่อยู่สาขาที่เปิดงาน */
 export default function QuoteDoc({ q }: { q: QuoteDocData }) {
+  const { branding } = useBranding()
+  const logoSrc = q.logoUrl || branding.logoUrl
+  const company = q.companyName || branding.companyName
+  const taxId = q.taxId || branding.taxId
+
   return (
     <div className="print-area">
-      <div style={{ textAlign: 'center', borderBottom: '1px solid var(--border)', paddingBottom: 12, marginBottom: 12 }}>
-        <p style={{ fontWeight: 600, fontSize: 16, margin: 0 }}>ศูนย์บริการซ่อมไทวัสดุ</p>
-        <p style={{ fontSize: 12, color: 'var(--text-mute)', margin: '2px 0 0' }}>Thaiwasadu Service Center</p>
-        {(q.branchName || q.branchAddress) && <p style={{ fontSize: 11.5, color: 'var(--text-mute)', margin: '4px 0 0' }}>{[q.branchName, q.branchAddress].filter(Boolean).join(' — ')}</p>}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border)', paddingBottom: 12, marginBottom: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={logoSrc}
+            alt={company}
+            style={{ width: 120, height: 'auto', maxHeight: 42, objectFit: 'contain' }}
+          />
+          <div>
+            <p style={{ fontWeight: 600, fontSize: 15, margin: 0 }}>ศูนย์บริการซ่อมไทวัสดุ</p>
+            <p style={{ fontSize: 11.5, color: 'var(--text-mute)', margin: '1px 0 0' }}>{company} · เลขผู้เสียภาษี {taxId}</p>
+            {(q.branchName || q.branchAddress) && (
+              <p style={{ fontSize: 11, color: 'var(--text-mute)', margin: '2px 0 0' }}>
+                {[q.branchName, q.branchAddress].filter(Boolean).join(' — ')}
+              </p>
+            )}
+          </div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontWeight: 700, fontSize: 15, color: 'inherit' }}>ใบเสนอราคา</div>
+          <div style={{ fontSize: 11.5, color: 'var(--text-mute)' }}>Quotation</div>
+        </div>
       </div>
       <div className="grid2" style={{ fontSize: 12.5, marginBottom: 10 }}>
         <div><span style={{ color: 'var(--text-2)' }}>เลขที่ใบเสนอราคา:</span> <b>{q.quoteNo}</b></div>

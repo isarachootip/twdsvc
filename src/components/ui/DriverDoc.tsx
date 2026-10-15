@@ -2,15 +2,27 @@
 
 import Modal from './Modal'
 import type { JobView } from '@/lib/job-view'
+import { useBranding } from '@/lib/hooks/useBranding'
 
 export default function DriverDoc({ doc, onClose }: { doc: { job: JobView; leg: string; url?: string } | null; onClose: () => void }) {
+  const { branding } = useBranding()
   if (!doc) return null
   const j = doc.job
   return (
     <Modal open onClose={onClose} size="narrow">
       <div className="print-area">
-        <p style={{ fontWeight: 600, fontSize: 15, margin: '0 0 4px' }}>{doc.url ? 'ลิงก์งานสำหรับคนรถ' : 'เอกสารให้คนรถ'}</p>
-        <p className="sub-mute" style={{ margin: '0 0 10px' }}>{doc.leg}</p>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, paddingBottom: 6, borderBottom: '1px solid var(--border)' }}>
+          <div>
+            <p style={{ fontWeight: 600, fontSize: 15, margin: '0 0 2px' }}>{doc.url ? 'ลิงก์งานสำหรับคนรถ' : 'เอกสารให้คนรถ'}</p>
+            <p className="sub-mute" style={{ margin: 0, fontSize: 11.5 }}>{doc.leg}</p>
+          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={branding.logoUrl}
+            alt={branding.companyName}
+            style={{ width: 90, height: 'auto', maxHeight: 28, objectFit: 'contain' }}
+          />
+        </div>
         <div className="info-row"><span className="info-label">เลขที่ใบแจ้งซ่อม</span><b>{j.jobNo}</b></div>
         <div className="info-row"><span className="info-label">สินค้า</span><span>{j.productName}</span></div>
         <div className="info-row"><span className="info-label">สาขา</span><span>{j.branch.name}</span></div>

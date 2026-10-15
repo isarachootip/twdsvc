@@ -3,62 +3,25 @@
 import QrImage from '@/components/ui/QrImage'
 import { absUrl } from '@/lib/client'
 import { fmtBaht } from '@/lib/constants'
+import { useBranding, type BrandingInfo } from '@/lib/hooks/useBranding'
 
-export interface RepairReceiptBranchInfo {
-  code?: string | null
-  stCode?: string | null
-  name: string
-  legalName?: string | null
-  address?: string | null
-  subdistrict?: string | null
-  district?: string | null
-  province?: string | null
-  postalCode?: string | null
-  phone?: string | null
-}
+import {
+  type RepairReceiptBranchInfo,
+  type RepairReceiptData,
+  DEFAULT_RECEIPT_REMARKS,
+} from './repair-receipt-types'
 
-export interface RepairReceiptData {
-  docType?: 'INTAKE' | 'RETURN'
-  jobNo: string
-  dateText: string
-  branch: RepairReceiptBranchInfo
-  customerName: string
-  customerPhone: string
-  customerAddress?: string | null
-  sku?: string | null
-  serialNo?: string | null
-  productName: string
-  brandName: string
-  hasWarranty: boolean
-  symptom: string
-  defect?: string | null
-  sizeName?: string | null
-  shippingMethodText?: string | null
-  vendorLabel?: string | null
-  quoteNo?: string | null
-  posReceiptNo?: string | null
-  repairDays?: number | null
-  expectedPickupDate?: string | null
-  repairedSummary?: string | null
-  amountBaht: number
-  paid: boolean
-  trackingUrl?: string | null
-}
-
-const REMARKS = [
-  'โปรดเก็บเอกสารเพื่อเป็นหลักฐานในการตรวจสอบรายละเอียดการซ่อมสินค้า',
-  'บริษัทขอสงวนสิทธิ์ เรียกเก็บค่าใช้จ่ายที่เกิดขึ้นตามจริง หากสินค้าไม่ได้อยู่ในการรับประกัน',
-  'บริษัทขอสงวนสิทธิ์ในการรับฝากสินค้าซ่อมไม่เกิน 14 วันนับจากวันที่สินค้าซ่อมเสร็จ',
-  'กำหนดระยะเวลาส่งซ่อมโดยประมาณ ไม่เกิน 30 วัน',
-  'บริษัทฯ รับประกันหลังการซ่อม ภายใน 30 วัน (เงื่อนไขเป็นไปตามข้อกำหนดของ Supplier)',
-]
+export type { RepairReceiptBranchInfo, RepairReceiptData }
+export const REMARKS = DEFAULT_RECEIPT_REMARKS
 
 function SingleReceiptHalf({
   data,
   copyLabel,
+  branding,
 }: {
   data: RepairReceiptData
   copyLabel: 'สำหรับลูกค้า' | 'สำหรับบริษัท'
+  branding?: BrandingInfo
 }) {
   const isReturn = data.docType === 'RETURN'
   const title = isReturn ? 'ใบส่งคืนสินค้าซ่อม' : 'ใบรับแจ้งซ่อมสินค้า'
@@ -70,6 +33,10 @@ function SingleReceiptHalf({
     .filter(Boolean)
     .join(' ')
 
+  const logoSrc = data.logoUrl || branding?.logoUrl || '/images/thaiwatsadu-logo.png'
+  const compName = data.companyName || branding?.companyName || b.legalName || 'บริษัท ซีอาร์ซี ไทวัสดุ จำกัด'
+  const taxIdDisplay = data.taxId || branding?.taxId || '0105555021215'
+
   return (
     <div className="receipt-half" style={{ fontSize: 11.5, lineHeight: 1.38, color: '#111827', padding: '4mm 6mm' }}>
       {/* Header: Logo + Branch Info + Document No & QR */}
@@ -77,17 +44,17 @@ function SingleReceiptHalf({
         <div style={{ paddingTop: 2 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/images/thaiwatsadu-logo.png"
-            alt="ไทวัสดุ THAIWATSADU.COM"
-            style={{ width: 132, height: 'auto', objectFit: 'contain', display: 'block' }}
+            src={logoSrc}
+            alt={compName}
+            style={{ width: 132, height: 'auto', maxHeight: 44, objectFit: 'contain', display: 'block' }}
           />
         </div>
         <div style={{ fontSize: 11, lineHeight: 1.35 }}>
           <div style={{ fontWeight: 700, fontSize: 13, color: '#111827' }}>{title}</div>
           <div style={{ fontWeight: 600 }}>
-            {b.legalName || 'บริษัท ซีอาร์ซี ไทวัสดุ จำกัด'} ({branchDisplayName})
+            {compName} ({branchDisplayName})
           </div>
-          <div>สาขาที่ {branchCodeDisplay} เลขประจำตัวผู้เสียภาษี 0105555021215</div>
+          <div>สาขาที่ {branchCodeDisplay} เลขประจำตัวผู้เสียภาษี {taxIdDisplay}</div>
           {(addressLine1 || addressLine2) && (
             <div>{[addressLine1, addressLine2].filter(Boolean).join(' ')}</div>
           )}
@@ -172,7 +139,12 @@ function SingleReceiptHalf({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderTop: '1px solid #e5e7eb', paddingTop: 3 }}>
         <div style={{ fontSize: 9.5, color: '#374151', lineHeight: 1.3 }}>
           <b>หมายเหตุ :</b>
-          {REMARKS.map((r, i) => (
+          {((data.footerNotes && data.footerNotes.length > 0)
+            ? data.footerNotes
+            : (branding?.footerNotes && branding.footerNotes.length > 0)
+              ? branding.footerNotes
+              : REMARKS
+          ).map((r, i) => (
             <div key={i}>* {r}</div>
           ))}
         </div>
@@ -185,9 +157,10 @@ function SingleReceiptHalf({
 }
 
 export function RepairReceiptDocument({ data }: { data: RepairReceiptData }) {
+  const { branding } = useBranding()
   return (
     <div className="repair-receipt-a4" style={{ background: '#ffffff', color: '#111827' }}>
-      <SingleReceiptHalf data={data} copyLabel="สำหรับลูกค้า" />
+      <SingleReceiptHalf data={data} copyLabel="สำหรับลูกค้า" branding={branding} />
       <div
         className="receipt-cut-line"
         style={{
@@ -201,7 +174,7 @@ export function RepairReceiptDocument({ data }: { data: RepairReceiptData }) {
           ✂ รอยปรุสำหรับฉีกแบ่งครึ่ง (ส่วนบน: สำหรับลูกค้า / ส่วนล่าง: สำหรับบริษัท)
         </span>
       </div>
-      <SingleReceiptHalf data={data} copyLabel="สำหรับบริษัท" />
+      <SingleReceiptHalf data={data} copyLabel="สำหรับบริษัท" branding={branding} />
     </div>
   )
 }

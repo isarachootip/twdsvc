@@ -30,6 +30,17 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   DISTRICT_MANAGERS: JSON.stringify({}), // siteId → ชื่อผู้จัดการเขต
   VENDOR_SIZES: JSON.stringify({}), // vendorParentId → sizeCategoryId[]
   VENDOR_DEDUCTIONS: JSON.stringify([]), // [{id, vendorParentId, jobNo?, amount, reason, createdAt, usedInBatch?}]
+  // Branding & Document Configuration
+  COMPANY_LOGO_URL: '/images/thaiwatsadu-logo.png',
+  COMPANY_NAME: 'บริษัท ซีอาร์ซี ไทวัสดุ จำกัด',
+  COMPANY_TAX_ID: '0105555021215',
+  DOCUMENT_FOOTER_NOTE: JSON.stringify([
+    'โปรดเก็บเอกสารเพื่อเป็นหลักฐานในการตรวจสอบรายละเอียดการซ่อมสินค้า',
+    'บริษัทขอสงวนสิทธิ์ เรียกเก็บค่าใช้จ่ายที่เกิดขึ้นตามจริง หากสินค้าไม่ได้อยู่ในการรับประกัน',
+    'บริษัทขอสงวนสิทธิ์ในการรับฝากสินค้าซ่อมไม่เกิน 14 วันนับจากวันที่สินค้าซ่อมเสร็จ',
+    'กำหนดระยะเวลาส่งซ่อมโดยประมาณ ไม่เกิน 30 วัน',
+    'บริษัทฯ รับประกันหลังการซ่อม ภายใน 30 วัน (เงื่อนไขเป็นไปตามข้อกำหนดของ Supplier)',
+  ]),
 }
 
 export async function getSettings(keys?: string[]): Promise<Record<string, string>> {
@@ -81,3 +92,34 @@ export function publicBaseUrl(req?: Request): string {
   }
   return ''
 }
+
+export interface BrandingSettings {
+  logoUrl: string
+  companyName: string
+  taxId: string
+  footerNotes: string[]
+}
+
+export async function getBrandingSettings(): Promise<BrandingSettings> {
+  const rows = await getSettings([
+    'COMPANY_LOGO_URL',
+    'COMPANY_NAME',
+    'COMPANY_TAX_ID',
+    'DOCUMENT_FOOTER_NOTE',
+  ])
+  let footerNotes: string[] = []
+  try {
+    const raw = rows.DOCUMENT_FOOTER_NOTE || SETTING_DEFAULTS.DOCUMENT_FOOTER_NOTE
+    footerNotes = JSON.parse(raw)
+    if (!Array.isArray(footerNotes)) footerNotes = []
+  } catch {
+    footerNotes = []
+  }
+  return {
+    logoUrl: rows.COMPANY_LOGO_URL || SETTING_DEFAULTS.COMPANY_LOGO_URL,
+    companyName: rows.COMPANY_NAME || SETTING_DEFAULTS.COMPANY_NAME,
+    taxId: rows.COMPANY_TAX_ID || SETTING_DEFAULTS.COMPANY_TAX_ID,
+    footerNotes,
+  }
+}
+

@@ -23,6 +23,7 @@ import './unit/shipping-label-builder.test'
 import './unit/print-modal-css.test'
 import './unit/barcode-scanner.test'
 import './unit/eordering.test'
+import './unit/branding-config.test'
 
 // Tier 2: Boundary & Corner Cases
 import './e2e/tier2-boundaries/boundary_financial_satang.test'

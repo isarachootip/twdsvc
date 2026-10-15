@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/client'
 import { useSave, SaveButton, Row, Loading } from './admin-helpers'
+import { BrandingConfigCard } from './BrandingConfigCard'
 
 export function GeneralSection() {
   const [s, setS] = useState<Record<string, string> | null>(null)
@@ -40,9 +41,24 @@ export function GeneralSection() {
     </div>
   )
 
+  let footerNoteStr = ''
+  try {
+    const parsed = JSON.parse(s.DOCUMENT_FOOTER_NOTE || '[]')
+    footerNoteStr = Array.isArray(parsed) ? parsed.join('\n') : ''
+  } catch {
+    footerNoteStr = s.DOCUMENT_FOOTER_NOTE || ''
+  }
+
   return (
-    <div className="pcard">
-      <h3>ตั้งค่าทั่วไป</h3>
+    <div>
+      <BrandingConfigCard
+        initialLogoUrl={s.COMPANY_LOGO_URL}
+        initialCompanyName={s.COMPANY_NAME}
+        initialTaxId={s.COMPANY_TAX_ID}
+        initialFooterNote={footerNoteStr}
+      />
+      <div className="pcard">
+        <h3>ตั้งค่าทั่วไป</h3>
       <div className="grid3" style={{ marginTop: 10 }}>
         {f('VAT_RATE', 'อัตรา VAT', 'เช่น 0.07 = 7%')}
         {f('QUOTE_EXPIRY_DAYS', 'อายุลิงก์ใบเสนอราคา (วัน)')}
@@ -80,6 +96,7 @@ export function GeneralSection() {
           }
         />
       </Row>
+    </div>
     </div>
   )
 }

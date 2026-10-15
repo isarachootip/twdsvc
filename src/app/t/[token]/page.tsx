@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { STAGE_ORDER, STAGE_LABELS, Stage } from '@/lib/constants'
 import { formatSatang } from '@/lib/fees'
+import { useBranding } from '@/lib/hooks/useBranding'
 
 interface TrackingEvent {
   type: string
@@ -54,6 +55,7 @@ const CUSTOMER_MILESTONES = [
 
 export default function PublicTrackingPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = use(params)
+  const { branding } = useBranding()
   const [data, setData] = useState<TrackingData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -114,9 +116,17 @@ export default function PublicTrackingPage({ params }: { params: Promise<{ token
       <div className="max-w-[440px] mx-auto min-h-screen bg-[#FAF7F2] shadow-sm flex flex-col justify-between">
         <div>
           {/* Header */}
-          <div className="bg-[#C8102E] text-white py-5 px-6 text-center shadow-md">
-            <h1 className="text-base font-semibold tracking-wide">ศูนย์บริการซ่อมไทวัสดุ</h1>
-            <p className="text-xs opacity-90 mt-0.5 font-light">ติดตามสถานะงานซ่อม — {data.jobNo}</p>
+          <div className="bg-[#C8102E] text-white py-4 px-6 text-center shadow-md">
+            <div className="flex items-center justify-center gap-3 mb-1.5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={branding.logoUrl}
+                alt={branding.companyName}
+                className="h-8 max-w-[130px] object-contain bg-white/95 rounded px-1.5 py-0.5"
+              />
+              <h1 className="text-base font-semibold tracking-wide">ศูนย์บริการซ่อมไทวัสดุ</h1>
+            </div>
+            <p className="text-xs opacity-90 font-light">ติดตามสถานะงานซ่อม — {data.jobNo}</p>
           </div>
 
           <div className="p-4 space-y-3.5">
