@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { OverdueSummary, KpiGrid, TabBar, SlaCell, JobIdCell, QueueHeader, EmptyCard, DateRange } from '@/components/ui/Queue'
 import PhotoButton from '@/components/ui/PhotoButton'
 import PrintLabel, { type LabelData } from '@/components/ui/PrintLabel'
+import { buildReturnBoxLabel } from '@/lib/shipping-labels'
 import DriverDoc from '@/components/ui/DriverDoc'
 import JobDetailModal from '@/components/jobs/JobDetail'
 import LonPreview from '@/components/jobs/LonPreview'
@@ -262,17 +263,25 @@ export default function VdClient({ role }: { role: string }) {
             <tr key={j.id} className={rowCls(j)}>
               <td><JobIdCell job={j} onOpen={() => setOpenId(j.id)} /></td><td>{j.customerName ?? 'สต็อกสาขา'}</td><td>{j.productName}{j.decision === 'REJECTED' && <div><span className="badge b-coral">ลูกค้าไม่อนุมัติซ่อม</span></div>}</td>
               <td><span className="badge b-blue">{RETURN_CH[j.channel ?? ''] ?? '-'}</span></td><td><SlaCell job={j} /></td>
-              <td>{done[j.id] ? <span className="badge b-green">{done[j.id]}</span> : j.channel === 'TPL' ? (
+              <td>{done[j.id] ? (
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span className="badge b-green">{done[j.id]}</span>
+                  <button type="button" className="btn" onClick={() => setLabel(buildReturnBoxLabel(j, { source: 'VD' }))}>🖨️ พิมพ์ใบปะหน้าส่งคืน</button>
+                </div>
+              ) : j.channel === 'TPL' ? (
                 <button className="btn btn-primary" disabled={readOnly || busy !== null} onClick={async () => {
                   const r = await run(j, 'vd_return_pack', {}, 'รอ 3PL มารับ (Auto Book แล้ว)')
-                  if (r) setLabel({ title: 'ใบปะหน้ากล่อง (ขาส่งคืน)', subtitle: `จาก ${j.vendor?.code ?? ''} ${j.vendor?.name ?? ''} (Auto Book 3PL #${r.trackingNo ?? ''})`, jobNo: j.jobNo, rows: [['สาขาปลายทาง', j.branch.name], ['ช่องทางส่งคืน', '3PL']] })
+                  if (r) setLabel(buildReturnBoxLabel(j, { source: 'VD', trackingNo: typeof r.trackingNo === 'string' ? r.trackingNo : null }))
                 }}>Confirm ซ่อมเสร็จ พร้อมส่งคืน (Auto Book 3PL)</button>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-start' }}>
-                  <PhotoButton photos={inp.photos(j.id)} onChange={p => inp.setPhotos(j.id, p)} disabled={readOnly} />
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <button type="button" className="btn" onClick={() => setLabel(buildReturnBoxLabel(j, { source: 'VD' }))}>🖨️ ใบปะหน้าส่งคืน</button>
+                    <PhotoButton photos={inp.photos(j.id)} onChange={p => inp.setPhotos(j.id, p)} disabled={readOnly} />
+                  </div>
                   <button className="btn btn-primary" disabled={!inp.photos(j.id).length || readOnly || busy !== null} onClick={async () => {
                     const r = await run(j, 'vd_return_pack', { photos: inp.photos(j.id) }, j.channel === 'DC' ? 'ส่งให้ DC แล้ว — รอ DC รับและส่งต่อสาขา' : 'ส่งมอบ GR แล้ว — รอ GR แจ้งลูกค้า')
-                    if (r) setLabel({ title: 'ใบปะหน้ากล่อง (ขาส่งคืน)', subtitle: `จาก ${j.vendor?.code ?? ''} ${j.vendor?.name ?? ''}`, jobNo: j.jobNo, rows: [['สาขาปลายทาง', j.branch.name], ['ช่องทางส่งคืน', j.channel === 'DC' ? 'DC' : 'สาขา (ส่งมอบ GR)']] })
+                    if (r) setLabel(buildReturnBoxLabel(j, { source: 'VD' }))
                   }}>{j.channel === 'DC' ? 'Pack เสร็จ + พิมพ์ใบปะหน้า (ส่งให้ DC)' : 'Pack เสร็จ + ส่งมอบให้ GR'}</button>
                 </div>
               )}</td>

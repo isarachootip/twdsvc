@@ -1,6 +1,8 @@
 'use client'
 
+import { useRef } from 'react'
 import Modal from '@/components/ui/Modal'
+import { printElement } from '@/lib/print-element'
 import ThaiwasaduLabel from './ThaiwasaduLabel'
 import KexLabel from './KexLabel'
 import type { UnifiedShippingLabelData } from '@/lib/shipping-labels/types'
@@ -11,6 +13,7 @@ export interface ShippingLabelModalProps {
 }
 
 export default function ShippingLabelModal({ data, onClose }: ShippingLabelModalProps) {
+  const printRef = useRef<HTMLDivElement>(null)
   if (!data) return null
 
   const title =
@@ -29,7 +32,7 @@ export default function ShippingLabelModal({ data, onClose }: ShippingLabelModal
         </p>
       </div>
 
-      <div className="print-area" style={{ display: 'flex', justifyContent: 'center' }}>
+      <div ref={printRef} className="print-area" style={{ display: 'flex', justifyContent: 'center' }}>
         {data.type === 'KEX' ? (
           <KexLabel data={data} />
         ) : (
@@ -44,7 +47,7 @@ export default function ShippingLabelModal({ data, onClose }: ShippingLabelModal
         <button
           type="button"
           className="btn btn-primary"
-          onClick={() => window.print()}
+          onClick={() => printElement(printRef.current, title)}
           style={{ display: 'flex', alignItems: 'center', gap: 6 }}
         >
           <span>🖨️ พิมพ์ใบปะหน้า</span>
@@ -53,3 +56,4 @@ export default function ShippingLabelModal({ data, onClose }: ShippingLabelModal
     </Modal>
   )
 }
+

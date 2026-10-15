@@ -3,6 +3,7 @@
 import type { ThaiwasaduLabelData } from '@/lib/shipping-labels/types'
 import BarcodeSvg from '@/components/ui/BarcodeSvg'
 import QrImage from '@/components/ui/QrImage'
+import { useBranding } from '@/lib/hooks/useBranding'
 
 export interface ThaiwasaduLabelProps {
   data: ThaiwasaduLabelData
@@ -10,6 +11,8 @@ export interface ThaiwasaduLabelProps {
 
 export default function ThaiwasaduLabel({ data }: ThaiwasaduLabelProps) {
   const isDc = data.type === 'DC'
+  const { branding } = useBranding()
+  const logoSrc = branding.logoUrl || '/images/thaiwatsadu-logo.png'
 
   return (
     <div
@@ -28,12 +31,23 @@ export default function ThaiwasaduLabel({ data }: ThaiwasaduLabelProps) {
       }}
     >
       {/* ─── 1. Header: Logo & Channel Badge ─── */}
-      <div style={{ backgroundColor: '#000000', color: '#ffffff', padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontWeight: 800, fontSize: 13, letterSpacing: 0.5 }}>THAIWASADU SERVICE CENTER</span>
-        <span style={{ backgroundColor: '#ffffff', color: '#000000', fontWeight: 800, fontSize: 12, padding: '2px 10px', borderRadius: 9999 }}>
+      <div style={{ backgroundColor: '#000000', color: '#ffffff', padding: '6px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ backgroundColor: '#ffffff', padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center' }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={logoSrc}
+              alt={branding.companyName}
+              style={{ height: 22, width: 'auto', maxWidth: 92, objectFit: 'contain', display: 'block' }}
+            />
+          </div>
+          <span style={{ fontWeight: 800, fontSize: 12, letterSpacing: 0.4 }}>THAIWASADU SERVICE CENTER</span>
+        </div>
+        <span style={{ backgroundColor: '#ffffff', color: '#000000', fontWeight: 800, fontSize: 11.5, padding: '2px 9px', borderRadius: 4, whiteSpace: 'nowrap' }}>
           {data.headerBadge}
         </span>
       </div>
+
 
       {/* ─── 2. Job Number, Top QR Code & Box ─── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 64px 70px', borderBottom: '2px solid #000', padding: '6px 10px', alignItems: 'center' }}>

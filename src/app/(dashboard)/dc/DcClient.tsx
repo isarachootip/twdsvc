@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { OverdueSummary, KpiGrid, TabBar, SlaCell, JobIdCell, QueueHeader, EmptyCard, DateRange } from '@/components/ui/Queue'
 import PhotoButton from '@/components/ui/PhotoButton'
 import PrintLabel, { type LabelData } from '@/components/ui/PrintLabel'
+import { buildReturnBoxLabel } from '@/lib/shipping-labels'
 import JobDetailModal from '@/components/jobs/JobDetail'
 import DriverDoc from '@/components/ui/DriverDoc'
 import { useSort, Th } from '@/components/ui/Sortable'
@@ -206,7 +207,12 @@ export default function DcClient({ role }: { role: string }) {
             return (
               <tr key={j.id} className={rowCls(j)}>
                 <td><JobIdCell job={j} onOpen={() => setOpenId(j.id)} /></td><td>{j.branch.name}</td><td>{j.customerName ?? 'สต็อกสาขา'}</td><td>{j.productName}</td><td><SlaCell job={j} /></td>
-                <td>{done[j.id] ? <span className="badge b-green">ส่งคืนกลับสาขาแล้ว — รอ GR รับที่สาขา</span> : !dispatched ? (
+                <td>{done[j.id] ? (
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <span className="badge b-green">ส่งคืนกลับสาขาแล้ว — รอ GR รับที่สาขา</span>
+                    <button type="button" className="btn" onClick={() => setLabel(buildReturnBoxLabel(j, { source: 'DC' }))}>🖨️ พิมพ์ใบปะหน้าส่งคืน</button>
+                  </div>
+                ) : !dispatched ? (
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     <button className="btn" disabled={readOnly || busy !== null} onClick={() => dispatch(j, 'PRINT', 'คลัง DC → สาขา')}>Print เอกสารให้คนรถ</button>
                     <button className="btn" disabled={readOnly || busy !== null} onClick={() => dispatch(j, 'LINK', 'คลัง DC → สาขา')}>ส่ง Link ให้คนรถ</button>
@@ -214,7 +220,7 @@ export default function DcClient({ role }: { role: string }) {
                 ) : (
                   <button className="btn btn-primary" disabled={readOnly || busy !== null} onClick={async () => {
                     const r = await run(j, 'dc_dispatch_confirm', {}, 'ส่งคืนกลับสาขาแล้ว — รอ GR รับที่สาขา')
-                    if (r) setLabel({ title: 'ใบปะหน้ากล่อง (ขาคืน)', subtitle: 'จากคลัง DC', jobNo: j.jobNo, rows: [['สาขาปลายทาง', j.branch.name], ['สินค้า', j.productName]] })
+                    if (r) setLabel(buildReturnBoxLabel(j, { source: 'DC' }))
                   }}>ยืนยัน: จัดส่งออกจาก DC แล้ว</button>
                 )}</td>
               </tr>

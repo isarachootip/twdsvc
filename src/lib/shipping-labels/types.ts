@@ -57,4 +57,39 @@ export interface KexLabelData {
   portalCheckedText?: string
 }
 
+export interface ReturnBoxLabelData {
+  title: string
+  subtitle?: string
+  jobNo: string
+  rows: Array<[string, string]>
+  headerBadge?: string
+  channelLabel?: string
+  box?: string
+  dateText?: string
+  trackingNo?: string | null
+  origin?: {
+    roleLabel: string
+    name: string
+    phone?: string | null
+    address?: string | null
+  }
+  destination?: {
+    roleLabel: string
+    name: string
+    code: string
+    address?: string | null
+  }
+  product?: {
+    name: string
+    sku?: string | null
+    serialNo?: string | null
+    repairOutcome?: string
+  }
+  customer?: {
+    name: string
+    phone?: string | null
+  }
+}
+
 export type UnifiedShippingLabelData = ThaiwasaduLabelData | KexLabelData
+

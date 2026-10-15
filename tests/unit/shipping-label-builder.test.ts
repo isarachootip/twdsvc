@@ -4,6 +4,9 @@ import {
   formatThaiNumericDate,
   buildKexLabel,
   formatKexTracking,
+  buildReturnBoxLabel,
+  deriveBranchSortCode,
+  normalizeReturnLabelData,
 } from '@/lib/shipping-labels'
 import type { JobView } from '@/lib/job-view'
 
@@ -103,5 +106,60 @@ assert.strictEqual(kexLabel.trackingNo, 'KEX 100 150 586 451')
 assert.strictEqual(kexLabel.barcodeValue, 'KEX100150586451')
 assert.strictEqual(kexLabel.recipient.name, 'บ.ช่างเจริญ')
 assert.strictEqual(kexLabel.pieces, '1 Of 1')
+
+// 5. Return Box Label Building (VD -> 3PL -> Branch)
+const rs4Job = {
+  ...baseMockJob,
+  jobNo: 'RS4-14102026-0001',
+  channel: 'TPL',
+  decision: 'APPROVED',
+  branch: { id: 'b-rs4', name: 'สาขารังสิต คลอง4', nickname: null, address: 'รังสิต-นครนายก คลอง 4' },
+  vendor: {
+    ...baseMockJob.vendor,
+    code: '610150',
+    name: 'K.T.MAX CO.LTD.(BRANCH 1)',
+  },
+} as unknown as JobView
+
+assert.strictEqual(deriveBranchSortCode('RS4-14102026-0001', null, 'สาขารังสิต คลอง4'), 'RS4')
+assert.strictEqual(deriveBranchSortCode('RP-2610-00123', 'BNA', 'สาขาบางนา'), 'BNA')
+
+const vdTplReturn = buildReturnBoxLabel(rs4Job, {
+  source: 'VD',
+  trackingNo: 'TPL-2610-000005',
+  now: dt,
+})
+assert.strictEqual(vdTplReturn.title, 'ใบปะหน้ากล่อง (ขาส่งคืน)')
+assert.strictEqual(vdTplReturn.headerBadge, 'ขาส่งคืน • 3PL')
+assert.strictEqual(vdTplReturn.jobNo, 'RS4-14102026-0001')
+assert.strictEqual(vdTplReturn.trackingNo, 'TPL-2610-000005')
+assert.strictEqual(vdTplReturn.destination?.name, 'สาขารังสิต คลอง4')
+assert.strictEqual(vdTplReturn.destination?.code, 'RS4')
+assert.strictEqual(vdTplReturn.origin?.name, '610150 K.T.MAX CO.LTD.(BRANCH 1)')
+assert.strictEqual(vdTplReturn.product?.repairOutcome, 'ซ่อมเสร็จพร้อมส่งคืน')
+
+// 6. Return Box Label Building (DC -> Branch & Rejected Job)
+const rejectedJob = { ...baseMockJob, decision: 'REJECTED' } as unknown as JobView
+const dcReturn = buildReturnBoxLabel(rejectedJob, { source: 'DC', now: dt })
+assert.strictEqual(dcReturn.title, 'ใบปะหน้ากล่อง (ขาคืน)')
+assert.strictEqual(dcReturn.headerBadge, 'ขาคืนสาขา • จากคลัง DC')
+assert.strictEqual(dcReturn.origin?.name, 'คลังสินค้า DC วังน้อย')
+assert.strictEqual(dcReturn.destination?.code, 'BNA')
+assert.strictEqual(dcReturn.product?.repairOutcome, 'ลูกค้าไม่อนุมัติซ่อม (คืนสภาพเดิม)')
+
+// 7. Normalize Legacy LabelData into ReturnBoxLabelData
+const legacyNorm = normalizeReturnLabelData({
+  title: 'ใบปะหน้ากล่อง (ขาส่งคืน)',
+  subtitle: 'จาก 610150 K.T.MAX CO.LTD.(BRANCH 1) (Auto Book 3PL #TPL-2610-000005)',
+  jobNo: 'RS4-14102026-0001',
+  rows: [
+    ['สาขาปลายทาง', 'สาขารังสิต คลอง4'],
+    ['ช่องทางส่งคืน', '3PL'],
+  ],
+})
+assert.strictEqual(legacyNorm.headerBadge, 'ขาส่งคืน • 3PL')
+assert.strictEqual(legacyNorm.destination?.code, 'RS4')
+assert.strictEqual(legacyNorm.destination?.name, 'สาขารังสิต คลอง4')
+assert.strictEqual(legacyNorm.trackingNo, 'TPL-2610-000005')
 
 console.log('✓ All Shipping Label Builder Tests Passed!')
