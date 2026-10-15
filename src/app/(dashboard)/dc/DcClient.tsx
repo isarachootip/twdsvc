@@ -1,17 +1,18 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { OverdueSummary, KpiGrid, TabBar, SlaCell, JobIdCell, QueueHeader, EmptyCard, DateRange } from '@/components/ui/Queue'
-import PhotoButton from '@/components/ui/PhotoButton'
+import { OverdueSummary, KpiGrid, TabBar, QueueHeader, EmptyCard, DateRange } from '@/components/ui/Queue'
 import PrintLabel, { type LabelData } from '@/components/ui/PrintLabel'
-import { buildReturnBoxLabel } from '@/lib/shipping-labels'
-import JobDetailModal from '@/components/jobs/JobDetail'
 import DriverDoc from '@/components/ui/DriverDoc'
-import { useSort, Th } from '@/components/ui/Sortable'
+import { buildLogisticsBoxLabel } from '@/lib/shipping-labels'
+import JobDetailModal from '@/components/jobs/JobDetail'
+import { useSort } from '@/components/ui/Sortable'
 import { useQueue, useRowInputs } from '@/components/ui/useQueue'
 import { useToast } from '@/components/ui/Toast'
 import { absUrl, exportXlsx, todayBkk } from '@/lib/client'
 import type { JobView } from '@/lib/job-view'
+import { DcPickupTab, DcDispatchBranchTab } from './DcPickupTables'
+import { DcReceiveLocationTab, DcHandoffVdTab, DcReturnFromVdTab, type DcWarehouseCtx } from './DcWarehouseTables'
 
 const TABS = [
   { key: 'pickup', label: 'เข้ารับจากสาขา', kpi: 'รอเข้ารับจากสาขา' },
@@ -25,8 +26,6 @@ const SORT = {
   id: (j: JobView) => j.jobNo, customer: (j: JobView) => j.customerName ?? '', product: (j: JobView) => j.productName,
   branch: (j: JobView) => j.branch.name, hours: (j: JobView) => j.sla?.hoursInStep ?? 0, vd: (j: JobView) => j.vendor?.code ?? '',
 }
-
-const isValidDcLoc = (loc: string) => /^DC-\d{2}-[A-Z]$/i.test(loc.trim())
 
 export default function DcClient({ role }: { role: string }) {
   const [tab, setTab] = useState('pickup')
@@ -70,34 +69,30 @@ export default function DcClient({ role }: { role: string }) {
   const s4 = useSort(list('returnFromVD'), SORT)
   const s5 = useSort(list('dispatchBranch'), SORT)
 
-  const dispatch = async (j: JobView, method: 'PRINT' | 'LINK', legLabel: string) => {
+  const handleDispatchDriver = async (
+    j: JobView,
+    method: 'PRINT' | 'LINK',
+    leg: 'GR_TO_DC' | 'DC_TO_BRANCH',
+  ) => {
     const r = await run(j, 'dispatch_pickup', { method }, 'แจ้งคนรถแล้ว', { silent: true })
     if (!r) return
-    if (method === 'LINK' && r.driverUrl) {
+    if (method === 'PRINT') {
+      toast('แจ้งคนรถแล้ว — แสดงใบปะหน้ากล่องมาตรฐานไทวัสดุ', 'success')
+      setLabel(buildLogisticsBoxLabel(j, leg))
+    } else if (r.driverUrl) {
       const url = absUrl(String(r.driverUrl))
       try { await navigator.clipboard?.writeText(url) } catch { /* ignore */ }
-      setDriverDoc({ job: j, leg: legLabel, url })
-      toast('สร้างลิงก์ให้คนรถแล้ว (คัดลอกแล้ว)', 'success')
-    } else {
-      setDriverDoc({ job: j, leg: legLabel })
+      toast('แจ้งคนรถและคัดลอกลิงก์แล้ว', 'success')
+      setDriverDoc({ job: j, leg: leg === 'GR_TO_DC' ? 'สาขา → คลัง DC' : 'คลัง DC → สาขา', url })
     }
   }
-
-  const shipBadge = (j: JobView, which: 'out' | 'in') => {
-    const s = which === 'out' ? j.outboundShipment : j.inboundShipment
-    if (!s || s.status === 'PENDING_DISPATCH') return null
-    return s
-  }
-
-  const actionBtn = (j: JobView, text: string, disabled: boolean, onClick: () => void, reason?: string) => (
-    done[j.id] ? <span className="badge b-green">{done[j.id]}</span> :
-      <button className="btn btn-primary" disabled={disabled || readOnly || busy !== null} title={disabled ? reason : undefined} onClick={onClick}>{text}</button>
-  )
 
   const exportAll = () => exportXlsx(TABS.map(t => ({
     name: t.label,
     rows: list(t.key).map(j => ({ 'เลขที่ใบแจ้งซ่อม': j.jobNo, 'สาขา': j.branch.name, 'ลูกค้า': j.customerName ?? '', 'สินค้า': j.productName, 'VD': j.vendor ? `${j.vendor.centerCode} ${j.vendor.name}` : '', 'รอมาแล้ว (ชม.)': j.sla?.hoursInStep ?? '', 'SLA (ชม.)': j.sla?.slaHours ?? '', 'เกิน SLA': j.sla?.overdue ? 'ใช่' : 'ไม่', 'Location': j.location ?? '' })),
   })), `service_center_dc_${todayBkk()}.xlsx`)
+
+  const whCtx: DcWarehouseCtx = { done, inp, readOnly, busy, rowCls, onOpenJob: setOpenId, run }
 
   return (
     <div className="page">
@@ -117,117 +112,31 @@ export default function DcClient({ role }: { role: string }) {
           </select>
         </div>
       )}
-      {readOnly && <p className="hint"><span className="badge b-amber">โหมดดูอย่างเดียว</span></p>}
+      {readOnly && <p className="hint"><span className="text-amber-700 font-semibold text-xs">• โหมดดูอย่างเดียว</span></p>}
       {loading && <EmptyCard text="กำลังโหลด…" />}
 
       {!loading && tab === 'pickup' && (
-        <>
-          {s1.sorted.length === 0 ? <EmptyCard /> : (
-            <div className="tcard"><div className="tbl-wrap"><table className="tbl">
-              <thead><tr><Th k="id" label="เลขที่ใบแจ้งซ่อม" {...s1} /><Th k="branch" label="สาขา" {...s1} /><Th k="customer" label="ลูกค้า" {...s1} /><Th k="product" label="สินค้า" {...s1} /><Th k="hours" label="รอมาแล้ว" {...s1} /><th>สถานะ / Action</th></tr></thead>
-              <tbody>{s1.sorted.map(j => {
-                const sh = shipBadge(j, 'out')
-                return (
-                  <tr key={j.id} className={rowCls(j)}>
-                    <td><JobIdCell job={j} onOpen={() => setOpenId(j.id)} showDate /></td><td>{j.branch.name}</td><td>{j.customerName ?? 'สต็อกสาขา'}</td><td>{j.productName}</td><td><SlaCell job={j} /></td>
-                    <td>{sh || done[j.id] ? <span className="badge b-green">แจ้งคนรถแล้ว — รอ GR ส่งมอบ</span> : (
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        <button className="btn" disabled={readOnly || busy !== null} onClick={() => dispatch(j, 'PRINT', 'สาขา → คลัง DC')}>Print เอกสารให้คนรถ</button>
-                        <button className="btn" disabled={readOnly || busy !== null} onClick={() => dispatch(j, 'LINK', 'สาขา → คลัง DC')}>ส่ง Link ให้คนรถ</button>
-                      </div>
-                    )}</td>
-                  </tr>
-                )
-              })}</tbody>
-            </table></div></div>
-          )}
-        </>
+        <DcPickupTab s1={s1} done={done} readOnly={readOnly} busy={busy} rowCls={rowCls} onOpenJob={setOpenId} onSetLabel={setLabel} onDispatchDriver={handleDispatchDriver} />
       )}
-
-      {!loading && tab === 'receiveDC' && (list('receiveDC').length === 0 ? <EmptyCard /> : (
-        <div className="tcard"><div className="tbl-wrap"><table className="tbl">
-          <thead><tr><Th k="id" label="เลขที่ใบแจ้งซ่อม" {...s2} /><Th k="branch" label="สาขาต้นทาง" {...s2} /><Th k="customer" label="ลูกค้า" {...s2} /><Th k="product" label="สินค้า" {...s2} /><Th k="hours" label="เวลาที่ค้าง" {...s2} /><th>เลขที่ Location (DC-00-A)</th><th>สถานะ</th></tr></thead>
-          <tbody>{s2.sorted.map(j => {
-            const locVal = inp.loc(j.id)
-            const valid = isValidDcLoc(locVal)
-            return (
-              <tr key={j.id} className={rowCls(j)}>
-                <td><JobIdCell job={j} onOpen={() => setOpenId(j.id)} /></td><td>{j.branch.name}</td><td>{j.customerName ?? 'สต็อกสาขา'}</td><td>{j.productName}</td><td><SlaCell job={j} /></td>
-                <td>{done[j.id] ? locVal : <input className="inp inp-sm" style={{ width: 130 }} placeholder="เช่น DC-01-A" value={locVal} onChange={e => inp.setLoc(j.id, e.target.value)} disabled={readOnly} />}</td>
-                <td>{actionBtn(j, 'ยืนยันรับเข้า Location', !valid, () => run(j, 'dc_receive_outbound', { location: locVal.trim().toUpperCase() }, 'รับเข้าแล้ว'), !valid ? 'Location ต้องเป็นรูปแบบ DC-00-A (เช่น DC-01-A)' : undefined)}</td>
-              </tr>
-            )
-          })}</tbody>
-        </table></div></div>
-      ))}
-
-      {!loading && tab === 'handoffVD' && (list('handoffVD').length === 0 ? <EmptyCard /> : (
-        <div className="tcard"><div className="tbl-wrap"><table className="tbl">
-          <thead><tr><Th k="id" label="เลขที่ใบแจ้งซ่อม" {...s3} /><Th k="customer" label="ลูกค้า" {...s3} /><Th k="product" label="สินค้า" {...s3} /><Th k="vd" label="VD ที่มารับ" {...s3} /><th>สถานะรถ VD</th><Th k="hours" label="เวลาที่ค้าง" {...s3} /><th>ถ่ายภาพ</th><th>สถานะ</th></tr></thead>
-          <tbody>{s3.sorted.map(j => {
-            const dispatched = j.outboundShipment?.legType === 'DC_TO_VD' && j.outboundShipment.status !== 'PENDING_DISPATCH'
-            const hasPhoto = inp.photos(j.id).length > 0
-            return (
-              <tr key={j.id} className={rowCls(j)}>
-                <td><JobIdCell job={j} onOpen={() => setOpenId(j.id)} /></td><td>{j.customerName ?? 'สต็อกสาขา'}</td><td>{j.productName}</td>
-                <td>{j.vendor ? `${j.vendor.centerCode} ${j.vendor.name}` : '-'}{j.location && <div className="sub-mute">Location {j.location}</div>}</td>
-                <td>{dispatched ? <span className="badge b-amber">VD ส่งรถแล้ว</span> : <span className="badge b-gray">รอ VD ส่งรถ</span>}</td>
-                <td><SlaCell job={j} /></td>
-                <td>{done[j.id] ? '✓' : <PhotoButton photos={inp.photos(j.id)} onChange={p => inp.setPhotos(j.id, p)} disabled={readOnly} />}</td>
-                <td>{actionBtn(j, 'ยืนยันส่งมอบ + Clear Location', !dispatched || !hasPhoto, () => run(j, 'dc_handoff_vd', { photos: inp.photos(j.id) }, 'ส่งมอบแล้ว — Location clear'), !dispatched ? 'รอ VD ส่งรถมารับ' : !hasPhoto ? 'ต้องถ่ายภาพก่อน' : undefined)}</td>
-              </tr>
-            )
-          })}</tbody>
-        </table></div></div>
-      ))}
-
-      {!loading && tab === 'returnFromVD' && (list('returnFromVD').length === 0 ? <EmptyCard /> : (
-        <div className="tcard"><div className="tbl-wrap"><table className="tbl">
-          <thead><tr><Th k="id" label="เลขที่ใบแจ้งซ่อม" {...s4} /><Th k="customer" label="ลูกค้า" {...s4} /><Th k="product" label="สินค้า" {...s4} /><Th k="vd" label="VD ที่ส่งคืนมา" {...s4} /><Th k="hours" label="เวลาที่ค้าง" {...s4} /><th>ถ่ายภาพ</th><th>สถานะ</th></tr></thead>
-          <tbody>{s4.sorted.map(j => {
-            const hasPhoto = inp.photos(j.id).length > 0
-            return (
-              <tr key={j.id} className={rowCls(j)}>
-                <td><JobIdCell job={j} onOpen={() => setOpenId(j.id)} /></td><td>{j.customerName ?? 'สต็อกสาขา'}</td><td>{j.productName}</td>
-                <td>{j.vendor ? `${j.vendor.centerCode} ${j.vendor.name}` : '-'}</td><td><SlaCell job={j} /></td>
-                <td>{done[j.id] ? '✓' : <PhotoButton photos={inp.photos(j.id)} onChange={p => inp.setPhotos(j.id, p)} disabled={readOnly} />}</td>
-                <td>{actionBtn(j, 'ยืนยันรับคืนจาก VD', !hasPhoto, () => run(j, 'dc_receive_inbound', { photos: inp.photos(j.id) }, 'รับคืนแล้ว'), !hasPhoto ? 'ต้องถ่ายภาพก่อน' : undefined)}</td>
-              </tr>
-            )
-          })}</tbody>
-        </table></div></div>
-      ))}
-
-      {!loading && tab === 'dispatchBranch' && (list('dispatchBranch').length === 0 ? <EmptyCard /> : (
-        <div className="tcard"><div className="tbl-wrap"><table className="tbl">
-          <thead><tr><Th k="id" label="เลขที่ใบแจ้งซ่อม" {...s5} /><Th k="branch" label="สาขาปลายทาง" {...s5} /><Th k="customer" label="ลูกค้า" {...s5} /><Th k="product" label="สินค้า" {...s5} /><Th k="hours" label="เวลาที่ค้าง" {...s5} /><th>สถานะ / Action</th></tr></thead>
-          <tbody>{s5.sorted.map(j => {
-            const sh = shipBadge(j, 'in')
-            const dispatched = sh && j.inboundShipment?.legType === 'DC_TO_BRANCH'
-            return (
-              <tr key={j.id} className={rowCls(j)}>
-                <td><JobIdCell job={j} onOpen={() => setOpenId(j.id)} /></td><td>{j.branch.name}</td><td>{j.customerName ?? 'สต็อกสาขา'}</td><td>{j.productName}</td><td><SlaCell job={j} /></td>
-                <td>{done[j.id] ? (
-                  <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <span className="badge b-green">ส่งคืนกลับสาขาแล้ว — รอ GR รับที่สาขา</span>
-                    <button type="button" className="btn" onClick={() => setLabel(buildReturnBoxLabel(j, { source: 'DC' }))}>🖨️ พิมพ์ใบปะหน้าส่งคืน</button>
-                  </div>
-                ) : !dispatched ? (
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    <button className="btn" disabled={readOnly || busy !== null} onClick={() => dispatch(j, 'PRINT', 'คลัง DC → สาขา')}>Print เอกสารให้คนรถ</button>
-                    <button className="btn" disabled={readOnly || busy !== null} onClick={() => dispatch(j, 'LINK', 'คลัง DC → สาขา')}>ส่ง Link ให้คนรถ</button>
-                  </div>
-                ) : (
-                  <button className="btn btn-primary" disabled={readOnly || busy !== null} onClick={async () => {
-                    const r = await run(j, 'dc_dispatch_confirm', {}, 'ส่งคืนกลับสาขาแล้ว — รอ GR รับที่สาขา')
-                    if (r) setLabel(buildReturnBoxLabel(j, { source: 'DC' }))
-                  }}>ยืนยัน: จัดส่งออกจาก DC แล้ว</button>
-                )}</td>
-              </tr>
-            )
-          })}</tbody>
-        </table></div></div>
-      ))}
+      {!loading && tab === 'receiveDC' && <DcReceiveLocationTab s2={s2} ctx={whCtx} />}
+      {!loading && tab === 'handoffVD' && <DcHandoffVdTab s3={s3} ctx={whCtx} />}
+      {!loading && tab === 'returnFromVD' && <DcReturnFromVdTab s4={s4} ctx={whCtx} />}
+      {!loading && tab === 'dispatchBranch' && (
+        <DcDispatchBranchTab
+          s5={s5}
+          done={done}
+          readOnly={readOnly}
+          busy={busy}
+          rowCls={rowCls}
+          onOpenJob={setOpenId}
+          onDispatchDriver={handleDispatchDriver}
+          onSetLabel={setLabel}
+          onConfirmDispatchBranch={async j => {
+            const r = await run(j, 'dc_dispatch_confirm', {}, 'ส่งคืนกลับสาขาแล้ว — รอ GR รับที่สาขา')
+            if (r) setLabel(buildLogisticsBoxLabel(j, 'DC_TO_BRANCH'))
+          }}
+        />
+      )}
 
       <DriverDoc doc={driverDoc} onClose={() => setDriverDoc(null)} />
       <PrintLabel data={label} onClose={() => setLabel(null)} />

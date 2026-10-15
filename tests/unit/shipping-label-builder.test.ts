@@ -5,6 +5,7 @@ import {
   buildKexLabel,
   formatKexTracking,
   buildReturnBoxLabel,
+  buildLogisticsBoxLabel,
   deriveBranchSortCode,
   normalizeReturnLabelData,
 } from '@/lib/shipping-labels'
@@ -162,4 +163,30 @@ assert.strictEqual(legacyNorm.destination?.code, 'RS4')
 assert.strictEqual(legacyNorm.destination?.name, 'สาขารังสิต คลอง4')
 assert.strictEqual(legacyNorm.trackingNo, 'TPL-2610-000005')
 
+// 8. Logistics Box Label Building across all routes (100x150mm standardized box label)
+const grToDcLabel = buildLogisticsBoxLabel(baseMockJob, 'GR_TO_DC', { now: dt })
+assert.strictEqual(grToDcLabel.title, 'ใบปะหน้ากล่อง (ขารับเข้าคลัง DC)')
+assert.strictEqual(grToDcLabel.headerBadge, 'ขารับเข้า • สาขา → คลัง DC')
+assert.strictEqual(grToDcLabel.origin?.name, 'ไทวัสดุ สาขาบางนา')
+assert.strictEqual(grToDcLabel.destination?.name, 'คลังสินค้า DC วังน้อย')
+assert.strictEqual(grToDcLabel.destination?.code, 'DC')
+
+const dcToVdLabel = buildLogisticsBoxLabel(baseMockJob, 'DC_TO_VD', { now: dt })
+assert.strictEqual(dcToVdLabel.title, 'ใบปะหน้ากล่อง (ขาส่งซ่อม VD)')
+assert.strictEqual(dcToVdLabel.headerBadge, 'ขาส่งซ่อม • คลัง DC → VD')
+assert.strictEqual(dcToVdLabel.origin?.name, 'คลังสินค้า DC วังน้อย')
+assert.strictEqual(dcToVdLabel.destination?.name, 'VD-0088 บ.ช่างเจริญ')
+assert.strictEqual(dcToVdLabel.destination?.code, 'VD-0088')
+
+const grToVdLabel = buildLogisticsBoxLabel(baseMockJob, 'GR_TO_VD', { now: dt })
+assert.strictEqual(grToVdLabel.title, 'ใบปะหน้ากล่อง (ขาส่งซ่อม VD)')
+assert.strictEqual(grToVdLabel.headerBadge, 'ขาส่งซ่อม • สาขา → VD')
+assert.strictEqual(grToVdLabel.origin?.name, 'ไทวัสดุ สาขาบางนา')
+assert.strictEqual(grToVdLabel.destination?.code, 'VD-0088')
+
+const dcToBranchLabel = buildLogisticsBoxLabel(baseMockJob, 'DC_TO_BRANCH', { now: dt })
+assert.strictEqual(dcToBranchLabel.title, 'ใบปะหน้ากล่อง (ขาคืน)')
+assert.strictEqual(dcToBranchLabel.destination?.code, 'BNA')
+
 console.log('✓ All Shipping Label Builder Tests Passed!')
+

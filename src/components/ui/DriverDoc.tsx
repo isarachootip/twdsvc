@@ -1,19 +1,40 @@
 'use client'
 
 import Modal from './Modal'
+import PrintLabel from './PrintLabel'
+import { buildLogisticsBoxLabel, type LogisticsLabelLeg } from '@/lib/shipping-labels'
 import type { JobView } from '@/lib/job-view'
 import { useBranding } from '@/lib/hooks/useBranding'
 
-export default function DriverDoc({ doc, onClose }: { doc: { job: JobView; leg: string; url?: string } | null; onClose: () => void }) {
+function resolveLeg(leg: string, job: JobView): LogisticsLabelLeg {
+  if (leg.includes('คลัง DC → สาขา')) return 'DC_TO_BRANCH'
+  if (leg.includes('สาขา → คลัง DC')) return 'GR_TO_DC'
+  if (leg.includes('DC → VD') || job.stage === 'AT_DC_OUTBOUND') return 'DC_TO_VD'
+  return 'GR_TO_VD'
+}
+
+export default function DriverDoc({
+  doc,
+  onClose,
+}: {
+  doc: { job: JobView; leg: string; url?: string } | null
+  onClose: () => void
+}) {
   const { branding } = useBranding()
   if (!doc) return null
   const j = doc.job
+
+  if (!doc.url) {
+    const labelData = buildLogisticsBoxLabel(j, resolveLeg(doc.leg, j))
+    return <PrintLabel data={labelData} onClose={onClose} />
+  }
+
   return (
     <Modal open onClose={onClose} size="narrow">
       <div className="print-area">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, paddingBottom: 6, borderBottom: '1px solid var(--border)' }}>
           <div>
-            <p style={{ fontWeight: 600, fontSize: 15, margin: '0 0 2px' }}>{doc.url ? 'ลิงก์งานสำหรับคนรถ' : 'เอกสารให้คนรถ'}</p>
+            <p style={{ fontWeight: 600, fontSize: 15, margin: '0 0 2px' }}>ลิงก์งานสำหรับคนรถ</p>
             <p className="sub-mute" style={{ margin: 0, fontSize: 11.5 }}>{doc.leg}</p>
           </div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -27,16 +48,13 @@ export default function DriverDoc({ doc, onClose }: { doc: { job: JobView; leg: 
         <div className="info-row"><span className="info-label">สินค้า</span><span>{j.productName}</span></div>
         <div className="info-row"><span className="info-label">สาขา</span><span>{j.branch.name}</span></div>
         <div className="info-row"><span className="info-label">ศูนย์ซ่อม</span><span>{j.vendor ? `${j.vendor.centerCode} ${j.vendor.name}` : '-'}</span></div>
-        {doc.url && (
-          <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
-            <input className="inp" readOnly value={doc.url} style={{ flex: 1, fontSize: 12 }} onFocus={e => e.target.select()} />
-            <button className="btn btn-primary" onClick={() => navigator.clipboard?.writeText(doc.url!)}>คัดลอก</button>
-          </div>
-        )}
+        <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
+          <input className="inp" readOnly value={doc.url} style={{ flex: 1, fontSize: 12 }} onFocus={e => e.target.select()} />
+          <button className="btn btn-primary" onClick={() => navigator.clipboard?.writeText(doc.url!)}>คัดลอก</button>
+        </div>
       </div>
       <div className="modal-actions no-print">
         <button className="btn" onClick={onClose}>ปิด</button>
-        {!doc.url && <button className="btn btn-primary" onClick={() => window.print()}>พิมพ์ (Print)</button>}
       </div>
     </Modal>
   )
