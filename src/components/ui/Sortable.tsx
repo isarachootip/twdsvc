@@ -20,6 +20,8 @@ export function useSort<T>(rows: T[], getters: Record<string, (r: T) => string |
   return { sorted, sort, toggle }
 }
 
+export type SortState<T> = ReturnType<typeof useSort<T>>
+
 export function Th({ k, label, sort, toggle, className }: { k: string; label: React.ReactNode; sort: { key: string | null; dir: SortDir }; toggle: (k: string) => void; className?: string }) {
   const active = sort.key === k
   return (

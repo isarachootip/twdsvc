@@ -9,7 +9,7 @@ import JobDetailModal from '@/components/jobs/JobDetail'
 import { useSort } from '@/components/ui/Sortable'
 import { useQueue, useRowInputs } from '@/components/ui/useQueue'
 import { useToast } from '@/components/ui/Toast'
-import { findJobTab, type JobLocation } from '@/lib/job-locator'
+import { findJobTab, findJobsByScan, type JobLocation } from '@/lib/job-locator'
 import type { JobView } from '@/lib/job-view'
 import { TABS, TAB_KEYS, SORT } from './gr-config'
 import type { GrRowCtx } from './gr-types'
@@ -33,7 +33,7 @@ export default function GrClient({ role }: { role: string }) {
   })
   const [shippingLabel, setShippingLabel] = useState<UnifiedShippingLabelData | null>(null)
   const [openId, setOpenId] = useState<string | null>(null)
-  const [highlight, setHighlight] = useState<string | null>(null)
+  const [highlightIds, setHighlightIds] = useState<string[]>([])
   const [scan, setScan] = useState('')
   const { toast } = useToast()
   const readOnly = role !== 'GR' && role !== 'ADMIN'
@@ -60,9 +60,9 @@ export default function GrClient({ role }: { role: string }) {
   const overCount = (k: string) => list(k).filter(j => !done[j.id] && j.sla?.overdue).length
 
   /** สลับไปแท็บที่มีงาน + ไฮไลต์ + เลื่อนไปที่แถว */
-  const goTo = (loc: JobLocation, delayMs: number) => {
+  const goTo = (loc: JobLocation, delayMs: number, allIds?: string[]) => {
     setTab(loc.tab)
-    setHighlight(loc.jobId)
+    setHighlightIds(allIds?.length ? allIds : [loc.jobId])
     setTimeout(() => document.getElementById(`row-${loc.jobId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), delayMs)
   }
 
@@ -74,14 +74,18 @@ export default function GrClient({ role }: { role: string }) {
 
   const onScan = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!scan.trim()) return
-    const loc = findJobTab(data.tabs, TAB_KEYS, scan)
-    if (!loc) { toast('ไม่พบเลขงานนี้ในคิว GR', 'error'); return }
-    goTo(loc, 50)
+    const q = scan.trim()
+    if (!q) return
+    const multi = findJobsByScan(data.tabs, TAB_KEYS, q)
+    if (!multi) { toast('ไม่พบเลขใบแจ้งซ่อมหรือใบรับสินค้านี้ในคิว GR', 'error'); return }
+    goTo({ tab: multi.tab, jobId: multi.jobIds[0] }, 50, multi.jobIds)
+    if (q.toUpperCase().startsWith('PU-')) {
+      toast(`พบ ${multi.jobIds.length} งานในใบรับสินค้า ${q.toUpperCase()}`, 'success')
+    }
     setScan('')
   }
 
-  const rowCls = (j: JobView) => `${done[j.id] ? 'done-row' : ''} ${highlight === j.id ? 'highlight' : ''}`
+  const rowCls = (j: JobView) => `${done[j.id] ? 'done-row' : ''} ${highlightIds.includes(j.id) ? 'highlight' : ''}`
   const ctx: GrRowCtx = { done, inp, readOnly, busy, rowCls, onOpen: setOpenId, run }
 
   // เก็บ state การเรียงไว้ที่นี่ เพื่อให้คงอยู่เมื่อสลับแท็บ (เหมือนเดิม)
@@ -107,13 +111,13 @@ export default function GrClient({ role }: { role: string }) {
           </div>
         }
       />
-      <OverdueSummary items={data.overdue.filter(o => !done[o.id])} onGo={(t, id) => { setTab(t); setHighlight(id) }} />
+      <OverdueSummary items={data.overdue.filter(o => !done[o.id])} onGo={(t, id) => { setTab(t); setHighlightIds([id]) }} />
       <KpiGrid items={TABS.map(t => ({ tab: t.key, label: t.kpi, count: pending(t.key), over: overCount(t.key) }))} active={tab} onPick={setTab} />
       <TabBar tabs={TABS.map(t => ({ key: t.key, label: t.label, count: pending(t.key) }))} active={tab} onPick={setTab} />
 
       <form className="filter-bar" onSubmit={onScan}>
-        <input ref={scanRef} className="inp" style={{ flex: 1, maxWidth: 460 }} value={scan} onChange={e => setScan(e.target.value)} placeholder="สแกน QR / คีย์เลขใบแจ้งซ่อม แล้วกด Enter เพื่อหางาน" />
-        {readOnly && <span className="badge b-amber">โหมดดูอย่างเดียว</span>}
+        <input ref={scanRef} className="inp" style={{ flex: 1, maxWidth: 460 }} value={scan} onChange={e => setScan(e.target.value)} placeholder="สแกน QR / บาร์โค้ดใบรับสินค้า (PU-...) / เลขใบแจ้งซ่อม แล้วกด Enter" />
+        {readOnly && <span className="text-amber-700 font-semibold text-xs">• โหมดดูอย่างเดียว</span>}
       </form>
 
       {loading && <EmptyCard text="กำลังโหลด…" />}

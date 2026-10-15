@@ -120,4 +120,33 @@ export const CLOSE_ACTIONS: Record<string, ActionDef> = {
     roles: ['CS', 'GR', 'DC', 'VD', 'S2', 'ADMIN'],
     event: c => ((c.input.photos?.length ?? 0) > 0 ? 'PHOTO_ADDED' : 'NOTE_ADDED'),
   },
+
+  cs_receive: {
+    roles: ['CS', 'ADMIN'],
+    from: [JobStage.READY_FOR_PICKUP, JobStage.GR_RETURN_RECEIVED],
+    event: 'CS_RECEIVED',
+    to: () => JobStage.READY_FOR_PICKUP,
+    location: true,
+    photo: true,
+    validate: c => {
+      if (c.job.type === 'STOCK') throw new ActionError('งานสต็อกรับโดย S2/GR')
+    },
+    effects: async c => {
+      c.extra.location = c.input.location
+    },
+  },
+
+  update_location: {
+    roles: ['CS', 'GR', 'DC', 'ADMIN'],
+    from: [
+      JobStage.CS_OPENED, JobStage.GR_RECEIVED, JobStage.GR_PACKED,
+      JobStage.AT_DC_OUTBOUND, JobStage.AT_DC_INBOUND, JobStage.GR_RETURN_RECEIVED,
+      JobStage.READY_FOR_PICKUP,
+    ],
+    event: 'LOCATION_UPDATED',
+    location: true,
+    effects: async c => {
+      c.extra.location = c.input.location
+    },
+  },
 }

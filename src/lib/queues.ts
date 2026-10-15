@@ -52,6 +52,7 @@ export const QUEUES: Record<string, { roles: string[]; tabs: QueueTabDef[] }> = 
   CS: {
     roles: ['CS', 'ADMIN'],
     tabs: [
+      { key: 'receive', label: 'รอรับของเข้า CS', where: { stage: 'READY_FOR_PICKUP', type: 'CUSTOMER' }, sla: ['GR_DELIVER_CS', 'CUSTOMER_PICKUP'] },
       { key: 'pickup', label: 'พร้อมรับที่สาขา', where: { stage: 'READY_FOR_PICKUP', type: 'CUSTOMER' }, sla: ['CUSTOMER_PICKUP'] },
       { key: 'approval', label: 'รอลูกค้าอนุมัติ', where: { stage: 'WAITING_APPROVAL' }, sla: ['CUSTOMER_APPROVAL'] },
       { key: 'opened', label: 'เปิดวันนี้ / รอชำระ', where: { type: 'CUSTOMER', stage: { in: ['CS_OPENED', 'PENDING_VENDOR_ASSIGNMENT'] } }, sla: ['CS_HANDOVER'] },
@@ -102,9 +103,14 @@ export async function queueHandler(dept: keyof typeof QUEUES, req: Request) {
         take: 500,
       })
       const serialized = rows.map(r => serializeJob(r, user.role, { preferSla: t.sla }))
-      const filtered = (dept === 'GR' && t.key === 'receive')
-        ? serialized.filter(j => !j.intakeUnpaid)
-        : serialized
+      let filtered = serialized
+      if (dept === 'GR' && t.key === 'receive') {
+        filtered = serialized.filter(j => !j.intakeUnpaid)
+      } else if (dept === 'CS' && t.key === 'receive') {
+        filtered = serialized.filter(j => !j.location)
+      } else if (dept === 'CS' && t.key === 'pickup') {
+        filtered = serialized.filter(j => !!j.location)
+      }
       tabs[t.key] = filtered
       kpis[t.key] = filtered.length
       if (t.aliasKey) {

@@ -10,10 +10,55 @@ import type { GrRowCtx } from './gr-types'
 
 function truckStatus(j: JobView) {
   const s = j.outboundShipment
-  if (!s || s.status === 'PENDING_DISPATCH') return { ready: false, badge: <span className="badge b-gray">รอจัดรถ</span> }
-  if (s.carrier === 'TPL') return { ready: true, badge: <span className="badge b-coral">Booked #{s.trackingNo}</span> }
-  if (s.status === 'DISPATCHED') return { ready: true, badge: <span className="badge b-amber">แจ้งคนรถแล้ว</span> }
-  return { ready: true, badge: <span className="badge b-green">ขนส่งรับแล้ว</span> }
+  if (!s || s.status === 'PENDING_DISPATCH') {
+    return {
+      ready: false,
+      node: (
+        <span className="inline-flex items-center gap-1.5 text-slate-500 font-medium text-xs">
+          <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+          รอจัดรถ
+        </span>
+      ),
+    }
+  }
+  if (s.carrier === 'TPL') {
+    return {
+      ready: true,
+      node: (
+        <span className="inline-flex items-center gap-1.5 text-orange-700 font-semibold text-xs">
+          <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+          Booked #{s.trackingNo}
+        </span>
+      ),
+    }
+  }
+  const slip = s.pickupSlip
+  const slipDetail = slip?.driverName || slip?.vehiclePlate
+    ? `${slip.driverName ?? ''}${slip.vehiclePlate ? ` · ${slip.vehiclePlate}` : ''}`.trim()
+    : null
+  if (s.status === 'DISPATCHED') {
+    return {
+      ready: true,
+      node: (
+        <div className="flex flex-col gap-0.5">
+          <span className="inline-flex items-center gap-1.5 text-amber-700 font-semibold text-xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+            แจ้งคนรถแล้ว{s.pickupSlipNo ? ` (${s.pickupSlipNo})` : ''}
+          </span>
+          {slipDetail && <span className="text-[11px] text-slate-600">{slipDetail}</span>}
+        </div>
+      ),
+    }
+  }
+  return {
+    ready: true,
+    node: (
+      <span className="inline-flex items-center gap-1.5 text-emerald-700 font-semibold text-xs">
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+        ขนส่งรับแล้ว
+      </span>
+    ),
+  }
 }
 
 export default function GrHandoffTab({
@@ -58,12 +103,15 @@ function HandoffSection({
   const pendingN = rows.filter(j => !ctx.done[j.id]).length
   return (
     <div className={`channel-section ${g.cls}`}>
-      <div className="subhead"><span>{g.title}</span><span className={`badge ${g.badge}`}>{pendingN} งานรอส่งมอบ</span></div>
+      <div className="subhead">
+        <span>{g.title}</span>
+        <span className="text-xs font-semibold text-slate-700">{pendingN} งานรอส่งมอบ</span>
+      </div>
       {rows.length === 0 ? <div className="empty" style={{ padding: 16 }}>ไม่มีงานในช่องทางนี้</div> : (
         <div className="tbl-wrap"><table className="tbl">
           <thead><tr>
             <Th k="id" label="เลขที่ใบแจ้งซ่อม" {...s} /><Th k="customer" label="ลูกค้า" {...s} /><Th k="product" label="สินค้า" {...s} />
-            <th>ปลายทาง VD</th><Th k="hours" label="เวลาที่ค้าง" {...s} /><th>สถานะรถ</th><th>ถ่ายภาพ</th><th>สถานะ</th>
+            <th>ปลายทาง VD</th><Th k="hours" label="เวลาที่ค้าง" {...s} /><th>สถานะรถ / ใบรับสินค้า</th><th>ถ่ายภาพ</th><th>สถานะ</th>
           </tr></thead>
           <tbody>{s.sorted.map(j => {
             const t = truckStatus(j)
@@ -74,7 +122,7 @@ function HandoffSection({
                 <td><JobIdCell job={j} onOpen={() => ctx.onOpen(j.id)} /></td><td>{customerLabel(j)}</td><td>{j.productName}</td>
                 <td>{j.vendor ? `${j.vendor.name} (${j.vendor.centerCode})` : '-'}</td>
                 <td><SlaCell job={j} /></td>
-                <td>{t.badge}</td>
+                <td>{t.node}</td>
                 <td><PhotoCell ctx={ctx} job={j} /></td>
                 <td>
                   <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>

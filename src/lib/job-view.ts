@@ -2,6 +2,7 @@
 import type { Prisma } from '@prisma/client'
 import { STAGE_LABELS, STAGE_BADGE, type Stage } from './constants'
 import { resolveOwner } from './sla-engine'
+import { extractPickupSlipMeta } from './pickup-slip'
 
 export const JOB_LIST_INCLUDE = {
   branch: { select: { id: true, name: true, nickname: true, address: true } },
@@ -105,6 +106,20 @@ export function latestLocation(job: Pick<JobWithList, 'events'>): string | null 
 const OUTBOUND_LEGS = ['BRANCH_TO_DC', 'DC_TO_VD', 'BRANCH_TO_VD']
 const INBOUND_LEGS = ['VD_TO_DC', 'DC_TO_BRANCH', 'VD_TO_BRANCH']
 
+function enrichShipment<T extends { legType: string; trackingNo: string | null }>(
+  ship: T | undefined,
+  events: ReadonlyArray<{ type: string; payload: unknown; createdAt: Date }>,
+) {
+  if (!ship) return null
+  const slip = extractPickupSlipMeta(events, ship.legType)
+  const pickupSlipNo = slip?.pickupSlipNo ?? (ship.trackingNo?.startsWith('PU-') ? ship.trackingNo : null)
+  return {
+    ...ship,
+    pickupSlipNo,
+    pickupSlip: slip,
+  }
+}
+
 export function serializeJob(job: JobWithList, role: string, opts?: { preferSla?: string[] }) {
   const sla = jobSla(job, opts?.preferSla)
   const money = calcMoney(job)
@@ -152,8 +167,8 @@ export function serializeJob(job: JobWithList, role: string, opts?: { preferSla?
     money: hideMoney ? null : money,
     unpaid: job.type === 'CUSTOMER' && ['APPROVED', 'AUTO_APPROVED'].includes(job.decision) && money.balance > 0 && !['CLOSED_REPAIRED', 'CLOSED_NOT_REPAIRED', 'CANCELLED'].includes(stage),
     intakeUnpaid: job.type === 'CUSTOMER' && money.intakeBalance > 0,
-    outboundShipment: outbound[outbound.length - 1] ?? null,
-    inboundShipment: inbound[inbound.length - 1] ?? null,
+    outboundShipment: enrichShipment(outbound[outbound.length - 1], job.events),
+    inboundShipment: enrichShipment(inbound[inbound.length - 1], job.events),
     location: latestLocation(job),
     quote: quote ? { ...quote, total: hideMoney ? null : quote.total, subtotal: hideMoney ? null : quote.subtotal } : null,
     items: job.items,

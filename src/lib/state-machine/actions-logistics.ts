@@ -3,6 +3,7 @@ import { JobStage, Channel, ShipmentLegType, CarrierType } from '@prisma/client'
 import { ActionDef } from './types'
 import { ActionError } from './errors'
 import { lastShipment, OUT_LEGS, IN_LEGS, totalBalance } from './helpers'
+import { pickupSlipMetaSchema } from '../pickup-slip/types'
 
 export const LOGISTICS_ACTIONS: Record<string, ActionDef> = {
   dispatch_pickup: {
@@ -29,9 +30,20 @@ export const LOGISTICS_ACTIONS: Record<string, ActionDef> = {
         await c.tx.publicToken.create({ data: { jobId: c.job.id, type: 'DRIVER', token: driverToken, expiresAt: new Date(c.now.getTime() + 48 * 3600000) } })
         c.extra.driverUrl = `/d/${driverToken}`
       }
-      await c.tx.shipment.update({ where: { id: ship.id }, data: { status: 'DISPATCHED', dispatchedAt: c.now, driverToken } })
+      const parsedSlip = c.input.pickupSlip ? pickupSlipMetaSchema.safeParse(c.input.pickupSlip) : null
+      const slipMeta = parsedSlip?.success ? parsedSlip.data : undefined
+      await c.tx.shipment.update({
+        where: { id: ship.id },
+        data: {
+          status: 'DISPATCHED',
+          dispatchedAt: c.now,
+          driverToken,
+          trackingNo: slipMeta?.pickupSlipNo ?? ship.trackingNo,
+        },
+      })
       c.extra.legType = leg
       c.extra.method = c.input.method ?? 'PRINT'
+      if (slipMeta) c.extra.pickupSlip = slipMeta
     },
   },
 

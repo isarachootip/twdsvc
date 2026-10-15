@@ -117,6 +117,26 @@ export function handleCloseSimAction(
       return { handled: true }
     }
 
+    case 'cs_receive': {
+      if (actor.role !== 'CS' && actor.role !== 'ADMIN') return { handled: true, result: { success: false, error: '403: Forbidden' } }
+      if (updatedJob.stage !== 'READY_FOR_PICKUP' && updatedJob.stage !== 'GR_RETURN_RECEIVED') {
+        return { handled: true, result: { success: false, error: `Cannot cs_receive from ${updatedJob.stage}` } }
+      }
+      if (!payload.location || !payload.location.trim()) {
+        return { handled: true, result: { success: false, error: 'Location required' } }
+      }
+      updatedJob.stage = 'READY_FOR_PICKUP'
+      return { handled: true }
+    }
+
+    case 'update_location': {
+      if (!['CS', 'GR', 'DC', 'ADMIN'].includes(actor.role)) return { handled: true, result: { success: false, error: '403: Forbidden' } }
+      if (!payload.location || !payload.location.trim()) {
+        return { handled: true, result: { success: false, error: 'Location required' } }
+      }
+      return { handled: true }
+    }
+
     default:
       return { handled: false }
   }

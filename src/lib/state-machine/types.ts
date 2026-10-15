@@ -1,4 +1,5 @@
 import { Prisma, JobStage, Channel, ShipmentLegType } from '@prisma/client'
+import type { PickupSlipMeta } from '../pickup-slip/types'
 
 export type Tx = Prisma.TransactionClient
 
@@ -11,6 +12,7 @@ export type ActionType =
   | 'vd_start_repair' | 'vd_pause_parts' | 'vd_resume_parts' | 'vd_finish_repair' | 'vd_return_pack'
   | 'customer_approve' | 'customer_reject' | 'cs_record_decision'
   | 'record_repair_payment' | 'cs_close' | 'cancel' | 'add_note'
+  | 'cs_receive' | 'update_location'
   | 'cs_receive_payment' | 'cs_close_job' | 'cs_trade_in' | 'cs_return_only'
 
 export interface PhotoInput {
@@ -35,6 +37,7 @@ export interface ActionInput {
   signatureUrl?: string
   // dispatch
   method?: 'PRINT' | 'LINK'
+  pickupSlip?: PickupSlipMeta
   // payment
   amount?: number
   paymentMethod?: string
