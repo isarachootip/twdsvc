@@ -18,6 +18,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
             include: { attachments: true },
             orderBy: { createdAt: 'asc' },
           },
+          charges: {
+            where: { type: 'OPERATION_FEE' },
+            select: { amount: true },
+          },
           quotes: {
             where: { status: { in: ['SENT', 'APPROVED', 'REJECTED'] } },
             orderBy: { version: 'desc' },
@@ -42,6 +46,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
   }
 
   const decided = ['APPROVED', 'REJECTED'].includes(quote.status)
+  const operationFeePaid = job.charges.reduce((s, c) => s + c.amount, 0)
 
   // Collect photos from triage/inspection events
   const photos: string[] = []
@@ -65,6 +70,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
       jobNo: job.jobNo,
       productName: job.productName,
       brandName: job.brandName,
+      serialNo: job.serialNo,
+      symptom: job.symptom,
+      shippingMethod: job.shippingMethod,
+      openedAt: job.openedAt,
+      operationFeePaid,
       branchName: job.branch.name,
       branchPhone: job.branch.phone,
       storeManagerName: job.branch.storeManagerName,
@@ -83,6 +93,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
       repairDays: quote.repairDays,
       repairWarrantyDays: quote.repairWarrantyDays,
       vendorNote: quote.vendorNote,
+      sentAt: quote.sentAt,
       expiresAt: quote.expiresAt,
       managerSignatureUrl: quote.managerSignatureUrl,
       managerSignerName: quote.managerSignerName,

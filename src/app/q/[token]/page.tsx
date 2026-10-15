@@ -3,10 +3,13 @@
 import { useState, useEffect, use } from 'react'
 import Link from 'next/link'
 import {
-  CheckCircle2, XCircle, AlertCircle, Clock, ShieldCheck,
-  ImageIcon, Wrench, ChevronRight, X, ExternalLink
+  CheckCircle2, XCircle, AlertCircle, Clock,
+  ImageIcon, ChevronRight, X, Printer
 } from 'lucide-react'
+import { fmtBaht } from '@/lib/constants'
+import { computeQuotationFinancials } from '@/lib/quotation-format'
 import CustomerSignModal from './CustomerSignModal'
+import PublicQuoteA4Modal from './PublicQuoteA4Modal'
 
 interface QuoteLine {
   type: string
@@ -23,6 +26,11 @@ interface QuoteData {
     jobNo: string
     productName: string
     brandName: string
+    serialNo?: string | null
+    symptom?: string | null
+    shippingMethod?: string | null
+    openedAt?: string | null
+    operationFeePaid?: number | null
     branchName: string
     branchPhone?: string | null
     storeManagerName?: string | null
@@ -41,6 +49,7 @@ interface QuoteData {
     repairDays: number
     repairWarrantyDays: number
     vendorNote?: string | null
+    sentAt?: string | null
     expiresAt?: string | null
     managerSignatureUrl?: string | null
     managerSignerName?: string | null
@@ -58,12 +67,6 @@ interface QuoteData {
   decision?: string
 }
 
-function formatSatang(satang: number | null | undefined): string {
-  if (satang === null || satang === undefined) return '฿0.00'
-  const baht = satang / 100
-  return `฿${baht.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-}
-
 export default function CustomerQuotePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = use(params)
   const [data, setData] = useState<QuoteData | null>(null)
@@ -71,6 +74,7 @@ export default function CustomerQuotePage({ params }: { params: Promise<{ token:
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [signModalOpen, setSignModalOpen] = useState(false)
+  const [a4ModalOpen, setA4ModalOpen] = useState(false)
   const [rejectModalOpen, setRejectModalOpen] = useState(false)
   const [rejectReason, setRejectReason] = useState('')
   const [activePhoto, setActivePhoto] = useState<string | null>(null)
@@ -295,49 +299,94 @@ export default function CustomerQuotePage({ params }: { params: Promise<{ token:
             )}
 
             {/* Line Items Breakdown Card */}
-            <div className="bg-white rounded-2xl p-4 border border-[#E4DED2] shadow-sm space-y-3">
-              <h3 className="font-bold text-xs text-[#2B2723] border-b border-[#E4DED2] pb-2">
-                รายการค่าใช้จ่าย (เลขที่ใบเสนอราคา: {quote.quoteNo})
-              </h3>
-              <div className="space-y-2.5 text-xs">
-                {quote.lines.map((line, idx) => (
-                  <div key={idx} className="flex justify-between items-start border-b border-[#F3EEE6] pb-2">
-                    <div className="pr-2">
-                      <div className="font-medium text-[#2B2723]">
-                        {line.description}
-                        {line.quantity > 1 && <span className="text-[#6B6459] ml-1">× {line.quantity}</span>}
-                      </div>
-                      {line.partWaitDays ? (
-                        <div className="text-[10px] text-[#BA7517] flex items-center gap-1 mt-0.5">
-                          <Clock size={11} /> รอสั่งอะไหล่ {line.partWaitDays} วัน
-                        </div>
-                      ) : null}
-                    </div>
-                    <div className="font-mono font-semibold text-[#2B2723] whitespace-nowrap">
-                      {formatSatang(line.unitPrice * line.quantity)}
-                    </div>
+            {(() => {
+              const fin = computeQuotationFinancials({
+                lines: quote.lines.map(l => ({
+                  type: l.type,
+                  description: l.description,
+                  quantity: l.quantity,
+                  amount: l.unitPrice * l.quantity,
+                  partWaitDays: l.partWaitDays,
+                  partWarrantyDays: l.partWarrantyDays,
+                })),
+                subtotal: quote.subtotal,
+                vatAmount: quote.vatAmount,
+                total: quote.total,
+                operationFeePaid: job.operationFeePaid,
+                hasWarranty: job.hasWarranty,
+              })
+
+              return (
+                <div className="bg-white rounded-2xl p-4 border border-[#E4DED2] shadow-sm space-y-3">
+                  <div className="flex items-center justify-between border-b border-[#E4DED2] pb-2">
+                    <h3 className="font-bold text-xs text-[#2B2723]">
+                      รายการค่าใช้จ่าย ({quote.quoteNo})
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => setA4ModalOpen(true)}
+                      className="text-[11px] font-semibold text-[#C8102E] hover:underline flex items-center gap-1"
+                    >
+                      <Printer size={13} />
+                      ดูใบเสนอราคา (A4)
+                    </button>
                   </div>
-                ))}
-              </div>
+                  <div className="space-y-2.5 text-xs">
+                    {fin.displayLines.map(line => (
+                      <div key={line.index} className="flex justify-between items-start border-b border-[#F3EEE6] pb-2">
+                        <div className="pr-2">
+                          <div className="font-medium text-[#2B2723]">
+                            {line.index}. {line.description}
+                            {line.quantity > 1 && <span className="text-[#6B6459] ml-1">× {line.quantity}</span>}
+                          </div>
+                          {line.partWaitDays ? (
+                            <div className="text-[10px] text-[#BA7517] flex items-center gap-1 mt-0.5">
+                              <Clock size={11} /> รอสั่งอะไหล่ {line.partWaitDays} วัน
+                            </div>
+                          ) : null}
+                        </div>
+                        <div className="font-mono font-semibold text-[#2B2723] whitespace-nowrap">
+                          {fmtBaht(line.amount)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
 
-              {/* Totals Calculation */}
-              <div className="space-y-1.5 pt-1 text-xs border-t border-[#E4DED2]">
-                <div className="flex justify-between text-[#6B6459]">
-                  <span>รวมก่อน VAT</span>
-                  <span className="font-mono">{formatSatang(quote.subtotal)}</span>
-                </div>
-                <div className="flex justify-between text-[#6B6459]">
-                  <span>ภาษีมูลค่าเพิ่ม (VAT 7%)</span>
-                  <span className="font-mono">{formatSatang(quote.vatAmount)}</span>
-                </div>
-              </div>
+                  {/* Totals Calculation */}
+                  <div className="space-y-1.5 pt-1 text-xs border-t border-[#E4DED2]">
+                    <div className="flex justify-between text-[#6B6459]">
+                      <span>รวมก่อน VAT</span>
+                      <span className="font-mono">{fmtBaht(fin.subtotal)}</span>
+                    </div>
+                    <div className="flex justify-between text-[#6B6459]">
+                      <span>ภาษีมูลค่าเพิ่ม (VAT 7%)</span>
+                      <span className="font-mono">{fmtBaht(fin.vatAmount)}</span>
+                    </div>
+                    <div className="flex justify-between font-semibold text-[#2B2723] pt-0.5">
+                      <span>ยอดซ่อมรวมทั้งสิ้น</span>
+                      <span className="font-mono">{fmtBaht(fin.total)}</span>
+                    </div>
+                    {fin.operationFeeDiscount > 0 && (
+                      <div className="flex justify-between font-medium text-emerald-700">
+                        <span>หัก: ส่วนลดค่าดำเนินการที่ชำระไว้</span>
+                        <span className="font-mono">-{fmtBaht(fin.operationFeeDiscount)}</span>
+                      </div>
+                    )}
+                  </div>
 
-              {/* Total Net Amount Box */}
-              <div className="bg-[#FBE7E9] rounded-xl p-3.5 text-center mt-2">
-                <p className="text-xs text-[#9C0C22] mb-0.5 font-medium">ยอดที่ต้องชำระทั้งหมด</p>
-                <p className="text-2xl font-bold text-[#9C0C22] font-mono">{formatSatang(quote.total)}</p>
-              </div>
-            </div>
+                  {/* Total Net Amount Box */}
+                  <div className="bg-[#C8102E] text-white rounded-xl p-3.5 text-center mt-2">
+                    <p className="text-xs opacity-90 mb-0.5 font-medium">ยอดที่ต้องชำระ (กรณีอนุมัติซ่อม)</p>
+                    <p className="text-2xl font-bold font-mono">{fmtBaht(fin.netPayable)}</p>
+                    {fin.operationFeeDiscount > 0 && (
+                      <p className="text-[10.5px] opacity-90 mt-0.5">
+                        ราคารวม VAT แล้ว · หักส่วนลด {fmtBaht(fin.operationFeeDiscount)} แล้ว
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )
+            })()}
 
             {/* Repair Info Card */}
             <div className="bg-white rounded-2xl p-4 border border-[#E4DED2] shadow-sm space-y-2 text-xs">
@@ -351,7 +400,7 @@ export default function CustomerQuotePage({ params }: { params: Promise<{ token:
               </div>
               {quote.vendorNote && (
                 <div className="mt-2 pt-2 border-t border-[#E4DED2] text-[11px] text-[#6B6459]">
-                  <span className="font-medium text-[#2B2723]">หมายเหตุจากช่าง:</span> {quote.vendorNote}
+                  <span className="font-medium text-[#2B2723]">ผลการตรวจ / หมายเหตุจากช่าง:</span> {quote.vendorNote}
                 </div>
               )}
             </div>
@@ -434,7 +483,7 @@ export default function CustomerQuotePage({ params }: { params: Promise<{ token:
                 href={data.payUrl}
                 className="w-full py-3.5 rounded-xl bg-[#C8102E] text-white font-bold text-sm shadow hover:bg-[#9C0C22] transition-colors flex items-center justify-center gap-2 text-center"
               >
-                ชำระค่าซ่อมออนไลน์ ({formatSatang(quote.total)}) <ChevronRight size={18} />
+                ชำระค่าซ่อมออนไลน์ <ChevronRight size={18} />
               </Link>
             )}
           </div>
@@ -524,6 +573,51 @@ export default function CustomerQuotePage({ params }: { params: Promise<{ token:
         submitting={submitting}
         quoteNo={quote.quoteNo}
         totalBaht={quote.total}
+      />
+
+      {/* A4 Standardized Quotation Modal */}
+      <PublicQuoteA4Modal
+        open={a4ModalOpen}
+        onClose={() => setA4ModalOpen(false)}
+        data={{
+          quoteNo: quote.quoteNo,
+          jobNo: job.jobNo,
+          customer: job.customerName ?? null,
+          product: job.productName,
+          brandName: job.brandName,
+          serialNo: job.serialNo,
+          hasWarranty: job.hasWarranty,
+          shippingMethod: job.shippingMethod,
+          symptom: job.symptom,
+          branchName: job.branchName,
+          storeManagerName: job.storeManagerName,
+          vendorLabel: job.vendorName,
+          sentAt: quote.sentAt,
+          expiresAt: quote.expiresAt,
+          openedAt: job.openedAt,
+          operationFeePaid: job.operationFeePaid,
+          quoteUrl: `/q/${token}`,
+          lines: quote.lines.map(l => ({
+            type: l.type,
+            description: l.description,
+            quantity: l.quantity,
+            amount: l.unitPrice * l.quantity,
+            partWaitDays: l.partWaitDays,
+            partWarrantyDays: l.partWarrantyDays,
+          })),
+          subtotal: quote.subtotal,
+          vatAmount: quote.vatAmount,
+          total: quote.total,
+          repairDays: quote.repairDays,
+          repairWarrantyDays: quote.repairWarrantyDays,
+          vendorNote: quote.vendorNote,
+          managerSignatureUrl: quote.managerSignatureUrl,
+          managerSignerName: quote.managerSignerName,
+          isManagerProxy: quote.isManagerProxy,
+          managerSignedAt: quote.managerSignedAt,
+          customerSignatureUrl: quote.customerSignatureUrl,
+          customerSignedAt: quote.customerSignedAt,
+        }}
       />
     </div>
   )
