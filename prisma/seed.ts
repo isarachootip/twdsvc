@@ -43,20 +43,29 @@ async function main() {
       { key: 'TRADEIN_COUPON_VALID_DAYS', value: '30' },
       { key: 'VENDOR_SLA_THRESHOLD', value: '85' },
       { key: 'CHARGE_3PL_RETURN_FEE', value: 'false' },
+      { key: 'CS_CANCEL_POLICY', value: 'BEFORE_GR' },
     ],
     skipDuplicates: true,
   })
   console.log('  ✓ System settings')
 
   // ─── Sites ─────────────────────────────────────────────────────────────────
-  // 1. Migrate legacy BN & SK if present
-  const oldBn = await prisma.site.findUnique({ where: { code: 'BN' } })
-  if (oldBn) {
-    await prisma.site.update({ where: { id: oldBn.id }, data: { code: '60920', nickname: '60920' } })
-  }
-  const oldSk = await prisma.site.findUnique({ where: { code: 'SK' } })
-  if (oldSk) {
-    await prisma.site.update({ where: { id: oldSk.id }, data: { code: '60919', nickname: '60919' } })
+  // 1. Migrate or deactivate legacy short-code sites if present
+  for (const [legacyCode, canonicalCode, canonicalNick] of [
+    ['BN', '60920', 'BNA'],
+    ['BNA', '60920', 'BNA'],
+    ['SK', '60919', 'SK3'],
+    ['SK3', '60919', 'SK3'],
+    ['BBT', '60918', 'BBT'],
+  ] as const) {
+    const oldSite = await prisma.site.findUnique({ where: { code: legacyCode } })
+    if (!oldSite) continue
+    const canonSite = await prisma.site.findUnique({ where: { code: canonicalCode } })
+    if (!canonSite) {
+      await prisma.site.update({ where: { id: oldSite.id }, data: { code: canonicalCode, nickname: canonicalNick } })
+    } else if (oldSite.active) {
+      await prisma.site.update({ where: { id: oldSite.id }, data: { active: false } })
+    }
   }
 
   // 2. Load and upsert stores from stores.json if available
@@ -115,17 +124,17 @@ async function main() {
       }
       await prisma.site.upsert({
         where: { code: s.code },
-        update: siteData,
+        update: s.active === false ? siteData : { ...siteData, active: undefined },
         create: { code: s.code, ...siteData },
       })
     }
   }
 
   const bn = (await prisma.site.findFirst({ where: { code: { in: ['60920', 'BN'] } } })) || (await prisma.site.create({
-    data: { code: '60920', name: 'สาขาบางนา', nickname: '60920', type: SiteType.BRANCH, province: 'สมุทรปราการ' },
+    data: { code: '60920', name: 'สาขาบางนา', nickname: 'BNA', type: SiteType.BRANCH, province: 'สมุทรปราการ' },
   }))
   const sk = (await prisma.site.findFirst({ where: { code: { in: ['60919', 'SK'] } } })) || (await prisma.site.create({
-    data: { code: '60919', name: 'สาขาสุขาภิบาล 3', nickname: '60919', type: SiteType.BRANCH, province: 'กรุงเทพมหานคร' },
+    data: { code: '60919', name: 'สาขาสุขาภิบาล 3', nickname: 'SK3', type: SiteType.BRANCH, province: 'กรุงเทพมหานคร' },
   }))
   const dc1 = await prisma.site.upsert({
     where: { code: 'DC01' },
@@ -157,11 +166,11 @@ async function main() {
   })
   console.log('  ✓ Size categories')
 
-  // ─── Fee Rates (Values in Satang integers: 150 THB = 15000 satang) ───────
+  // ─── Fee Rates (Values in Satang integers: 150 THB = 15000 satang, 3PL 80/250 THB) ───
   await prisma.feeRate.createMany({
     data: [
-      { sizeCategoryId: small.id, operationFee: 15000, shippingFee3pl: 20000 },
-      { sizeCategoryId: large.id, operationFee: 30000, shippingFee3pl: 30000 },
+      { sizeCategoryId: small.id, operationFee: 15000, shippingFee3pl: 8000 },
+      { sizeCategoryId: large.id, operationFee: 30000, shippingFee3pl: 25000 },
     ],
     skipDuplicates: true,
   })

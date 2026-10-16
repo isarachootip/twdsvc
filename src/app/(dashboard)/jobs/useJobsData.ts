@@ -5,6 +5,7 @@ import { useToast } from '@/components/ui/Toast'
 import { api } from '@/lib/client'
 import type { JobView } from '@/lib/job-view'
 import type { SlaKpis } from '@/lib/sla-summary'
+import { isJobNoFormat } from '@/lib/business-rules'
 
 export interface JobsDataParams {
   from: string
@@ -12,26 +13,29 @@ export interface JobsDataParams {
   flag: string | null
   branch: string
   channel: string
+  search?: string
   initialJobs?: JobView[]
 }
 
 /**
  * ข้อมูลหน้า /jobs แยกเป็น 2 ส่วน:
- *  - ตาราง: ใช้ช่วงวันที่ — แต่เมื่อเลือกการ์ด จะแสดงงานเปิดทั้งหมดของการ์ดนั้น (ตรงกับตัวเลข) ไม่ใช้วันที่
+ *  - ตาราง: ใช้ช่วงวันที่ — แต่เมื่อเลือกการ์ด หรือค้นด้วยเลขใบงาน จะดึงข้ามช่วงวันที่ได้
  *  - การ์ด SLA: นับจากงานที่ยังไม่ปิดทั้งหมด ขึ้นกับสาขา/ช่องทางที่เลือกเท่านั้น
  */
-export function useJobsData({ from, to, flag, branch, channel, initialJobs }: JobsDataParams) {
+export function useJobsData({ from, to, flag, branch, channel, search = '', initialJobs }: JobsDataParams) {
   const { toast } = useToast()
   const hasInitial = Boolean(initialJobs && initialJobs.length > 0)
   const [jobs, setJobs] = useState<JobView[]>(hasInitial ? (initialJobs ?? []) : [])
   const [loading, setLoading] = useState<boolean>(!hasInitial)
   const [kpis, setKpis] = useState<SlaKpis | null>(null)
+  const jobNoQuery = isJobNoFormat(search) ? search.trim() : ''
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
       const qs = new URLSearchParams({ limit: '1000', kpis: '0' })
       if (flag) qs.set('flag', flag)
+      else if (jobNoQuery) qs.set('search', jobNoQuery)
       else {
         if (from) qs.set('from', from)
         if (to) qs.set('to', to)
@@ -43,7 +47,7 @@ export function useJobsData({ from, to, flag, branch, channel, initialJobs }: Jo
     } finally {
       setLoading(false)
     }
-  }, [from, to, flag, toast])
+  }, [from, to, flag, jobNoQuery, toast])
 
   const loadKpis = useCallback(async () => {
     try {

@@ -25,6 +25,9 @@ export async function PUT(req: NextRequest) {
       if (['QUOTE_EXPIRY_DAYS', 'TRADEIN_COUPON_VALID_DAYS'].includes(k) && !(Number(val) >= 1)) {
         throw new HttpError(400, `${k} ต้อง ≥ 1`)
       }
+      if (k === 'CS_CANCEL_POLICY' && !['BEFORE_GR', 'BEFORE_CARRIER'].includes(val)) {
+        throw new HttpError(400, 'CS_CANCEL_POLICY ต้องเป็น BEFORE_GR หรือ BEFORE_CARRIER')
+      }
       await setSetting(k, val)
     }
     return NextResponse.json({ ok: true })

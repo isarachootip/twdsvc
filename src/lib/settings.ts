@@ -7,6 +7,8 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   TRADEIN_COUPON_VALID_DAYS: '30',
   VENDOR_SLA_THRESHOLD: '85',
   CHARGE_3PL_RETURN_FEE: 'false',
+  CS_CANCEL_POLICY: 'BEFORE_GR', // BEFORE_GR (เฉพาะ CS_OPENED/PENDING_VENDOR_ASSIGNMENT) หรือ BEFORE_CARRIER (รวม GR_RECEIVED/GR_PACKED)
+  SLA_TIER_MULTIPLIERS: JSON.stringify({ enabled: false, NORMAL: 1.0, EXPRESS: 0.5, VIP: 0.3 }),
   DEMO_MODE: 'true', // แสดงปุ่มจำลอง (3PL webhook / ลูกค้ากด LON / ชำระเงิน) เมื่อยังไม่เชื่อม integration จริง
   REQUIRE_PHOTOS: 'true',
   PUBLIC_BASE_URL: '',

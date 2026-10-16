@@ -39,7 +39,7 @@ export default function JobsClient({ role: initialRole, user, initialJobs }: Job
   const [search, setSearch] = useState(sp.get('search') ?? '')
   const [openId, setOpenId] = useState<string | null>(sp.get('open'))
   const [sysTime, setSysTime] = useState<string>('')
-  const { jobs, loading, kpis, reloadAll } = useJobsData({ from, to, flag, branch, channel, initialJobs })
+  const { jobs, loading, kpis, reloadAll } = useJobsData({ from, to, flag, branch, channel, search, initialJobs })
 
   useEffect(() => {
     const update = () => setSysTime(fmtDateTime(new Date()))

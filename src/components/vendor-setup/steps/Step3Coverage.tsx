@@ -76,7 +76,7 @@ export function Step3Coverage({ coverage, vendorBranches, onUpdateCoverage }: St
       <div className="p-4 rounded-xl text-white flex items-center justify-between" style={{ backgroundColor: 'var(--navy)' }}>
         <div>
           <div className="text-xs opacity-75">เลือกพื้นที่บริการสาขา SVC (ทั่วประเทศ)</div>
-          <div className="text-lg font-bold">เลือกแล้ว {selectedCount}/{sites.length || 95} สาขา</div>
+          <div className="text-lg font-bold">เลือกแล้ว {selectedCount}/{sites.length || 92} สาขา</div>
         </div>
         <div className="flex gap-2">
           {vendorBranches.length > 0 && (

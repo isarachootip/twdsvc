@@ -65,6 +65,18 @@ export function GeneralSection() {
         {f('TRADEIN_COUPON_VALID_DAYS', 'อายุคูปอง Trade-in (วัน)')}
         {f('VENDOR_SLA_THRESHOLD', 'เกณฑ์ SLA VD (%)', 'ต่ำกว่านี้ 3 เดือนติด → แจ้งเตือนผู้บริหาร')}
         {f('PUBLIC_BASE_URL', 'URL หลักของระบบ (สำหรับลิงก์ลูกค้า)', 'เช่น https://svc.thaiwatsadu.com', 'text')}
+        <div className="field">
+          <label>สิทธิ์การยกเลิกงานของ CS</label>
+          <select
+            className="sel"
+            value={s.CS_CANCEL_POLICY ?? 'BEFORE_GR'}
+            onChange={e => setS({ ...s, CS_CANCEL_POLICY: e.target.value })}
+          >
+            <option value="BEFORE_GR">ยกเลิกได้เฉพาะก่อนส่งมอบ GR (CS_OPENED / รอจับคู่ VD)</option>
+            <option value="BEFORE_CARRIER">ยกเลิกได้ก่อนส่งให้ขนส่ง (รวม GR_RECEIVED / GR_PACKED)</option>
+          </select>
+          <span className="sub-mute">กำหนดขอบเขตสถานะที่ CS ยกเลิกใบงานได้ (ADMIN ยกเลิกได้ทุกสถานะที่ยังไม่ปิด)</span>
+        </div>
       </div>
       <div className="divider" />
       {t('CHARGE_3PL_RETURN_FEE', 'คิดค่า 3PL ขากลับ', 'เพิ่มค่าขนส่งขากลับอีก 1 รายการสำหรับงานส่งด่วน (C3)')}
@@ -86,6 +98,7 @@ export function GeneralSection() {
                     'TRADEIN_COUPON_VALID_DAYS',
                     'VENDOR_SLA_THRESHOLD',
                     'PUBLIC_BASE_URL',
+                    'CS_CANCEL_POLICY',
                     'CHARGE_3PL_RETURN_FEE',
                     'REQUIRE_PHOTOS',
                     'DEMO_MODE',

@@ -214,6 +214,7 @@ export async function loadClosedJobs(from: Date, to: Date, where: Prisma.JobWher
       AND: [
         where,
         {
+          isTest: false,
           type: 'CUSTOMER',
           stage: { in: ['CLOSED_REPAIRED', 'CLOSED_NOT_REPAIRED'] },
           closedAt: { gte: from, lt: to },
@@ -261,7 +262,7 @@ export async function approvalRate(from: Date, to: Date, where: Prisma.JobWhereI
     where: {
       decidedAt: { gte: from, lt: to },
       status: { in: ['APPROVED', 'REJECTED'] },
-      job: { AND: [where, { decision: { in: ['APPROVED', 'REJECTED'] } }] },
+      job: { AND: [where, { isTest: false, decision: { in: ['APPROVED', 'REJECTED'] } }] },
     },
     select: { status: true },
   })
@@ -271,7 +272,7 @@ export async function approvalRate(from: Date, to: Date, where: Prisma.JobWhereI
 
 export async function csatAvg(from: Date, to: Date, where: Prisma.JobWhereInput = {}) {
   const evs = await prisma.jobEvent.findMany({
-    where: { type: 'CSAT_SUBMITTED', createdAt: { gte: from, lt: to }, job: where },
+    where: { type: 'CSAT_SUBMITTED', createdAt: { gte: from, lt: to }, job: { AND: [where, { isTest: false }] } },
     select: { payload: true },
   })
   const scores = evs
@@ -282,10 +283,10 @@ export async function csatAvg(from: Date, to: Date, where: Prisma.JobWhereInput 
 
 export async function tradeinConversion(from: Date, to: Date, where: Prisma.JobWhereInput = {}) {
   const notRepaired = await prisma.job.count({
-    where: { AND: [where, { stage: 'CLOSED_NOT_REPAIRED', closedAt: { gte: from, lt: to } }] },
+    where: { AND: [where, { isTest: false, stage: 'CLOSED_NOT_REPAIRED', closedAt: { gte: from, lt: to } }] },
   })
   const used = await prisma.tradeIn.count({
-    where: { type: 'TYPE2', status: 'USED', job: { AND: [where, { closedAt: { gte: from, lt: to } }] } },
+    where: { type: 'TYPE2', status: 'USED', job: { AND: [where, { isTest: false, closedAt: { gte: from, lt: to } }] } },
   })
   return notRepaired ? Math.round((used / notRepaired) * 1000) / 10 : 0
 }
@@ -295,7 +296,7 @@ export async function openJobs(where: Prisma.JobWhereInput = {}) {
     where: {
       AND: [
         where,
-        { stage: { notIn: ['CLOSED_REPAIRED', 'CLOSED_NOT_REPAIRED', 'CANCELLED'] } },
+        { isTest: false, stage: { notIn: ['CLOSED_REPAIRED', 'CLOSED_NOT_REPAIRED', 'CANCELLED'] } },
       ],
     },
     select: {

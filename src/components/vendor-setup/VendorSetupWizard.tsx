@@ -13,7 +13,7 @@ import { CheckCircle2, ChevronLeft, ChevronRight, Send, AlertTriangle } from 'lu
 const STEP_TITLES = [
   'ข้อมูลร้าน & สาขา',
   'ความเชี่ยวชาญ (Pack Info)',
-  'พื้นที่บริการ 91 สาขา',
+  'พื้นที่บริการสาขา SVC',
   'เอกสาร & การเงิน',
   'สรุปและข้อตกลง',
 ]

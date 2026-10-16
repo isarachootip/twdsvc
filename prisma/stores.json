@@ -2297,7 +2297,7 @@
     "rom": "Other",
     "districtManager": "Other",
     "groupEmail": "Other",
-    "active": true
+    "active": false
   },
   {
     "code": "60802",
@@ -2322,7 +2322,7 @@
     "rom": "Other",
     "districtManager": "Other",
     "groupEmail": "Other",
-    "active": true
+    "active": false
   },
   {
     "code": "60813",
@@ -2372,6 +2372,6 @@
     "rom": "Other",
     "districtManager": "Other",
     "groupEmail": "Other",
-    "active": true
+    "active": false
   }
 ]

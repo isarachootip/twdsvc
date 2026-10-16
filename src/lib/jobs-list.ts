@@ -6,6 +6,7 @@ import type { UserSession } from './auth'
 import { STAGE_ORDER } from './constants'
 import { JOB_LIST_INCLUDE, serializeJob, type JobView } from './job-view'
 import { SLA_CARD_FLAGS, computeSlaSummary, type SlaCardFlag, type SlaKpis } from './sla-summary'
+import { isJobNoFormat } from './business-rules'
 
 const bkkStart = (d: string) => new Date(`${d}T00:00:00+07:00`)
 const bkkEnd = (d: string) => new Date(`${d}T23:59:59.999+07:00`)
@@ -51,6 +52,9 @@ export async function listJobs(user: UserSession, sp: URLSearchParams): Promise<
   const summary = needSummary ? await computeSlaSummary(user, { branchId, channel }) : null
 
   const and: Prisma.JobWhereInput[] = [await jobScope(user)]
+  if (sp.get('includeTest') !== '1') {
+    and.push({ isTest: false })
+  }
   const stages = (sp.get('stage') ?? '').split(',').filter(s => STAGE_ORDER.includes(s as never)) as JobStage[]
   if (stages.length) and.push({ stage: { in: stages } })
   const type = sp.get('type')
@@ -64,7 +68,7 @@ export async function listJobs(user: UserSession, sp: URLSearchParams): Promise<
   if (flag && summary) {
     // ดูรายการของการ์ด = งานเปิดทั้งหมดที่การ์ดนับ (ตรงกับตัวเลข) จึงไม่ใช้ช่วงวันที่
     and.push({ id: { in: summary.ids[flag] } })
-  } else {
+  } else if (!isJobNoFormat(search)) {
     const from = sp.get('from')
     const to = sp.get('to')
     if (from) and.push({ openedAt: { gte: bkkStart(from) } })

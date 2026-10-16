@@ -3,6 +3,7 @@ import { JobStage, QuoteDecision } from '@prisma/client'
 import { ActionDef } from './types'
 import { ActionError } from './errors'
 import { applyDecision, isApprove, totalBalance, payMethod, requirePosReceipt } from './helpers'
+import { canActorCancelJob } from '../business-rules'
 
 export const CLOSE_ACTIONS: Record<string, ActionDef> = {
   customer_approve: {
@@ -98,14 +99,11 @@ export const CLOSE_ACTIONS: Record<string, ActionDef> = {
     roles: ['CS', 'ADMIN'],
     event: 'JOB_CANCELLED',
     to: () => JobStage.CANCELLED,
-    validate: c => {
-      const closed: JobStage[] = [JobStage.CLOSED_REPAIRED, JobStage.CLOSED_NOT_REPAIRED, JobStage.CANCELLED]
-      if (closed.includes(c.job.stage)) {
-        throw new ActionError('ไม่สามารถยกเลิกงานที่ปิดแล้ว')
-      }
-      const csAllowed: JobStage[] = [JobStage.CS_OPENED, JobStage.PENDING_VENDOR_ASSIGNMENT]
-      if (c.actor.role !== 'ADMIN' && !csAllowed.includes(c.job.stage)) {
-        throw new ActionError('CS ยกเลิกได้เฉพาะงานที่ยังไม่ส่งมอบ GR')
+    validate: async c => {
+      const policyRow = await c.tx.systemSetting.findUnique({ where: { key: 'CS_CANCEL_POLICY' } })
+      const check = canActorCancelJob(c.actor.role, c.job.stage, policyRow?.value)
+      if (!check.allowed) {
+        throw new ActionError(check.message ?? 'ไม่สามารถยกเลิกงานได้')
       }
       if (!(c.input.reason || c.input.note || '').trim()) throw new ActionError('กรุณาระบุเหตุผลการยกเลิก')
     },

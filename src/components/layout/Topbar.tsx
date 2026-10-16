@@ -7,6 +7,7 @@ import { useState } from 'react'
 import { api } from '@/lib/client'
 import { useToast } from '@/components/ui/Toast'
 import { ROLE_LABELS } from '@/lib/constants'
+import { isJobNoFormat } from '@/lib/business-rules'
 
 const PAGE_TITLES: Array<[string, string]> = [
   ['/exec', 'Executive Dashboard'],
@@ -46,7 +47,7 @@ export default function Topbar({ user, onMenu }: TopbarProps) {
       setSearch('')
     } catch {
       router.push(`/jobs?search=${encodeURIComponent(q)}`)
-      if (!/^(JB|STK)-/i.test(q)) return
+      if (!isJobNoFormat(q)) return
       toast('ไม่พบเลขงานนี้ — แสดงผลการค้นหาแทน', 'info')
     }
   }

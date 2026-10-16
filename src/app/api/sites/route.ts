@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth'
+import { queryActiveSitesForDropdown } from '@/lib/sites-query'
 
 export const dynamic = 'force-dynamic'
 
@@ -8,10 +8,8 @@ export async function GET(req: Request) {
   const user = await getCurrentUser(req)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const sites = await prisma.site.findMany({
-    where: { active: true },
-    select: { id: true, code: true, name: true, type: true },
-    orderBy: [{ type: 'asc' }, { code: 'asc' }],
-  })
-  return NextResponse.json(sites)
+  const sites = await queryActiveSitesForDropdown()
+  return NextResponse.json(
+    sites.map(s => ({ id: s.id, code: s.code, name: s.name, type: s.type }))
+  )
 }

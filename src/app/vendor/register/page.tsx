@@ -1,12 +1,18 @@
 import { VendorSetupWizard } from '@/components/vendor-setup/VendorSetupWizard'
 import { Wrench } from 'lucide-react'
+import { queryActiveBranchSites } from '@/lib/sites-query'
+
+export const dynamic = 'force-dynamic'
 
 export const metadata = {
   title: 'สมัครเข้าร่วมเป็นคู่ค้าศูนย์บริการ (Vendor Onboarding) | SVC',
   description: 'ระบบลงทะเบียนและตั้งค่าคู่ค้าศูนย์บริการซ่อมมาตรฐานเครือข่าย SVC',
 }
 
-export default function VendorRegisterPage() {
+export default async function VendorRegisterPage() {
+  const activeBranches = await queryActiveBranchSites().catch(() => [])
+  const branchCount = activeBranches.length || 92
+
   return (
     <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: 'var(--bg)' }}>
       {/* Top Header */}
@@ -20,7 +26,7 @@ export default function VendorRegisterPage() {
               SVC Vendor Onboarding Portal
             </h1>
             <p className="text-xs" style={{ color: 'var(--text-2)' }}>
-              ลงทะเบียนคู่ค้าศูนย์ซ่อม • เครือข่าย 91 สาขาทั่วประเทศ • ระบบจ่ายงานและประกันรายได้
+              ลงทะเบียนคู่ค้าศูนย์ซ่อม • เครือข่าย {branchCount} สาขาทั่วประเทศ • ระบบจ่ายงานและประกันรายได้
             </p>
           </div>
         </div>

@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
     // Vendor concentration (jobs opened in period)
     const opened = await prisma.job.groupBy({
       by: ['vendorCenterId'],
-      where: { type: 'CUSTOMER', openedAt: { gte: cur.from, lt: cur.to }, vendorCenterId: { not: null } },
+      where: { isTest: false, type: 'CUSTOMER', openedAt: { gte: cur.from, lt: cur.to }, vendorCenterId: { not: null } },
       _count: { _all: true },
     })
     const centers = await prisma.vendorCenter.findMany({

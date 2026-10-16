@@ -71,7 +71,7 @@ export async function loadQueueTabs(dept: keyof typeof QUEUES, user: UserSession
     result.labels[t.key] = t.label
     const extraScope: Prisma.JobWhereInput = dept === 'CS' && t.key === 'opened' ? csOpenedScope() : {}
     const rows = await prisma.job.findMany({
-      where: { AND: [scope, t.where, dateWhere, extraScope, filterWhere] },
+      where: { AND: [scope, { isTest: false }, t.where, dateWhere, extraScope, filterWhere] },
       include: JOB_LIST_INCLUDE,
       orderBy: { stageEnteredAt: 'asc' },
       take: 500,
