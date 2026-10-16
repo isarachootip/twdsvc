@@ -4,6 +4,7 @@ import StageBadge from '@/components/ui/StageBadge'
 import { Th, type SortDir } from '@/components/ui/Sortable'
 import { CHANNEL_LABELS, OWNER_LABELS, fmtDateTime, fmtPhone } from '@/lib/constants'
 import type { JobView } from '@/lib/job-view'
+import { WAITING_INTAKE_PAYMENT_LABEL, isWaitingIntakePayment } from '@/lib/job-status-filter'
 
 export function ownerOf(j: JobView) {
   return j.overdue ? j.overdueOwner : j.sla?.owner ?? null
@@ -13,7 +14,7 @@ export function flags(j: JobView) {
   const out: string[] = []
   if (j.overdue) out.push(`เกิน SLA (${OWNER_LABELS[j.overdueOwner ?? ''] ?? j.overdueOwner})`)
   if (j.unpaid) out.push('ค้างชำระ')
-  if (j.intakeUnpaid && ['CS_OPENED', 'PENDING_VENDOR_ASSIGNMENT'].includes(j.stage)) out.push('รอชำระค่าดำเนินการ')
+  if (isWaitingIntakePayment(j)) out.push(WAITING_INTAKE_PAYMENT_LABEL)
   if (j.stage === 'PENDING_VENDOR_ASSIGNMENT') out.push('รอกำหนดศูนย์ซ่อม')
   return out
 }

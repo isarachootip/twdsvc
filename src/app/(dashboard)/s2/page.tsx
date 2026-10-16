@@ -288,7 +288,7 @@ export default function S2Page() {
 
   const loadHistory = useCallback(() => {
     setHistoryLoading(true)
-    fetch('/api/jobs?type=STOCK&limit=50')
+    fetch('/api/jobs?type=STOCK&limit=50&kpis=0')
       .then((r) => r.json())
       .then((d) => setHistory(d.jobs ?? []))
       .catch(() => {})

@@ -33,6 +33,8 @@ import './unit/seed-guard.test'
 import './unit/credential-leak.test'
 import './unit/test-account-plan.test'
 import './unit/test-accounts-cli.test'
+import './unit/job-status-filter.test'
+import './unit/sla-summary.test'
 
 // Tier 2: Boundary & Corner Cases
 import './e2e/tier2-boundaries/boundary_financial_satang.test'

@@ -164,7 +164,7 @@ export default function TradeInPage() {
   // 3. Load Type 2 Eligible Jobs (rejected customer jobs)
   const loadEligibleJobs = useCallback(() => {
     const qs = branchFilter ? `&branchId=${branchFilter}` : ''
-    fetch(`/api/jobs?limit=50${qs}`)
+    fetch(`/api/jobs?limit=50&kpis=0${qs}`)
       .then((r) => r.json())
       .then((d) => {
         const jobs: EligibleJob[] = (d.jobs ?? []).filter(

@@ -1,6 +1,6 @@
 'use client'
 
-import { STAGE_ORDER, STAGE_LABELS, type Stage } from '@/lib/constants'
+import { statusFilterOptions } from '@/lib/job-status-filter'
 
 interface JobsFilterBarProps {
   branch: string
@@ -49,12 +49,8 @@ export default function JobsFilterBar({
     setStageGroup([])
   }
 
-  const getStatusLabel = (stg: string) => {
-    if (stg in STAGE_LABELS) {
-      return STAGE_LABELS[stg as Stage]
-    }
-    return stg
-  }
+  const getStatusLabel = (stg: string) =>
+    statusFilterOptions().find(o => o.value === stg)?.label ?? stg
 
   return (
     <div className="bg-white p-3.5 rounded-xl border border-slate-200/90 shadow-2xs mb-4 space-y-2.5">
@@ -114,9 +110,8 @@ export default function JobsFilterBar({
             value={status}
             onChange={e => setStatus(e.target.value)}
           >
-            <option value="">ทุกสถานะ</option>
-            {STAGE_ORDER.map(s => (
-              <option key={s} value={s}>{STAGE_LABELS[s]}</option>
+            {statusFilterOptions().map(o => (
+              <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
 

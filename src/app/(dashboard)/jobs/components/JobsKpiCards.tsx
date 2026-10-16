@@ -1,6 +1,7 @@
 'use client'
 
-import type { JobView } from '@/lib/job-view'
+import type { SlaKpis } from '@/lib/sla-summary'
+import { fmtBaht } from '@/lib/constants'
 
 export interface KpiItemDef {
   key: string | null
@@ -19,18 +20,20 @@ export const KPI_DEFS: KpiItemDef[] = [
   { key: 'unpaid', label: 'ยอดค้างชำระ', sublabel: 'ค่าดำเนินการ/ซ่อม', icon: 'unpaid', tone: 'finance' },
 ]
 
-export function matchFlag(j: JobView, flag: string | null) {
-  if (!flag) return true
-  if (flag === 'unpaid') return j.unpaid
-  if (!j.overdue) return false
-  if (flag === 'overdue') return true
-  if (flag === 'transport') return ['DC', 'TPL', 'CARRIER'].includes(j.overdueOwner ?? '')
-  if (flag === 'CS') return ['CS', 'CUSTOMER'].includes(j.overdueOwner ?? '')
-  return j.overdueOwner === flag
+export function kpiValue(kpis: SlaKpis, key: string | null): number {
+  switch (key) {
+    case null: return kpis.total
+    case 'CS': return kpis.CS
+    case 'GR': return kpis.GR
+    case 'VD': return kpis.VD
+    case 'transport': return kpis.transport
+    case 'unpaid': return kpis.unpaid
+    default: return 0
+  }
 }
 
 interface JobsKpiCardsProps {
-  jobs: JobView[]
+  kpis: SlaKpis | null
   flag: string | null
   onToggleFlag: (key: string | null) => void
 }
@@ -81,50 +84,52 @@ function KpiIcon({ name, active, urgent }: { name: string; active: boolean; urge
   )
 }
 
-export default function JobsKpiCards({ jobs, flag, onToggleFlag }: JobsKpiCardsProps) {
-  const count = (key: string | null) => jobs.filter(j => matchFlag(j, key)).length
-
+export default function JobsKpiCards({ kpis, flag, onToggleFlag }: JobsKpiCardsProps) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
-      {KPI_DEFS.map(k => {
-        const val = count(k.key)
-        const isActive = (k.key === null && flag === null) || (k.key !== null && flag === k.key)
-        const isUrgent = k.key !== null && val > 0
+    <div className="mb-5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        {KPI_DEFS.map(k => {
+          const val = kpis ? kpiValue(kpis, k.key) : null
+          const isActive = (k.key === null && flag === null) || (k.key !== null && flag === k.key)
+          const isUrgent = k.key !== null && val !== null && val > 0
 
-        return (
-          <button
-            key={k.label}
-            type="button"
-            onClick={() => onToggleFlag(k.key)}
-            className={`flex flex-col justify-between p-3.5 rounded-xl border text-left transition-all duration-150 cursor-pointer ${
-              isActive
-                ? 'bg-red-50/40 border-red-600 ring-2 ring-red-100 shadow-sm'
-                : 'bg-white border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-xs'
-            }`}
-          >
-            <div className="flex items-center justify-between gap-1 w-full mb-2">
-              <span className="text-xs font-medium text-slate-500 truncate">{k.label}</span>
-              <div className={`p-1.5 rounded-lg ${isUrgent ? 'bg-rose-50' : isActive ? 'bg-red-100/60' : 'bg-slate-100'}`}>
-                <KpiIcon name={k.icon} active={isActive} urgent={isUrgent} />
+          return (
+            <button
+              key={k.label}
+              type="button"
+              onClick={() => onToggleFlag(k.key)}
+              className={`flex flex-col justify-between p-3.5 rounded-xl border text-left transition-all duration-150 cursor-pointer ${
+                isActive
+                  ? 'bg-red-50/40 border-red-600 ring-2 ring-red-100 shadow-sm'
+                  : 'bg-white border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-xs'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-1 w-full mb-2">
+                <span className="text-xs font-medium text-slate-500 truncate">{k.label}</span>
+                <div className={`p-1.5 rounded-lg ${isUrgent ? 'bg-rose-50' : isActive ? 'bg-red-100/60' : 'bg-slate-100'}`}>
+                  <KpiIcon name={k.icon} active={isActive} urgent={isUrgent} />
+                </div>
               </div>
-            </div>
 
-            <div className="flex items-baseline justify-between mt-auto">
-              <span className={`text-2xl font-bold tracking-tight ${isUrgent ? 'text-rose-600' : val === 0 ? 'text-slate-400' : 'text-slate-800'}`}>
-                {val}
-              </span>
-              {k.key !== null && val > 0 && (
-                <span className="text-[11px] font-semibold text-rose-600">
-                  เร่งด่วน
+              <div className="flex items-baseline justify-between mt-auto">
+                <span className={`text-2xl font-bold tracking-tight ${isUrgent ? 'text-rose-600' : val === 0 ? 'text-slate-400' : 'text-slate-800'}`}>
+                  {val ?? '–'}
                 </span>
+                {k.key !== null && val !== null && val > 0 && (
+                  <span className="text-[11px] font-semibold text-rose-600">เร่งด่วน</span>
+                )}
+                {k.key !== null && val === 0 && (
+                  <span className="text-[10px] text-slate-400">ปกติ</span>
+                )}
+              </div>
+              {k.key === 'unpaid' && kpis && kpis.unpaid > 0 && (
+                <span className="text-[11px] text-slate-500 mt-1">รวม {fmtBaht(kpis.unpaidAmount)}</span>
               )}
-              {k.key !== null && val === 0 && (
-                <span className="text-[10px] text-slate-400">ปกติ</span>
-              )}
-            </div>
-          </button>
-        )
-      })}
+            </button>
+          )
+        })}
+      </div>
+      <p className="text-[11px] text-slate-400 mt-2">นับจากงานที่ยังไม่ปิดทั้งหมด (ไม่ขึ้นกับช่วงวันที่ด้านบน)</p>
     </div>
   )
 }

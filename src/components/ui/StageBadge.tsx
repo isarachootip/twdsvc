@@ -1,5 +1,6 @@
 import { JobStage } from '@prisma/client'
-import { STAGE_LABELS, STAGE_BADGE, type Stage } from '@/lib/constants'
+import { STAGE_BADGE, type Stage } from '@/lib/constants'
+import { displayStageLabel, isWaitingIntakePayment } from '@/lib/job-status-filter'
 
 interface Props {
   stage: JobStage | string
@@ -62,8 +63,8 @@ export default function StageBadge({
   variant = 'badge',
   className = '',
 }: Props) {
-  const isWaitingPayment = stage === 'CS_OPENED' && Boolean(intakeUnpaid)
-  const label = isWaitingPayment ? 'รอชำระค่าดำเนินการ' : (STAGE_LABELS[stage as Stage] ?? stage)
+  const isWaitingPayment = isWaitingIntakePayment({ stage, intakeUnpaid })
+  const label = displayStageLabel({ stage, intakeUnpaid })
   const badgeKey = isWaitingPayment ? 'b-amber' : (STAGE_BADGE[stage as Stage] ?? 'b-gray')
   const theme = THEME_MAP[badgeKey] ?? THEME_MAP['b-gray']
 

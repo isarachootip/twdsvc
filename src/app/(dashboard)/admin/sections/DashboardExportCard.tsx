@@ -12,7 +12,7 @@ export function DashboardExportCard() {
 
   const doExport = async () => {
     try {
-      const qs = new URLSearchParams({ limit: '1000' })
+      const qs = new URLSearchParams({ limit: '1000', kpis: '0' })
       if (range.from) qs.set('from', range.from)
       if (range.to) qs.set('to', range.to)
       const r = await api<{ jobs: JobView[] }>(`/api/jobs?${qs}`)

@@ -1,85 +1,21 @@
 import crypto from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
-import type { Prisma, JobStage, Channel, PaymentMethod } from '@prisma/client'
+import type { JobStage, Channel, PaymentMethod } from '@prisma/client'
 import { prisma } from '@/lib/db'
-import { requireUser, jobScope, handleError, HttpError } from '@/lib/api'
+import { requireUser, handleError, HttpError } from '@/lib/api'
 import { generateJobNo } from '@/lib/number-generator'
 import { calcIntakeFees } from '@/lib/fees'
 import { resolveRouting } from '@/lib/routing'
 import { slaOnEvent, refreshBreaches } from '@/lib/sla-engine'
-import { JOB_LIST_INCLUDE, serializeJob, type JobView } from '@/lib/job-view'
-import { STAGE_ORDER } from '@/lib/constants'
-
-function bkkStart(d: string) { return new Date(`${d}T00:00:00+07:00`) }
-function bkkEnd(d: string) { return new Date(`${d}T23:59:59.999+07:00`) }
+import { listJobs } from '@/lib/jobs-list'
 
 // GET /api/jobs?from&to&stage&type&branchId&channel&search&flag&limit
+// kpis = การ์ด SLA (งานที่ยังไม่ปิดทั้งหมด ไม่ขึ้นกับ from/to); jobs = ตารางรายการที่กรองตามเงื่อนไข
 export async function GET(req: NextRequest) {
   try {
     const user = await requireUser(undefined, req)
     await refreshBreaches()
-    const sp = new URL(req.url).searchParams
-    const scope = await jobScope(user)
-    const and: Prisma.JobWhereInput[] = [scope]
-
-    const stages = (sp.get('stage') ?? '').split(',').filter(s => STAGE_ORDER.includes(s as never)) as JobStage[]
-    if (stages.length) and.push({ stage: { in: stages } })
-    const type = sp.get('type')
-    if (type === 'CUSTOMER' || type === 'STOCK') and.push({ type })
-    const branchId = sp.get('branchId')
-    if (branchId) and.push({ branchId })
-    const channel = sp.get('channel')
-    if (channel === 'DC' || channel === 'DSD' || channel === 'TPL') and.push({ channel: channel as Channel })
-    const from = sp.get('from')
-    const to = sp.get('to')
-    if (from) and.push({ openedAt: { gte: bkkStart(from) } })
-    if (to) and.push({ openedAt: { lte: bkkEnd(to) } })
-    if (sp.get('open') === '1') and.push({ stage: { notIn: ['CLOSED_REPAIRED', 'CLOSED_NOT_REPAIRED', 'CANCELLED'] } })
-    const search = (sp.get('search') ?? '').trim()
-    if (search) {
-      const digits = search.replace(/\D/g, '')
-      and.push({
-        OR: [
-          { jobNo: { contains: search, mode: 'insensitive' } },
-          { customerName: { contains: search, mode: 'insensitive' } },
-          { productName: { contains: search, mode: 'insensitive' } },
-          { sku: { contains: search, mode: 'insensitive' } },
-          { receiverName: { contains: search, mode: 'insensitive' } },
-          { items: { some: { sku: { contains: search, mode: 'insensitive' } } } },
-          { vendorCenter: { code: { contains: search, mode: 'insensitive' } } },
-          { vendorCenter: { vendorParent: { name: { contains: search, mode: 'insensitive' } } } },
-          ...(digits.length >= 4 ? [{ customerPhone: { contains: digits } }] : []),
-        ],
-      })
-    }
-    const limit = Math.min(1000, Math.max(1, Number(sp.get('limit') ?? '300')))
-
-    const rows = await prisma.job.findMany({
-      where: { AND: and },
-      take: limit,
-      orderBy: [{ stageEnteredAt: 'desc' }, { openedAt: 'desc' }],
-      include: JOB_LIST_INCLUDE,
-    })
-    let jobs: JobView[] = rows.map(j => serializeJob(j, user.role))
-
-    const kpis = {
-      total: jobs.length,
-      GR: jobs.filter(j => j.overdue && j.overdueOwner === 'GR').length,
-      VD: jobs.filter(j => j.overdue && j.overdueOwner === 'VD').length,
-      transport: jobs.filter(j => j.overdue && ['DC', 'TPL', 'CARRIER'].includes(j.overdueOwner ?? '')).length,
-      CS: jobs.filter(j => j.overdue && ['CS', 'CUSTOMER'].includes(j.overdueOwner ?? '')).length,
-      unpaid: jobs.filter(j => j.unpaid).length,
-      overdue: jobs.filter(j => j.overdue).length,
-    }
-
-    const flag = sp.get('flag')
-    if (flag === 'unpaid') jobs = jobs.filter(j => j.unpaid)
-    else if (flag === 'overdue') jobs = jobs.filter(j => j.overdue)
-    else if (flag === 'GR' || flag === 'VD') jobs = jobs.filter(j => j.overdue && j.overdueOwner === flag)
-    else if (flag === 'transport') jobs = jobs.filter(j => j.overdue && ['DC', 'TPL', 'CARRIER'].includes(j.overdueOwner ?? ''))
-    else if (flag === 'CS') jobs = jobs.filter(j => j.overdue && ['CS', 'CUSTOMER'].includes(j.overdueOwner ?? ''))
-
-    return NextResponse.json({ jobs, kpis, total: jobs.length })
+    return NextResponse.json(await listJobs(user, new URL(req.url).searchParams))
   } catch (e) {
     return handleError(e)
   }

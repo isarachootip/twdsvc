@@ -1,18 +1,19 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import JobDetailModal from '@/components/jobs/JobDetail'
 import { useSort } from '@/components/ui/Sortable'
 import { DateRange } from '@/components/ui/Queue'
-import { useToast } from '@/components/ui/Toast'
-import { api, monthStartBkk, todayBkk } from '@/lib/client'
+import { monthStartBkk, todayBkk } from '@/lib/client'
 import { STAGE_ORDER, fmtDateTime, type Stage } from '@/lib/constants'
 import type { JobView } from '@/lib/job-view'
+import { matchesStatusFilter } from '@/lib/job-status-filter'
 import JobsTable, { ownerOf } from './components/JobsTable'
 import JobsFilterBar from './components/JobsFilterBar'
-import JobsKpiCards, { matchFlag } from './components/JobsKpiCards'
+import JobsKpiCards from './components/JobsKpiCards'
 import { exportJobsXlsx } from './components/jobs-export'
+import { useJobsData } from './useJobsData'
 
 export interface JobsClientProps {
   role?: string
@@ -24,14 +25,10 @@ export default function JobsClient({ role: initialRole, user, initialJobs }: Job
   const role = initialRole ?? user?.role ?? 'CS'
   const sp = useSearchParams()
   const router = useRouter()
-  const { toast } = useToast()
 
   const hasSpecificFilter = Boolean(sp.get('open') || sp.get('search') || sp.get('stage') || sp.get('stages') || sp.get('flag') || sp.get('overdue'))
   const [from, setFrom] = useState(hasSpecificFilter ? '' : monthStartBkk())
   const [to, setTo] = useState(hasSpecificFilter ? '' : todayBkk())
-
-  const [jobs, setJobs] = useState<JobView[]>(initialJobs && initialJobs.length > 0 ? initialJobs : [])
-  const [loading, setLoading] = useState<boolean>(!initialJobs || initialJobs.length === 0)
 
   const initialFlag = sp.get('flag') ?? (sp.get('overdue') === 'true' || sp.get('overdue') === '1' ? 'overdue' : null)
   const [flag, setFlag] = useState<string | null>(initialFlag)
@@ -42,6 +39,7 @@ export default function JobsClient({ role: initialRole, user, initialJobs }: Job
   const [search, setSearch] = useState(sp.get('search') ?? '')
   const [openId, setOpenId] = useState<string | null>(sp.get('open'))
   const [sysTime, setSysTime] = useState<string>('')
+  const { jobs, loading, kpis, reloadAll } = useJobsData({ from, to, flag, branch, channel, initialJobs })
 
   useEffect(() => {
     const update = () => setSysTime(fmtDateTime(new Date()))
@@ -50,24 +48,6 @@ export default function JobsClient({ role: initialRole, user, initialJobs }: Job
     return () => clearInterval(timer)
   }, [])
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    try {
-      const qs = new URLSearchParams({ limit: '1000' })
-      if (from) qs.set('from', from)
-      if (to) qs.set('to', to)
-      const d = await api<{ jobs: JobView[] }>(`/api/jobs?${qs}`)
-      setJobs(d.jobs ?? [])
-    } catch (e) {
-      toast(e instanceof Error ? e.message : 'โหลดข้อมูลไม่สำเร็จ', 'error')
-    } finally {
-      setLoading(false)
-    }
-  }, [from, to, toast])
-
-  useEffect(() => {
-    if (!initialJobs || initialJobs.length === 0) load()
-  }, [load, initialJobs])
 
   useEffect(() => {
     const o = sp.get('open')
@@ -92,7 +72,7 @@ export default function JobsClient({ role: initialRole, user, initialJobs }: Job
     return jobs.filter(j => {
       if (branch && j.branch.id !== branch) return false
       if (channel && j.channel !== channel) return false
-      if (status && j.stage !== status) return false
+      if (!matchesStatusFilter(j, status)) return false
       if (stageGroup.length && !stageGroup.includes(j.stage)) return false
       if (q) {
         const hit = j.jobNo.toLowerCase().includes(q) || (j.customerName ?? '').toLowerCase().includes(q) || j.productName.toLowerCase().includes(q) ||
@@ -103,7 +83,8 @@ export default function JobsClient({ role: initialRole, user, initialJobs }: Job
     })
   }, [jobs, branch, channel, status, search, stageGroup])
 
-  const filtered = useMemo(() => base.filter(j => matchFlag(j, flag)), [base, flag])
+  // เมื่อเลือกการ์ด เซิร์ฟเวอร์คัดรายการตามการ์ดนั้นมาให้แล้ว (flag) จึงไม่กรองซ้ำฝั่ง client
+  const filtered = base
 
   // Default sorting: Latest item that entered the current state (stageEnteredAt desc)
   const { sorted, sort, toggle } = useSort(filtered, {
@@ -142,7 +123,12 @@ export default function JobsClient({ role: initialRole, user, initialJobs }: Job
         </div>
       </div>
 
-      <JobsKpiCards jobs={base} flag={flag} onToggleFlag={k => setFlag(flag === k ? null : k)} />
+      <JobsKpiCards kpis={kpis} flag={flag} onToggleFlag={k => setFlag(flag === k ? null : k)} />
+      {flag && (
+        <p className="text-[11px] text-slate-500 -mt-3 mb-4">
+          รายการด้านล่างแสดงงานที่ยังไม่ปิดทั้งหมดของการ์ดที่เลือก (ไม่ใช้ช่วงวันที่)
+        </p>
+      )}
 
       <JobsFilterBar
         branch={branch}
@@ -177,7 +163,7 @@ export default function JobsClient({ role: initialRole, user, initialJobs }: Job
           setOpenId(null)
           if (sp.get('open')) router.replace('/jobs')
         }}
-        onChanged={load}
+        onChanged={reloadAll}
       />
     </div>
   )
