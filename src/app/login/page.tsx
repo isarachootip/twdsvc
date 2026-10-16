@@ -14,15 +14,6 @@ const ROLE_ROUTES: Record<string, string> = {
   S2: '/s2',
 }
 
-const QUICK_LOGINS = [
-  { label: 'CS', username: 'test_cs', icon: '👤' },
-  { label: 'GR', username: 'test_gr', icon: '📦' },
-  { label: 'DC', username: 'test_dc', icon: '🏭' },
-  { label: 'VD (ช่าง)', username: 'test_vd', icon: '🔧' },
-  { label: 'S2', username: 'test_s2', icon: '🏪' },
-  { label: 'Admin', username: 'test_am', icon: '⚙️' },
-]
-
 export default function LoginPage() {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -50,10 +41,6 @@ export default function LoginPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     startTransition(() => doLogin(username, password))
-  }
-
-  const handleQuickLogin = (u: string) => {
-    startTransition(() => doLogin(u, 'password123'))
   }
 
   return (
@@ -113,33 +100,6 @@ export default function LoginPage() {
               {isPending ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
             </button>
           </form>
-
-          {/* Quick login (dev only) */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="mt-6 pt-5 border-t" style={{ borderColor: 'var(--border)' }}>
-              <p className="text-xs mb-3 text-center" style={{ color: 'var(--text-mute)' }}>
-                🛠 Quick Login (dev only)
-              </p>
-              <div className="grid grid-cols-3 gap-2">
-                {QUICK_LOGINS.map(q => (
-                  <button
-                    key={q.username}
-                    type="button"
-                    disabled={isPending}
-                    onClick={() => handleQuickLogin(q.username)}
-                    className="flex flex-col items-center px-2 py-2 text-xs rounded-lg border transition-colors hover:bg-gray-50 disabled:opacity-50"
-                    style={{ borderColor: 'var(--border)', color: 'var(--text-2)' }}
-                  >
-                    <span className="text-base mb-0.5">{q.icon}</span>
-                    {q.label}
-                  </button>
-                ))}
-              </div>
-              <p className="text-xs mt-2 text-center" style={{ color: 'var(--text-mute)' }}>
-                รหัสผ่าน: password123
-              </p>
-            </div>
-          )}
         </div>
       </div>
     </div>

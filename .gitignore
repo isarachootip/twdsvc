@@ -43,3 +43,6 @@ next-env.d.ts
 
 # scratch scripts
 scratch/
+
+# local state files written by ops scripts (rollback snapshots)
+scripts/.state/

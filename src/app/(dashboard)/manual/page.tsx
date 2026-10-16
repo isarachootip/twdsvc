@@ -5,29 +5,12 @@ import TrainingKitViewer from '@/components/manual/TrainingKitViewer'
 import { 
   BookOpen, Search, UserCheck, Package, Warehouse, Wrench, 
   Truck, ShieldCheck, HelpCircle, ChevronRight, CheckCircle2, 
-  AlertTriangle, ArrowRight, ExternalLink, Copy, Check, GraduationCap
+  AlertTriangle, ArrowRight, ExternalLink, GraduationCap
 } from 'lucide-react'
 
 export default function ManualPage() {
   const [activeTab, setActiveTab] = useState<'all' | 'training' | 'cs' | 'gr' | 'dc' | 'vd' | 's2' | 'admin' | 'km' | 'faq'>('all')
   const [searchTerm, setSearchTerm] = useState('')
-  const [copiedUser, setCopiedUser] = useState<string | null>(null)
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
-    setCopiedUser(text)
-    setTimeout(() => setCopiedUser(null), 2000)
-  }
-
-  const testAccounts = [
-    { role: 'CS (บริการลูกค้า)', user: 'test_cs', pass: 'password123', site: 'สาขาบางนา (BN)', desc: 'เปิดใบแจ้งซ่อม, ถ่ายรูป S/N, เก็บค่าเปิดเครื่อง, ปิดงานพร้อมลายเซ็น' },
-    { role: 'GR (คลังสาขา)', user: 'test_gr', pass: 'password123', site: 'สาขาบางนา (BN)', desc: 'รับเครื่องจาก CS, แพ็กสินค้า, เลือกส่ง DC หรือตรง Vendor' },
-    { role: 'DC (คลังใหญ่)', user: 'test_dc', pass: 'password123', site: 'คลัง DC กรุงเทพ', desc: 'รับเข้าคลัง DC, ตีกลับสินค้า (Reject), ส่งต่อ Vendor' },
-    { role: 'VD (ศูนย์ซ่อม/ช่าง)', user: 'test_vd', pass: 'password123', site: 'บ.ช่างเจริญ', desc: 'ตรวจเช็ค, ทำใบเสนอราคา Cost-Plus, บันทึกผลซ่อม' },
-    { role: 'S2 (เร่งรัดงาน)', user: 'test_s2', pass: 'password123', site: 'ศูนย์ประสานงาน', desc: 'มอนิเตอร์ไฟเตือน SLA (On Track / At Risk / Overdue), เร่งรัดงานค้าง' },
-    { role: 'Admin (ผู้ดูแลระบบ)', user: 'test_am', pass: 'password123', site: 'สำนักงานใหญ่', desc: 'จัดการ SLA 16 ขั้น, ค่าธรรมเนียม, สิทธิ์เมนู, ผู้ใช้งาน' },
-    { role: 'Executive (ผู้บริหาร)', user: 'test_exec', pass: 'password123', site: 'บริหารส่วนกลาง', desc: 'ดู Executive Dashboard สรุป KPI, SLA Compliance %' },
-  ]
 
   const matchesSearch = (text: string) => {
     if (!searchTerm.trim()) return true
@@ -106,54 +89,19 @@ export default function ManualPage() {
         </div>
       )}
 
-      {/* Demo Accounts Card */}
-      {(activeTab === 'all' || activeTab === 'admin') && matchesSearch('บัญชีผู้ใช้ รหัสผ่าน demo test account login') && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="p-5 border-b border-gray-100 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-lg bg-red-50 text-red-600">
-                <UserCheck size={20} />
-              </div>
-              <div>
-                <h3 className="font-bold text-gray-800 text-base">บัญชีทดสอบระบบสำหรับฝึกอบรม (Training Accounts)</h3>
-                <p className="text-xs text-gray-500">รหัสผ่านเริ่มต้นทุกบัญชีคือ: <code className="bg-gray-100 px-1.5 py-0.5 rounded font-bold text-red-600">password123</code></p>
-              </div>
-            </div>
+      {/* Training accounts notice (no credentials are ever rendered here) */}
+      {(activeTab === 'all' || activeTab === 'admin') && matchesSearch('บัญชีผู้ใช้ บัญชีฝึกอบรม training account login') && (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-start gap-2.5">
+          <div className="p-2 rounded-lg bg-red-50 text-red-600">
+            <UserCheck size={20} />
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-gray-50 text-gray-600 border-b border-gray-100 uppercase tracking-wider font-semibold">
-                <tr>
-                  <th className="py-3 px-4">บทบาท (Role)</th>
-                  <th className="py-3 px-4">Username</th>
-                  <th className="py-3 px-4">สังกัด/สาขา</th>
-                  <th className="py-3 px-4">ขอบเขตหน้าที่</th>
-                  <th className="py-3 px-4 text-center">คัดลอก</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 text-gray-700">
-                {testAccounts.map((acc) => (
-                  <tr key={acc.user} className="hover:bg-gray-50/80 transition-colors">
-                    <td className="py-3 px-4 font-semibold text-gray-800">{acc.role}</td>
-                    <td className="py-3 px-4 font-mono font-bold text-red-600">{acc.user}</td>
-                    <td className="py-3 px-4">{acc.site}</td>
-                    <td className="py-3 px-4 text-gray-500">{acc.desc}</td>
-                    <td className="py-3 px-4 text-center">
-                      <button
-                        onClick={() => copyToClipboard(acc.user)}
-                        className="p-1.5 rounded-md hover:bg-gray-200 text-gray-500 transition-colors"
-                        title="คัดลอก Username"
-                      >
-                        {copiedUser === acc.user ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div>
+            <h3 className="font-bold text-gray-800 text-base">บัญชีสำหรับฝึกอบรม (Training Accounts)</h3>
+            <p className="text-sm text-gray-600 mt-1">ขอบัญชีฝึกอบรมจากผู้ดูแลระบบ</p>
           </div>
         </div>
       )}
+
 
       {/* Overview Diagram & Status Standard */}
       {(activeTab === 'all' || activeTab === 'km') && matchesSearch('สถานะ diagram workflow dc path vendor path 100 200 300') && (

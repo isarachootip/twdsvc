@@ -4,7 +4,7 @@ import { CS_QUIZ_QUESTIONS, CS_DEMO_SCRIPT } from './cs-quiz-data'
 export const CS_TRAINING_KIT: RoleTrainingKit = {
   role: 'CS',
   roleName: 'แผนกบริการลูกค้า (Customer Service)',
-  account: 'test_cs (รหัสผ่าน: password123) สาขาบางนา',
+  account: 'ขอบัญชีฝึกอบรมจากผู้ดูแลระบบ',
   duration: '45 นาที',
   guideSummary: {
     objectives: [
@@ -70,7 +70,7 @@ export const CS_TRAINING_KIT: RoleTrainingKit = {
       title: 'เคส 1: เปิดงานนอกประกัน ขนาดเล็ก ชำระ QR Code (เคสปกติ)',
       scenario: 'ลูกค้าคุณสมพงษ์ ใจดี เบอร์ 0891112233 นำพัดลม Hatari นอกประกัน ขนาดเล็ก สวิตช์ไม่ติด มาซ่อมแบบปกติ',
       steps: [
-        'เข้าสู่ระบบด้วย test_cs ไปที่ /cs กด "+ เปิดใบแจ้งซ่อม"',
+        'เข้าสู่ระบบด้วยบัญชีฝึกอบรมบทบาท CS ไปที่ /cs กด "+ เปิดใบแจ้งซ่อม"',
         'กรอกเบอร์โทรและข้อมูลลูกค้า, เลือกแบรนด์ Hatari, ระบุอาการเสีย',
         'เลือก "ไม่มีประกัน", ขนาด "เล็ก (Small)" ระบบคำนวณค่าดำเนินการ ฿150',
         'แนบภาพ 5 มุม, เลือก QR Payment กดแสดง QR แล้วกดยืนยันชำระ',
