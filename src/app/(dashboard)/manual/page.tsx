@@ -1,4 +1,4 @@
-import { loadManualCatalog } from '@/lib/manual-catalog'
+import { loadManualCatalog } from '@/lib/manual-loader'
 import ManualClient from './ManualClient'
 
 export const dynamic = 'force-dynamic'

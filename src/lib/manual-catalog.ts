@@ -1,23 +1,74 @@
 import { STAGE_ORDER, STAGE_LABELS, OWNER_LABELS, type Stage } from './constants'
-import { resolveOwner } from './sla-engine'
 import {
   DEFAULT_SLA_STEP_MAP, STAGE_META,
   type SlaStepInfo, type FeeConfigInfo, type ManualCatalog, type ManualChannel,
   type ManualPhase, type ManualFlowStep, type ManualStageRow, type ManualRuleItem,
+  type ManualRoleGuide, type ManualFaqItem,
 } from './manual-data'
 import { ROLE_GUIDES, MANUAL_FAQS } from './manual-roles-faqs'
 
 export { DEFAULT_SLA_STEP_MAP } from './manual-data'
-export { filterManualContent, loadManualCatalog, type FilteredManualContent } from './manual-loader'
 export type {
   ManualRoleId, ManualChannel, ManualPhase, ManualCatalog,
   ManualFlowStep, ManualStageRow, ManualRuleItem, ManualFaqItem, ManualRoleGuide,
 } from './manual-data'
 
+export interface FilteredManualContent {
+  roles: ManualRoleGuide[]
+  allStages: ManualStageRow[]
+  rules: ManualRuleItem[]
+  faqs: ManualFaqItem[]
+}
+
+/** Pure client-safe owner resolution (matches sla-engine.ts resolveOwner §4.2) */
+function resolveSlaOwner(ownerDept: string, stepCode: string, channel: string | null): string {
+  if (ownerDept !== 'CARRIER') return ownerDept
+  if (stepCode === 'VD_RECEIVE' && channel === 'DC') return 'VD'
+  if (channel === 'DC') return 'DC'
+  if (channel === 'DSD') return 'VD'
+  if (channel === 'TPL') return 'TPL'
+  return 'CARRIER'
+}
+
 export function formatSlaHours(hours: number | null | undefined): string {
   if (!hours || hours <= 0) return '-'
   if (hours >= 48 && hours % 24 === 0) return `${hours} ชม. (${hours / 24} วัน)`
   return `${hours} ชม.`
+}
+
+export function filterManualContent(catalog: ManualCatalog, query: string): FilteredManualContent {
+  const q = (query ?? '').trim().toLowerCase()
+  if (!q) {
+    return {
+      roles: catalog.roles,
+      allStages: catalog.allStages,
+      rules: catalog.rules,
+      faqs: catalog.faqs,
+    }
+  }
+
+  return {
+    roles: catalog.roles.filter(r => {
+      const hay = [
+        r.id, r.title, r.subtitle, r.description,
+        ...r.screens, ...r.managedStages,
+        ...r.steps.map(s => `${s.title} ${s.detail} ${s.warning ?? ''}`),
+      ].join(' ').toLowerCase()
+      return hay.includes(q)
+    }),
+    allStages: catalog.allStages.filter(row => {
+      const hay = `${row.stage} ${row.label} ${row.ownerDept} ${row.ownerLabel} ${row.slaCode ?? ''} ${row.slaText} ${row.screen} ${row.nextAction}`.toLowerCase()
+      return hay.includes(q)
+    }),
+    rules: catalog.rules.filter(rule => {
+      const hay = `${rule.code} ${rule.title} ${rule.summary} ${rule.detail}`.toLowerCase()
+      return hay.includes(q)
+    }),
+    faqs: catalog.faqs.filter(faq => {
+      const hay = `${faq.q} ${faq.a} ${faq.tags}`.toLowerCase()
+      return hay.includes(q)
+    }),
+  }
 }
 
 function buildSystemRules(fees: FeeConfigInfo, cancelPolicy: 'BEFORE_GR' | 'BEFORE_CARRIER'): ManualRuleItem[] {
@@ -79,7 +130,7 @@ function makeStep(
   const meta = STAGE_META[stage]
   const sla = meta.slaCode ? catalog.slaMap[meta.slaCode] : undefined
   const rawOwner = sla?.ownerDept ?? meta.ownerDept
-  const resolvedOwner = meta.slaCode ? resolveOwner(rawOwner, meta.slaCode, channel) : rawOwner
+  const resolvedOwner = meta.slaCode ? resolveSlaOwner(rawOwner, meta.slaCode, channel) : rawOwner
   return {
     phase: meta.phase,
     stage,

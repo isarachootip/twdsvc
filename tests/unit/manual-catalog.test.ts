@@ -4,9 +4,9 @@ import {
   buildManualCatalog,
   getFlowStepsForChannel,
   filterManualContent,
-  loadManualCatalog,
   DEFAULT_SLA_STEP_MAP,
 } from '../../src/lib/manual-catalog'
+import { loadManualCatalog } from '../../src/lib/manual-loader'
 
 setTier('Tier 1')
 

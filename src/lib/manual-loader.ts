@@ -5,60 +5,10 @@ import {
   type SlaStepInfo,
   type FeeConfigInfo,
   type ManualCatalog,
-  type ManualRoleGuide,
-  type ManualStageRow,
-  type ManualRuleItem,
-  type ManualFaqItem,
 } from './manual-data'
-import { buildManualCatalog } from './manual-catalog'
+import { buildManualCatalog, filterManualContent, type FilteredManualContent } from './manual-catalog'
 
-export interface FilteredManualContent {
-  roles: ManualRoleGuide[]
-  allStages: ManualStageRow[]
-  rules: ManualRuleItem[]
-  faqs: ManualFaqItem[]
-}
-
-export function filterManualContent(catalog: ManualCatalog, query: string): FilteredManualContent {
-  const q = (query ?? '').trim().toLowerCase()
-  if (!q) {
-    return {
-      roles: catalog.roles,
-      allStages: catalog.allStages,
-      rules: catalog.rules,
-      faqs: catalog.faqs,
-    }
-  }
-
-  return {
-    roles: catalog.roles.filter(r => {
-      const hay = [
-        r.id,
-        r.title,
-        r.subtitle,
-        r.description,
-        ...r.screens,
-        ...r.managedStages,
-        ...r.steps.map(s => `${s.title} ${s.detail} ${s.warning ?? ''}`),
-      ]
-        .join(' ')
-        .toLowerCase()
-      return hay.includes(q)
-    }),
-    allStages: catalog.allStages.filter(row => {
-      const hay = `${row.stage} ${row.label} ${row.ownerDept} ${row.ownerLabel} ${row.slaCode ?? ''} ${row.slaText} ${row.screen} ${row.nextAction}`.toLowerCase()
-      return hay.includes(q)
-    }),
-    rules: catalog.rules.filter(rule => {
-      const hay = `${rule.code} ${rule.title} ${rule.summary} ${rule.detail}`.toLowerCase()
-      return hay.includes(q)
-    }),
-    faqs: catalog.faqs.filter(faq => {
-      const hay = `${faq.q} ${faq.a} ${faq.tags}`.toLowerCase()
-      return hay.includes(q)
-    }),
-  }
-}
+export { filterManualContent, type FilteredManualContent }
 
 export async function loadManualCatalog(): Promise<ManualCatalog> {
   try {
