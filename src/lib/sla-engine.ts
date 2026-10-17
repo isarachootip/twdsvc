@@ -171,4 +171,7 @@ export async function refreshBreaches(force = false) {
     where: { status: 'RUNNING', breached: false, dueAt: { lt: new Date(now) } },
     data: { breached: true, breachedAt: new Date(now) },
   })
+  import('./services/sla-warning-notify.service')
+    .then(m => m.checkAndNotifySlaWarnings(new Date(now)))
+    .catch(() => {})
 }

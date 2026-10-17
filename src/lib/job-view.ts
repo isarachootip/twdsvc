@@ -91,6 +91,7 @@ export function maskPhone(p: string | null | undefined, role: string): string | 
   if (['ADMIN', 'EXECUTIVE', 'CS'].includes(role)) return p
   if (role === 'S2') return null
   const d = p.replace(/\D/g, '')
+  if (d.length >= 7) return `${d.slice(0, 3)}-xxx-${d.slice(-4)}`
   return `xxx-xxx-${d.slice(-4)}`
 }
 

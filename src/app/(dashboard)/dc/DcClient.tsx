@@ -101,9 +101,9 @@ export default function DcClient({ role }: { role: string }) {
         sub="เข้ารับจากสาขา → รับเข้า Location → ส่งมอบให้ VD → รับคืนจาก VD → ส่งคืนกลับสาขา"
         right={<DateRange from={range.from} to={range.to} onChange={(from, to) => setRange({ from, to })} onExport={exportAll} />}
       />
-      <OverdueSummary items={data.overdue.filter(o => !done[o.id])} onGo={t => setTab(t)} />
-      <KpiGrid items={TABS.map(t => ({ tab: t.key, label: t.kpi, count: pending(t.key), over: overCount(t.key) }))} active={tab} onPick={setTab} />
-      <TabBar tabs={TABS.map(t => ({ key: t.key, label: t.label, count: pending(t.key) }))} active={tab} onPick={setTab} />
+      <OverdueSummary items={data.overdue.filter(o => !done[o.id])} onGo={t => setTab(t)} loading={loading} />
+      <KpiGrid items={TABS.map(t => ({ tab: t.key, label: t.kpi, count: pending(t.key), over: overCount(t.key) }))} active={tab} onPick={setTab} loading={loading} />
+      <TabBar tabs={TABS.map(t => ({ key: t.key, label: t.label, count: pending(t.key) }))} active={tab} onPick={setTab} loading={loading} />
       {branches.length > 0 && (
         <div className="filter-bar" style={{ marginTop: 12, marginBottom: 12 }}>
           <select className="sel" value={branchFilter} onChange={e => setBranchFilter(e.target.value)}>

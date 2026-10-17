@@ -36,14 +36,15 @@ export default function Sidebar({ user, menus, open, onClose }: SidebarProps) {
 
   return (
     <>
-      {open && <div className="fixed inset-0 z-40 bg-black/40 md:hidden" onClick={onClose} />}
+      {open && <div className="fixed inset-0 z-40 bg-black/40 md:hidden" onClick={onClose} aria-label="ปิดแถบเมนูด้านข้าง" />}
       <aside
+        aria-label="แถบเมนูหลัก"
         className={`fixed md:static z-50 inset-y-0 left-0 flex flex-col shrink-0 border-r overflow-y-auto transition-transform md:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'}`}
         style={{ width: 230, background: 'var(--surface)', borderColor: 'var(--border)' }}
       >
         <SidebarBrandHeader onClose={onClose} />
 
-        <nav className="flex-1 py-3">
+        <nav aria-label="รายการเมนูระบบ" className="flex-1 py-3">
           {items.map(item => {
             if (item.key === 'admin') {
               return (
@@ -57,6 +58,7 @@ export default function Sidebar({ user, menus, open, onClose }: SidebarProps) {
                   >
                     <Link
                       href="/admin/vendor"
+                      aria-label={item.label}
                       onClick={e => {
                         e.stopPropagation()
                         setAdminOpen(true)
@@ -89,6 +91,7 @@ export default function Sidebar({ user, menus, open, onClose }: SidebarProps) {
                           <Link
                             key={sub.id}
                             href={subHref}
+                            aria-label={`${i + 1}. ${sub.name}`}
                             onClick={onClose}
                             className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[12.5px] transition-colors ${
                               isSubActive
@@ -113,6 +116,7 @@ export default function Sidebar({ user, menus, open, onClose }: SidebarProps) {
                           <Link
                             key={link.href}
                             href={link.href}
+                            aria-label={link.name}
                             onClick={onClose}
                             className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[12.5px] transition-colors ${
                               isActive
@@ -136,6 +140,7 @@ export default function Sidebar({ user, menus, open, onClose }: SidebarProps) {
               <Link
                 key={item.key}
                 href={item.href}
+                aria-label={item.label}
                 onClick={onClose}
                 className={`flex items-center gap-3 px-4 py-2.5 text-[13.5px] transition-colors ${active ? 'nav-active font-medium' : 'hover:bg-gray-50'}`}
                 style={active ? {} : { color: 'var(--text-2)' }}
@@ -153,11 +158,11 @@ export default function Sidebar({ user, menus, open, onClose }: SidebarProps) {
             <div>{ROLE_LABELS[user.role] ?? user.role}{user.siteName ? ` · ${user.siteName}` : ''}</div>
             {user.vendorLabel && <div>{user.vendorLabel}</div>}
           </div>
-          <Link href="/account/line" className="flex items-center gap-2 w-full text-sm px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors mb-1" style={{ color: 'var(--text-2)' }}>
+          <Link href="/account/line" aria-label="เชื่อมต่อบัญชี LINE" className="flex items-center gap-2 w-full text-sm px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors mb-1" style={{ color: 'var(--text-2)' }}>
             เชื่อมต่อ LINE
           </Link>
           <form action="/api/auth/logout" method="POST">
-            <button type="submit" className="flex items-center gap-2 w-full text-sm px-3 py-2 rounded-lg hover:bg-red-50 transition-colors" style={{ color: 'var(--red)' }}>
+            <button type="submit" aria-label="ออกจากระบบ" className="flex items-center gap-2 w-full text-sm px-3 py-2 rounded-lg hover:bg-red-50 transition-colors" style={{ color: 'var(--red)' }}>
               <LogOut size={16} />
               ออกจากระบบ
             </button>

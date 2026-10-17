@@ -103,7 +103,7 @@ export default function CsQueue({ role }: { role: string }) {
         </div>
       </div>
 
-      <TabBar tabs={TABS.map(t => ({ ...t, count: list(t.key).length }))} active={tab} onPick={k => { setTab(k); setSel(null) }} />
+      <TabBar tabs={TABS.map(t => ({ ...t, count: list(t.key).length }))} active={tab} onPick={k => { setTab(k); setSel(null) }} loading={loading} />
 
       <form className="filter-bar" onSubmit={onScan} style={{ marginBottom: 12 }}>
         <input

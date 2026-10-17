@@ -41,3 +41,26 @@ export function isValidThaiPhone(input: string | null | undefined): boolean {
   // Thai mobile numbers are 10 digits starting with 06, 08, or 09 (or general 0X)
   return /^0[689]\d{8}$/.test(digits)
 }
+
+/**
+ * Masks the middle digits of a phone number for summary tables (e.g. 063-xxx-5619).
+ */
+export function maskPhoneMiddle(input: string | null | undefined): string {
+  if (!input || !input.trim()) return '-'
+  const trimmed = input.trim()
+  if (trimmed.includes('x')) return trimmed
+  const digits = trimmed.replace(/\D/g, '')
+  if (digits.length >= 10) {
+    return `${digits.slice(0, 3)}-xxx-${digits.slice(6, 10)}`
+  }
+  if (digits.length === 9 && digits.startsWith('02')) {
+    return `02-xxx-${digits.slice(5, 9)}`
+  }
+  if (digits.length >= 7) {
+    return `${digits.slice(0, 3)}-xxx-${digits.slice(-4)}`
+  }
+  if (digits.length >= 4) {
+    return `xxx-xxx-${digits.slice(-4)}`
+  }
+  return trimmed
+}

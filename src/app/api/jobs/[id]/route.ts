@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth'
 import { calcBalance, getHoursInStep } from '@/lib/fees'
-import { calcMoney } from '@/lib/job-view'
+import { calcMoney, maskPhone } from '@/lib/job-view'
 import { resolveOwner } from '@/lib/sla-engine'
 import { executeAction } from '@/lib/state-machine'
 
@@ -72,7 +72,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       }
     })
 
-    return NextResponse.json({ ...job, balance, money, intakeUnpaid, slaInfo, links })
+    return NextResponse.json({
+      ...job,
+      customerPhone: maskPhone(job.customerPhone, user.role),
+      balance,
+      money,
+      intakeUnpaid,
+      slaInfo,
+      links,
+    })
   } catch (e) {
     return NextResponse.json({ error: 'ไม่พบงานนี้' }, { status: 404 })
   }

@@ -7,8 +7,18 @@ import { fmtOverage } from '@/lib/constants'
 
 export interface OverdueItem { id: string; jobNo: string; customerName: string | null; productName: string; tab: string; tabLabel: string; stepName: string; overHours: number }
 
-export function OverdueSummary({ items, onGo }: { items: OverdueItem[]; onGo: (tab: string, jobId: string) => void }) {
+export function OverdueSummary({ items, onGo, loading }: { items: OverdueItem[]; onGo: (tab: string, jobId: string) => void; loading?: boolean }) {
   const [open, setOpen] = useState(false)
+  if (loading) {
+    return (
+      <div className="overdue-summary ok" aria-busy="true" aria-label="กำลังโหลดข้อมูล SLA">
+        <div className="num">
+          <span className="inline-block w-8 h-6 rounded bg-slate-200 animate-pulse align-middle" />
+        </div>
+        <div className="lbl">กำลังโหลดข้อมูล SLA…</div>
+      </div>
+    )
+  }
   return (
     <>
       <button className={`overdue-summary ${items.length === 0 ? 'ok' : ''}`} onClick={() => setOpen(true)}>
@@ -44,26 +54,39 @@ export function OverdueSummary({ items, onGo }: { items: OverdueItem[]; onGo: (t
 
 export interface KpiDef { tab: string; label: string; count: number; over: number }
 
-export function KpiGrid({ items, active, onPick }: { items: KpiDef[]; active?: string; onPick: (tab: string) => void }) {
+export function KpiGrid({ items, active, onPick, loading }: { items: KpiDef[]; active?: string; onPick: (tab: string) => void; loading?: boolean }) {
   return (
-    <div className="kpi-grid">
+    <div className="kpi-grid" aria-busy={loading ? 'true' : undefined}>
       {items.map(k => (
         <button key={k.tab} className={`kpi-card ${active === k.tab ? 'active' : ''}`} onClick={() => onPick(k.tab)}>
-          <div className="num">{k.count}</div>
+          <div className="num">
+            {loading ? (
+              <span className="inline-block w-10 h-7 rounded bg-slate-200 animate-pulse align-middle" aria-label="กำลังโหลด" />
+            ) : (
+              k.count
+            )}
+          </div>
           <div className="lbl">{k.label}</div>
-          {k.over > 0 && <div className="over-lbl">เกิน SLA: {k.over} งาน</div>}
+          {!loading && k.over > 0 && <div className="over-lbl">เกิน SLA: {k.over} งาน</div>}
         </button>
       ))}
     </div>
   )
 }
 
-export function TabBar({ tabs, active, onPick }: { tabs: Array<{ key: string; label: string; count: number }>; active: string; onPick: (k: string) => void }) {
+export function TabBar({ tabs, active, onPick, loading }: { tabs: Array<{ key: string; label: string; count: number }>; active: string; onPick: (k: string) => void; loading?: boolean }) {
   return (
-    <div className="tabs">
+    <div className="tabs" aria-busy={loading ? 'true' : undefined}>
       {tabs.map(t => (
         <button key={t.key} className={`tab-btn ${active === t.key ? 'active' : ''}`} onClick={() => onPick(t.key)}>
-          {t.label} <span className="tab-count">{t.count}</span>
+          {t.label}{' '}
+          <span className="tab-count">
+            {loading ? (
+              <span className="inline-block w-5 h-3.5 rounded bg-slate-200 animate-pulse align-middle" aria-label="กำลังโหลด" />
+            ) : (
+              t.count
+            )}
+          </span>
         </button>
       ))}
     </div>

@@ -2,7 +2,8 @@
 
 import StageBadge from '@/components/ui/StageBadge'
 import { Th, type SortDir } from '@/components/ui/Sortable'
-import { CHANNEL_LABELS, OWNER_LABELS, fmtDateTime, fmtPhone } from '@/lib/constants'
+import { CHANNEL_LABELS, OWNER_LABELS, fmtDateTime } from '@/lib/constants'
+import { maskPhoneMiddle } from '@/lib/phone-utils'
 import type { JobView } from '@/lib/job-view'
 import { WAITING_INTAKE_PAYMENT_LABEL, isWaitingIntakePayment } from '@/lib/job-status-filter'
 
@@ -98,7 +99,7 @@ export default function JobsTable({ jobs, sort, toggle, loading, onOpenJob }: Jo
                       <div className="font-medium text-slate-800">{j.customerName}</div>
                     )}
                     <div className="text-[11px] text-slate-400 font-mono mt-0.5">
-                      {j.customerPhone && !j.customerPhone.includes('x') ? fmtPhone(j.customerPhone) : j.customerPhone}
+                      {j.type === 'STOCK' ? '' : maskPhoneMiddle(j.customerPhone)}
                     </div>
                   </td>
                   <td className="py-3 px-4 align-middle max-w-[220px]">

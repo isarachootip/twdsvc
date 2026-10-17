@@ -140,9 +140,9 @@ export default function VdClient({ role }: { role: string }) {
           </div>
         }
       />
-      <OverdueSummary items={data.overdue.filter(o => !done[o.id])} onGo={t => setTab(t)} />
-      <KpiGrid items={TABS.map(t => ({ tab: t.key, label: t.kpi, count: pending(t.key), over: overCount(t.key) }))} active={tab} onPick={setTab} />
-      <TabBar tabs={TABS.map(t => ({ key: t.key, label: t.label, count: pending(t.key) }))} active={tab} onPick={setTab} />
+      <OverdueSummary items={data.overdue.filter(o => !done[o.id])} onGo={t => setTab(t)} loading={loading} />
+      <KpiGrid items={TABS.map(t => ({ tab: t.key, label: t.kpi, count: pending(t.key), over: overCount(t.key) }))} active={tab} onPick={setTab} loading={loading} />
+      <TabBar tabs={TABS.map(t => ({ key: t.key, label: t.label, count: pending(t.key) }))} active={tab} onPick={setTab} loading={loading} />
       {readOnly && <p className="hint"><span className="text-amber-700 font-semibold text-xs">• โหมดดูอย่างเดียว</span></p>}
       {loading && <EmptyCard text="กำลังโหลด…" />}
 
