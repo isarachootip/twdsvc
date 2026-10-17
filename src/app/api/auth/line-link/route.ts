@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireUser, handleError, HttpError } from '@/lib/api'
-import { prisma } from '@/lib/db'
-import { issueLinkCode, unlinkLine } from '@/lib/services/line-link.service'
+import { getLineLinkStatus, issueLinkCode, unlinkLine } from '@/lib/services/line-link.service'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,8 +10,8 @@ const lastIssued = new Map<string, number>()
 export async function GET(req: NextRequest) {
   try {
     const user = await requireUser(undefined, req)
-    const row = await prisma.user.findUnique({ where: { id: user.id }, select: { lineUserId: true } })
-    return NextResponse.json({ linked: Boolean(row?.lineUserId) })
+    const status = await getLineLinkStatus(user.id)
+    return NextResponse.json(status)
   } catch (e) {
     return handleError(e)
   }
@@ -21,6 +20,10 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const user = await requireUser(undefined, req)
+    const status = await getLineLinkStatus(user.id)
+    if (!status.lineConfigured) {
+      throw new HttpError(503, 'ระบบยังไม่ได้ตั้งค่าการเชื่อมต่อ LINE Official Account')
+    }
     const now = Date.now()
     if (now - (lastIssued.get(user.id) ?? 0) < MIN_INTERVAL_MS) {
       throw new HttpError(429, 'กรุณารอ 1 นาทีก่อนขอรหัสใหม่')
@@ -42,3 +45,4 @@ export async function DELETE(req: NextRequest) {
     return handleError(e)
   }
 }
+

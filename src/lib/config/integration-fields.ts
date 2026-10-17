@@ -3,6 +3,7 @@ import { z } from 'zod'
 export const INTEGRATION_PREFIX = 'INTEGRATION_'
 
 export const INTEGRATION_KEYS = [
+  'LINE_OA_ID',
   'LINE_CHANNEL_ID',
   'LINE_CHANNEL_SECRET',
   'LINE_CHANNEL_ACCESS_TOKEN',
@@ -32,6 +33,17 @@ export interface IntegrationFieldDef {
 const noSpaces = z.string().trim().min(8, 'สั้นเกินไป').max(512).regex(/^\S+$/, 'ห้ามมีช่องว่าง')
 
 export const INTEGRATION_FIELDS: IntegrationFieldDef[] = [
+  {
+    key: 'LINE_OA_ID',
+    label: 'LINE Official Account ID (เช่น @twdservice)',
+    group: 'line',
+    secret: false,
+    schema: z
+      .string()
+      .trim()
+      .regex(/^@?[A-Za-z0-9._-]{3,64}$/, 'ต้องเป็น LINE ID เช่น @twdservice')
+      .transform(v => (v.startsWith('@') ? v : `@${v}`)),
+  },
   { key: 'LINE_CHANNEL_ID', label: 'Channel ID', group: 'line', secret: false, schema: z.string().trim().regex(/^\d{6,20}$/, 'ต้องเป็นตัวเลข') },
   { key: 'LINE_CHANNEL_SECRET', label: 'Channel Secret', group: 'line', secret: true, schema: noSpaces },
   { key: 'LINE_CHANNEL_ACCESS_TOKEN', label: 'Channel Access Token', group: 'line', secret: true, schema: noSpaces },

@@ -168,4 +168,20 @@ describe('Phase 5 — UX, Accessibility, Phone Masking & LINE SLA < 20% Notifica
       await prisma.user.delete({ where: { id: lineUser.id } })
     }
   })
+
+  it('P5-05: LINE account page supports QR code (@LINE_OA_ID), auto-polling, test push, and proper .btn classes', () => {
+    const cardSrc = fs.readFileSync(path.join(ROOT, 'src', 'components', 'account', 'LineLinkCard.tsx'), 'utf-8')
+    const qrSrc = fs.readFileSync(path.join(ROOT, 'src', 'components', 'account', 'LineOaQrBox.tsx'), 'utf-8')
+    const codeSrc = fs.readFileSync(path.join(ROOT, 'src', 'components', 'account', 'LineCodeBox.tsx'), 'utf-8')
+    const linkedSrc = fs.readFileSync(path.join(ROOT, 'src', 'components', 'account', 'LineLinkedStatus.tsx'), 'utf-8')
+    const fieldsSrc = fs.readFileSync(path.join(ROOT, 'src', 'lib', 'config', 'integration-fields.ts'), 'utf-8')
+
+    expect(fieldsSrc.includes('LINE_OA_ID')).toBe(true)
+    expect(cardSrc.includes('btn btn-primary')).toBe(true)
+    expect(cardSrc.includes('setInterval')).toBe(true)
+    expect(qrSrc.includes('QRCode.toDataURL')).toBe(true)
+    expect(codeSrc.includes('navigator.clipboard.writeText')).toBe(true)
+    expect(linkedSrc.includes('/api/auth/line-link/test')).toBe(true)
+  })
 })
+
