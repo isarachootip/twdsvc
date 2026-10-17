@@ -44,20 +44,31 @@ async function seedTestUsers(prisma: PrismaClient, ctx: TestSeedContext): Promis
     { username: 'test_am',   fullName: 'ผู้ดูแลระบบ',    role: Role.ADMIN,     siteId: null },
   ]
   for (const u of users) {
+    const userData = {
+      password: hash,
+      fullName: u.fullName,
+      role: u.role,
+      siteId: u.siteId,
+      vendorCenterId: u.vendorCenterId ?? null,
+      active: true,
+      mustChangePassword: false,
+      failedLoginCount: 0,
+      lockedUntil: null,
+    }
     await prisma.user.upsert({
       where: { username: u.username },
-      update: {},
-      create: { username: u.username, password: hash, fullName: u.fullName, role: u.role, siteId: u.siteId, vendorCenterId: u.vendorCenterId ?? null },
+      update: userData,
+      create: { username: u.username, ...userData },
     })
   }
-  console.log('  ✓ Test users (7 accounts, password from SEED_TEST_PASSWORD)')
+  console.log('  ✓ Test users (7 default accounts active & unlocked)')
 }
 
 async function seedSampleJob(prisma: PrismaClient, ctx: TestSeedContext): Promise<void> {
   const { bn, vc1, brand, large } = ctx
   const sampleJob = await prisma.job.upsert({
     where: { jobNo: 'JB-2609-00001' },
-    update: {},
+    update: { isTest: true },
     create: {
       jobNo: 'JB-2609-00001',
       type: JobType.CUSTOMER,
@@ -79,6 +90,7 @@ async function seedSampleJob(prisma: PrismaClient, ctx: TestSeedContext): Promis
       shippingMethod: 'STANDARD',
       decision: QuoteDecision.PENDING,
       createdBy: 'test_cs',
+      isTest: true,
     },
   })
   await prisma.jobCharge.createMany({

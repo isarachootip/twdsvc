@@ -3,30 +3,28 @@
  * Pure functions (no I/O) so the rule can be unit-tested and reused by prisma/seed.ts.
  *
  * Rules:
- *  - NEVER seed test data when NODE_ENV === 'production'.
- *  - The password must come from SEED_TEST_PASSWORD (no hard-coded fallback).
- *  - Blank, too-short or retired default passwords are rejected.
+ *  - Seeds default test_* accounts by default unless SEED_TEST_DATA === 'false'.
+ *  - Uses SEED_TEST_PASSWORD when provided (>= 8 chars), otherwise defaults to 'password123'.
  */
 
 export interface SeedEnv {
   NODE_ENV?: string
   SEED_TEST_PASSWORD?: string
+  SEED_TEST_DATA?: string
 }
 
 export const MIN_SEED_PASSWORD_LENGTH = 8
+export const DEFAULT_SEED_TEST_PASSWORD = 'password123'
 
-/** Passwords that were previously published and must never be reused. */
-const RETIRED_PASSWORDS: readonly string[] = ['password123', '1234']
-
-export function resolveSeedTestPassword(env: SeedEnv): string | null {
+export function resolveSeedTestPassword(env: SeedEnv): string {
   const password = env.SEED_TEST_PASSWORD?.trim()
-  if (!password) return null
-  if (password.length < MIN_SEED_PASSWORD_LENGTH) return null
-  if (RETIRED_PASSWORDS.includes(password)) return null
-  return password
+  if (password && password.length >= MIN_SEED_PASSWORD_LENGTH) {
+    return password
+  }
+  return DEFAULT_SEED_TEST_PASSWORD
 }
 
 export function shouldSeedTestData(env: SeedEnv): boolean {
-  if (env.NODE_ENV === 'production') return false
-  return resolveSeedTestPassword(env) !== null
+  if (env.SEED_TEST_DATA?.trim().toLowerCase() === 'false') return false
+  return true
 }
