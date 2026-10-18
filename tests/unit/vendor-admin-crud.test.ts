@@ -1,5 +1,6 @@
 import { describe, it, expect, setTier } from '../framework/core'
 import { createEmptyVendor, VendorFilterState, VendorParentRow } from '../../src/app/(dashboard)/admin/sections/vendor/vendor-types'
+import { saveSignatureDataUrl } from '../../src/lib/services/file-storage.service'
 
 setTier('Tier 1')
 
@@ -81,4 +82,18 @@ describe('Unit: Vendor Directory & Single-Vendor Management', () => {
     expect(resultsCode.length).toBe(1)
     expect(resultsCode[0].code).toBe('600429')
   })
+
+  it('VD-ADMIN-04: saveSignatureDataUrl gracefully retains pre-existing file URLs', async () => {
+    const regularUrl = '/uploads/sample-signature.png'
+    const preserved = await saveSignatureDataUrl(regularUrl)
+    expect(preserved).toBe(regularUrl)
+  })
+
+  it('VD-ADMIN-05: saveSignatureDataUrl persists valid base64 data URLs as stored file URLs', async () => {
+    // 1x1 transparent png data url
+    const pngDataUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='
+    const savedUrl = await saveSignatureDataUrl(pngDataUrl, 'test-sig')
+    expect(savedUrl.startsWith('/api/files/test-sig-')).toBe(true)
+  })
 })
+

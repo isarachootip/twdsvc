@@ -8,6 +8,7 @@ import { Step3Coverage } from './steps/Step3Coverage'
 import { Step4DocsFinance } from './steps/Step4DocsFinance'
 import { Step5Agreements } from './steps/Step5Agreements'
 import { SidebarChecklist } from './SidebarChecklist'
+import { VendorSetupSuccessView } from './VendorSetupSuccessView'
 import { CheckCircle2, ChevronLeft, ChevronRight, Send, AlertTriangle } from 'lucide-react'
 
 const STEP_TITLES = [
@@ -18,7 +19,12 @@ const STEP_TITLES = [
   'สรุปและข้อตกลง',
 ]
 
-export function VendorSetupWizard() {
+interface VendorSetupWizardProps {
+  mode?: 'admin' | 'public'
+  onFinish?: () => void
+}
+
+export function VendorSetupWizard({ mode = 'public', onFinish }: VendorSetupWizardProps) {
   const {
     currentStep,
     setCurrentStep,
@@ -38,33 +44,31 @@ export function VendorSetupWizard() {
     submittedResult,
     submitApplication,
     draftRestored,
-  } = useVendorSetupForm()
+  } = useVendorSetupForm({ mode })
 
   if (submittedResult) {
-    return (
-      <div className="max-w-2xl mx-auto p-8 rounded-3xl border bg-white text-center space-y-4 shadow-sm" style={{ borderColor: 'var(--border)' }}>
-        <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
-          <CheckCircle2 className="w-10 h-10" />
-        </div>
-        <h3 className="text-xl font-bold" style={{ color: 'var(--text)' }}>
-          ส่งใบสมัครเข้าร่วมเป็นคู่ค้าเรียบร้อยแล้ว
-        </h3>
-        <p className="text-sm" style={{ color: 'var(--text-2)' }}>
-          เลขที่ใบสมัครของท่าน: <span className="font-bold text-base" style={{ color: 'var(--red)' }}>{submittedResult.applicationNo}</span>
-        </p>
-        <div className="p-4 rounded-2xl bg-slate-50 border inline-block text-xs space-y-1 text-left" style={{ borderColor: 'var(--border)' }}>
-          <div><span className="text-slate-500">สถานะ:</span> <b>รอเจ้าหน้าที่ตรวจสอบ (Pending Approval)</b></div>
-          <div><span className="text-slate-500">ระดับคาดการณ์:</span> <b>{submittedResult.estimatedTier}</b> (คะแนนความพร้อม {submittedResult.score}/100)</div>
-          <div><span className="text-slate-500">ขั้นตอนถัดไป:</span> เจ้าหน้าที่ SVC จะติดต่อกลับภายใน 1-2 วันทำการ</div>
-        </div>
-      </div>
-    )
+    return <VendorSetupSuccessView result={submittedResult} onFinish={onFinish} />
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto space-y-5">
+      {mode === 'admin' && onFinish && (
+        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+          <span className="text-xs text-slate-500">
+            โหมดบันทึกข้อมูลคู่ค้าโดยผู้ดูแลระบบ (Admin Assisted Onboarding)
+          </span>
+          <button
+            type="button"
+            onClick={onFinish}
+            className="text-xs text-slate-600 hover:text-slate-900 transition underline underline-offset-2"
+          >
+            ← กลับไปหน้ารายชื่อคู่ค้า
+          </button>
+        </div>
+      )}
+
       {/* Progress Step Bar */}
-      <div className="p-4 rounded-2xl border bg-white shadow-sm" style={{ borderColor: 'var(--border)' }}>
+      <div className="p-3.5 rounded-2xl border border-slate-200/80 bg-white shadow-xs">
         <div className="flex items-center justify-between overflow-x-auto gap-2">
           {STEP_TITLES.map((title, idx) => {
             const stepNo = idx + 1
@@ -78,20 +82,20 @@ export function VendorSetupWizard() {
                 className="flex items-center gap-2 text-xs shrink-0 cursor-pointer select-none"
               >
                 <span
-                  className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs transition-all ${
+                  className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-[11px] transition-all ${
                     isActive
-                      ? 'bg-red-700 text-white shadow'
+                      ? 'bg-red-700 text-white shadow-xs'
                       : isCompleted
                       ? 'bg-emerald-600 text-white'
                       : 'bg-slate-100 text-slate-500'
                   }`}
                 >
-                  {isCompleted ? <CheckCircle2 className="w-4 h-4" /> : stepNo}
+                  {isCompleted ? <CheckCircle2 className="w-3.5 h-3.5" /> : stepNo}
                 </span>
                 <span className={`font-semibold ${isActive ? 'text-red-800' : 'text-slate-600'}`}>
                   {title}
                 </span>
-                {stepNo < 5 && <div className="w-8 h-px bg-slate-200 hidden md:block" />}
+                {stepNo < 5 && <div className="w-6 h-px bg-slate-200 hidden md:block" />}
               </button>
             )
           })}
@@ -167,11 +171,30 @@ export function VendorSetupWizard() {
               >
                 ถัดไป <ChevronRight className="w-4 h-4" />
               </button>
+            ) : mode === 'admin' ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  disabled={!canGoNext || submitting}
+                  onClick={() => submitApplication({ autoApprove: false })}
+                  className="btn btn-secondary text-xs flex items-center gap-1 disabled:opacity-40"
+                >
+                  <Send className="w-3.5 h-3.5" /> {submitting ? 'กำลังบันทึก...' : 'ส่งเข้าคิวรอตรวจสอบ'}
+                </button>
+                <button
+                  type="button"
+                  disabled={!canGoNext || submitting}
+                  onClick={() => submitApplication({ autoApprove: true })}
+                  className="btn btn-primary text-xs flex items-center gap-1 px-4 py-2 font-semibold disabled:opacity-40"
+                >
+                  <CheckCircle2 className="w-4 h-4" /> {submitting ? 'กำลังดำเนินการ...' : 'บันทึก & เปิดใช้งานทันที'}
+                </button>
+              </div>
             ) : (
               <button
                 type="button"
                 disabled={!canGoNext || submitting}
-                onClick={submitApplication}
+                onClick={() => submitApplication()}
                 className="btn btn-primary text-xs flex items-center gap-1 px-6 py-2.5 font-bold disabled:opacity-40"
               >
                 <Send className="w-4 h-4" /> {submitting ? 'กำลังส่งข้อมูล...' : 'ส่งใบสมัครเข้าร่วม SVC'}

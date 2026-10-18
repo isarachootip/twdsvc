@@ -87,3 +87,20 @@ export async function readStoredFile(name: string): Promise<{ data: Buffer; mime
     return null
   }
 }
+
+/**
+ * Persists a base64 data-URL (e.g. from signature canvas) to DB and returns its file URL.
+ */
+export async function saveSignatureDataUrl(dataUrl: string, prefix = 'sig'): Promise<string> {
+  const match = /^data:image\/(png|jpeg);base64,(.+)$/.exec(dataUrl)
+  if (!match) return dataUrl
+  const ext = match[1] === 'png' ? '.png' : '.jpg'
+  const mimeType = match[1] === 'png' ? 'image/png' : 'image/jpeg'
+  const saved = await saveUploadedFile(Buffer.from(match[2], 'base64'), {
+    prefix,
+    ext,
+    mimeType,
+  })
+  return saved.fileUrl
+}
+

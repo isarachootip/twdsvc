@@ -4,12 +4,23 @@ import { calculateVendorScoreAndTier } from '@/lib/services/vendor-tier.service'
 import { INITIAL_FORM } from './initial-form'
 import { useDraftStorage } from './useDraftStorage'
 
-export function useVendorSetupForm() {
+export interface UseVendorSetupFormOptions {
+  mode?: 'admin' | 'public'
+}
+
+export function useVendorSetupForm(options: UseVendorSetupFormOptions = {}) {
+  const mode = options.mode || 'public'
   const [currentStep, setCurrentStep] = useState(1)
   const [form, setForm] = useState<VendorSetupFormData>(INITIAL_FORM)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
-  const [submittedResult, setSubmittedResult] = useState<{ applicationNo: string; score: number; estimatedTier: string } | null>(null)
+  const [submittedResult, setSubmittedResult] = useState<{
+    applicationNo: string
+    score: number
+    estimatedTier: string
+    directApproved?: boolean
+  } | null>(null)
+
   const { clearDraft, draftRestored } = useDraftStorage({
     form,
     step: currentStep,
@@ -88,25 +99,31 @@ export function useVendorSetupForm() {
     if (currentStep > 1) setCurrentStep(c => c - 1)
   }
 
-  const submitApplication = async () => {
+  const submitApplication = async (opts?: { autoApprove?: boolean }) => {
     setSubmitting(true)
     setSubmitError(null)
     try {
-      const res = await fetch('/api/vendors/apply', {
+      const url = mode === 'admin' ? '/api/admin/vendor-applications' : '/api/vendors/apply'
+      const payload = mode === 'admin'
+        ? { ...form, autoApprove: opts?.autoApprove ?? true }
+        : form
+
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'เกิดข้อผิดพลาดในการส่งใบสมัคร')
+      if (!res.ok) throw new Error(data.error || 'เกิดข้อผิดพลาดในการส่งข้อมูล')
       setSubmittedResult({
         applicationNo: data.applicationNo,
         score: data.score,
         estimatedTier: data.estimatedTier,
+        directApproved: Boolean(data.directApproved),
       })
       clearDraft()
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการส่งใบสมัคร')
+      setSubmitError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการส่งข้อมูล')
     } finally {
       setSubmitting(false)
     }
