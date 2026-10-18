@@ -95,5 +95,26 @@ describe('Unit: Vendor Directory & Single-Vendor Management', () => {
     const savedUrl = await saveSignatureDataUrl(pngDataUrl, 'test-sig')
     expect(savedUrl.startsWith('/api/files/test-sig-')).toBe(true)
   })
+
+  it('VD-ADMIN-06: formatStructuredAddress correctly compiles Thai address parts', () => {
+    const { formatStructuredAddress } = require('../../src/app/(dashboard)/admin/sections/vendor/vendor-address-helper')
+    const formatted = formatStructuredAddress({
+      houseNo: '88/12 หมู่ 5 ถ.บางนา-ตราด',
+      subdistrict: 'บางนา',
+      district: 'บางนา',
+      province: 'กรุงเทพมหานคร',
+      postalCode: '10260',
+    })
+    expect(formatted).toBe('88/12 หมู่ 5 ถ.บางนา-ตราด ต.บางนา อ.บางนา กรุงเทพมหานคร 10260')
+
+    const withPrefixes = formatStructuredAddress({
+      houseNo: '100/1 ถ.มิตรภาพ',
+      subdistrict: 'ต.ในเมือง',
+      district: 'อ.เมือง',
+      province: 'จ.ขอนแก่น',
+      postalCode: '40000',
+    })
+    expect(withPrefixes).toBe('100/1 ถ.มิตรภาพ ต.ในเมือง อ.เมือง จ.ขอนแก่น 40000')
+  })
 })
 
