@@ -10,6 +10,13 @@ export async function GET(req: Request) {
 
   const sites = await queryActiveSitesForDropdown()
   return NextResponse.json(
-    sites.map(s => ({ id: s.id, code: s.code, name: s.name, type: s.type }))
+    sites.map(s => ({
+      id: s.id,
+      code: s.code,
+      name: s.name,
+      type: s.type,
+      postalCode: s.postalCode,
+      province: s.province,
+    }))
   )
 }

@@ -121,6 +121,7 @@ model VendorCenter {
   vendorParentId        String
   zoneSiteId            String?
   address               String?
+  postalCode            String?
   phone                 String?
   deliveryMethod        String              @default("DC")
   gpPctOverride         Float?

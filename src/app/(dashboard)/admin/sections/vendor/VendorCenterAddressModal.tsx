@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { MapPin, X, Check, FileText, Layers, Trash2 } from 'lucide-react'
-import { formatStructuredAddress } from './vendor-address-helper'
+import { formatStructuredAddress, extractPostalCode } from './vendor-address-helper'
 import {
   VendorCenterAddressStructuredFields,
   StructuredFieldsState,
@@ -12,9 +12,10 @@ interface VendorCenterAddressModalProps {
   isOpen: boolean
   centerCode: string
   initialAddress: string
+  initialPostalCode?: string
   zoneSiteName?: string
   onClose: () => void
-  onSave: (address: string) => void
+  onSave: (address: string, postalCode?: string) => void
 }
 
 const emptyFields: StructuredFieldsState = {
@@ -29,6 +30,7 @@ export function VendorCenterAddressModal({
   isOpen,
   centerCode,
   initialAddress,
+  initialPostalCode,
   zoneSiteName,
   onClose,
   onSave,
@@ -40,10 +42,11 @@ export function VendorCenterAddressModal({
   useEffect(() => {
     if (isOpen) {
       setAddressText(initialAddress || '')
-      setFields(emptyFields)
+      const zip = initialPostalCode || extractPostalCode(initialAddress || '') || ''
+      setFields({ ...emptyFields, postalCode: zip })
       setMode('freeform')
     }
-  }, [isOpen, initialAddress])
+  }, [isOpen, initialAddress, initialPostalCode])
 
   if (!isOpen) return null
 
@@ -54,6 +57,12 @@ export function VendorCenterAddressModal({
       setAddressText(structuredPreview)
       setMode('freeform')
     }
+  }
+
+  const handleConfirm = () => {
+    const zip = fields.postalCode.trim() || extractPostalCode(addressText) || undefined
+    onSave(addressText.trim(), zip)
+    onClose()
   }
 
   return (
@@ -145,10 +154,7 @@ export function VendorCenterAddressModal({
           </button>
           <button
             type="button"
-            onClick={() => {
-              onSave(addressText)
-              onClose()
-            }}
+            onClick={handleConfirm}
             className="btn btn-primary text-xs py-1.5 px-4 flex items-center gap-1"
           >
             <Check className="w-3.5 h-3.5" />

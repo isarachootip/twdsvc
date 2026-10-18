@@ -4,6 +4,7 @@ import React from 'react'
 import { Trash2, MapPin } from 'lucide-react'
 import { SiteLite } from '../admin-helpers'
 import { VendorCenterRow } from './vendor-types'
+import { matchSiteByPostalCode } from './vendor-address-helper'
 
 interface VendorCenterTableRowProps {
   center: VendorCenterRow
@@ -24,6 +25,17 @@ export function VendorCenterTableRow({
   onRemove,
   onOpenAddressModal,
 }: VendorCenterTableRowProps) {
+  const handlePostalCodeChange = (newZip: string) => {
+    const patch: Partial<VendorCenterRow> = { postalCode: newZip }
+    if (newZip.trim().length === 5) {
+      const matched = matchSiteByPostalCode(newZip, sites)
+      if (matched) {
+        patch.zoneSiteId = matched.id
+      }
+    }
+    onUpdate(patch)
+  }
+
   return (
     <tr className="hover:bg-slate-50/60">
       <td className="p-1.5">
@@ -47,6 +59,20 @@ export function VendorCenterTableRow({
             </option>
           ))}
         </select>
+      </td>
+      <td className="p-1.5 w-24">
+        <input
+          className="inp inp-sm w-full text-xs font-mono text-center"
+          value={center.postalCode || ''}
+          placeholder="รหัส ปณ."
+          maxLength={5}
+          title={
+            center.postalCode
+              ? `รหัส ปณ. ${center.postalCode}`
+              : 'กรอกรหัส ปณ. 5 หลักเพื่อจับคู่สาขา/DC อัตโนมัติ'
+          }
+          onChange={e => handlePostalCodeChange(e.target.value)}
+        />
       </td>
       <td className="p-1.5">
         <div className="relative flex items-center">

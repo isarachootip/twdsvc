@@ -70,6 +70,8 @@ export interface SiteLite {
   code: string
   name: string
   type: string
+  postalCode?: string
+  province?: string
   manager?: string
 }
 

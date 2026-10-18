@@ -62,5 +62,24 @@ export async function resolveRouting(input: RoutingInput): Promise<RoutingResult
   })
   const z = zone.find(c => eligible(c))
   if (z) return build(z, z.deliveryMethod === 'DSD' ? 'DSD' : 'DC')
+
+  // 3. Fallback: Match by branch postal code (5-digit exact, then 2-digit provincial prefix)
+  const branch = await prisma.site.findUnique({
+    where: { id: input.branchId },
+    select: { postalCode: true },
+  })
+  if (branch?.postalCode && branch.postalCode.length === 5) {
+    const candidates = await prisma.vendorCenter.findMany({
+      where: { active: true, postalCode: { not: null } },
+      include: { vendorParent: { include: { brands: true } } },
+    })
+    const eligibleCandidates = candidates.filter(c => eligible(c))
+    const exact = eligibleCandidates.find(c => c.postalCode === branch.postalCode)
+    if (exact) return build(exact, exact.deliveryMethod === 'DSD' ? 'DSD' : 'DC')
+    const prefix = branch.postalCode.slice(0, 2)
+    const fallback = eligibleCandidates.find(c => c.postalCode?.slice(0, 2) === prefix)
+    if (fallback) return build(fallback, fallback.deliveryMethod === 'DSD' ? 'DSD' : 'DC')
+  }
+
   return null
 }

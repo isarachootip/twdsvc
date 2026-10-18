@@ -3,6 +3,7 @@ export interface VendorCenterRow {
   code: string
   zoneSiteId?: string
   address?: string
+  postalCode?: string
   phone?: string
   deliveryMethod: string
   gpPctOverride?: number | string

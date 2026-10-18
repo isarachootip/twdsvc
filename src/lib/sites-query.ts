@@ -76,6 +76,7 @@ export async function queryActiveSitesForDropdown() {
       type: true,
       province: true,
       region: true,
+      postalCode: true,
     },
     orderBy: [{ type: 'asc' }, { code: 'asc' }],
   })

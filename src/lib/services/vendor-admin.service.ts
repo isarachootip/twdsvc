@@ -7,6 +7,7 @@ export interface CenterInput {
   code: string
   zoneSiteId?: string | null
   address?: string | null
+  postalCode?: string | null
   phone?: string | null
   deliveryMethod: string
   gpPctOverride?: number | string | null
@@ -88,6 +89,7 @@ export async function upsertSingleVendor(v: VendorInput) {
         vendorParentId: parent.id,
         zoneSiteId: c.zoneSiteId || null,
         address: c.address || null,
+        postalCode: c.postalCode || null,
         phone: c.phone || null,
         deliveryMethod: c.deliveryMethod,
         gpPctOverride: optNum(c.gpPctOverride),
