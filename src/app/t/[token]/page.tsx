@@ -241,6 +241,12 @@ export default function PublicTrackingPage({ params }: { params: Promise<{ token
                 <span className="text-[#6B6459]">เลขที่งาน:</span>
                 <span className="font-mono font-bold text-[#2B2723]">{data.jobNo}</span>
               </div>
+              {data.customerName && (
+                <div className="flex justify-between">
+                  <span className="text-[#6B6459]">ชื่อลูกค้า:</span>
+                  <span className="font-medium text-[#2B2723]">{data.customerName}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-[#6B6459]">สินค้า:</span>
                 <span className="font-semibold text-[#2B2723]">{data.productName}</span>
