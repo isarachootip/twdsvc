@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { api, exportXlsx } from '@/lib/client'
 import { CHANNEL_LABELS, fmtDate } from '@/lib/constants'
+import DateInput from '@/components/ui/DateInput'
 import { useToast } from '@/components/ui/Toast'
 import type { JobView } from '@/lib/job-view'
 
@@ -48,20 +49,20 @@ export function DashboardExportCard() {
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
         <div className="field" style={{ flex: 1 }}>
           <label>ตั้งแต่วันที่</label>
-          <input
+          <DateInput
             className="inp"
-            type="date"
             value={range.from}
-            onChange={e => setRange({ ...range, from: e.target.value })}
+            onChange={v => setRange({ ...range, from: v })}
+            ariaLabel="ตั้งแต่วันที่ (dd/mm/yyyy)"
           />
         </div>
         <div className="field" style={{ flex: 1 }}>
           <label>ถึงวันที่</label>
-          <input
+          <DateInput
             className="inp"
-            type="date"
             value={range.to}
-            onChange={e => setRange({ ...range, to: e.target.value })}
+            onChange={v => setRange({ ...range, to: v })}
+            ariaLabel="ถึงวันที่ (dd/mm/yyyy)"
           />
         </div>
         <button className="btn btn-primary" onClick={doExport}>

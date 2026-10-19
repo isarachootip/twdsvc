@@ -1,5 +1,6 @@
 'use client'
 
+import DateInput from '@/components/ui/DateInput'
 import type { JobView } from '@/lib/job-view'
 import type { PickupRouteType, PickupSlipData } from '@/lib/pickup-slip'
 
@@ -134,7 +135,7 @@ export default function PickupSlipForm(p: PickupSlipFormProps) {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
         <div>
           <label style={{ fontSize: 11, fontWeight: 600 }}>วันที่นัดรับ</label>
-          <input type="date" className="inp inp-sm" value={p.scheduledDate} onChange={e => p.setScheduledDate(e.target.value)} />
+          <DateInput className="inp inp-sm" value={p.scheduledDate} onChange={v => p.setScheduledDate(v)} style={{ width: '100%' }} ariaLabel="วันที่นัดรับ (dd/mm/yyyy)" />
         </div>
         <div>
           <label style={{ fontSize: 11, fontWeight: 600 }}>เวลานัด</label>

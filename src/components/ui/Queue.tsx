@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Modal from './Modal'
+import DateInput from './DateInput'
 import type { JobView } from '@/lib/job-view'
 import { fmtOverage } from '@/lib/constants'
 
@@ -131,9 +132,9 @@ export function DateRange({ from, to, onChange, onExport, exportLabel = 'Export 
   return (
     <div className="daterange">
       <label>ตั้งแต่</label>
-      <input type="date" className="inp" value={from} onChange={e => onChange(e.target.value, to)} />
+      <DateInput className="inp" value={from} onChange={v => onChange(v, to)} ariaLabel="ตั้งแต่วันที่ (dd/mm/yyyy)" />
       <label>ถึง</label>
-      <input type="date" className="inp" value={to} onChange={e => onChange(from, e.target.value)} />
+      <DateInput className="inp" value={to} onChange={v => onChange(from, v)} ariaLabel="ถึงวันที่ (dd/mm/yyyy)" />
       {onExport && <button className="btn btn-primary" onClick={onExport}>{exportLabel}</button>}
     </div>
   )

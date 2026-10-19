@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import * as XLSX from 'xlsx'
 import Modal from '@/components/ui/Modal'
+import DateInput from '@/components/ui/DateInput'
 import { useToast } from '@/components/ui/Toast'
 import {
   Download, RefreshCw, Eye, Send, PlusCircle, Trash2, CheckSquare, Square,
@@ -407,18 +408,18 @@ export default function VdPaymentClient({ role }: { role: string }) {
 
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-gray-500 font-medium">ตั้งแต่วันที่:</span>
-            <input
-              type="date"
+            <DateInput
               value={dateFrom}
-              onChange={e => setDateFrom(e.target.value)}
+              onChange={v => setDateFrom(v)}
               className="border rounded px-2 py-1 text-xs bg-gray-50"
+              ariaLabel="ตั้งแต่วันที่ (dd/mm/yyyy)"
             />
             <span className="text-xs text-gray-500 font-medium">ถึง:</span>
-            <input
-              type="date"
+            <DateInput
               value={dateTo}
-              onChange={e => setDateTo(e.target.value)}
+              onChange={v => setDateTo(v)}
               className="border rounded px-2 py-1 text-xs bg-gray-50"
+              ariaLabel="ถึงวันที่ (dd/mm/yyyy)"
             />
             <button
               onClick={() => loadData(dateFrom, dateTo)}

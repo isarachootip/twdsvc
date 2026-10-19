@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '@/lib/client'
+import DateInput from '@/components/ui/DateInput'
 import { useSave, SaveButton, Row, Loading } from './admin-helpers'
 
 interface PromotionRow {
@@ -108,10 +109,10 @@ export function TradeinSection() {
                   <input className="inp inp-sm" style={{ width: 60 }} type="number" value={r.discountPct} onChange={e => upd(i, { discountPct: e.target.value })} />
                 </td>
                 <td>
-                  <input className="inp inp-sm" type="date" value={r.startDate} onChange={e => upd(i, { startDate: e.target.value })} />
+                  <DateInput className="inp inp-sm" value={r.startDate} onChange={v => upd(i, { startDate: v })} ariaLabel="วันเริ่มแคมเปญ (dd/mm/yyyy)" />
                 </td>
                 <td>
-                  <input className="inp inp-sm" type="date" value={r.endDate} onChange={e => upd(i, { endDate: e.target.value })} />
+                  <DateInput className="inp inp-sm" value={r.endDate} onChange={v => upd(i, { endDate: v })} ariaLabel="วันสิ้นสุดแคมเปญ (dd/mm/yyyy)" />
                 </td>
                 <td>
                   <select className="sel" value={r.status} onChange={e => upd(i, { status: e.target.value })}>

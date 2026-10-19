@@ -5,6 +5,7 @@ import {
   Calendar, Clock, MapPin, Truck, CheckCircle2,
   Store, Home, AlertCircle, Camera, ShieldCheck
 } from 'lucide-react'
+import DateInput from '@/components/ui/DateInput'
 
 interface DeliveryData {
   jobNo: string
@@ -351,13 +352,14 @@ export default function DeliverySchedulingPage({ params }: { params: Promise<{ t
                   <label className="block text-xs font-medium text-[#6B6459] flex items-center gap-1">
                     <Calendar size={13} /> วันที่นัดหมาย
                   </label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={appointmentDate}
                     min={new Date().toISOString().slice(0, 10)}
-                    onChange={(e) => setAppointmentDate(e.target.value)}
+                    onChange={(v) => setAppointmentDate(v)}
                     className="w-full p-2.5 border border-[#D2C9B8] rounded-xl text-xs outline-none focus:border-[#C8102E]"
+                    style={{ width: '100%' }}
                     required
+                    ariaLabel="วันที่นัดหมาย (dd/mm/yyyy)"
                   />
                 </div>
 
