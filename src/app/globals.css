@@ -31,9 +31,25 @@
 
 /* ─── Base ───────────────────────────────────────────────────────────── */
 html, body {
-  font-family: 'Sarabun', sans-serif;
+  font-family: var(--font-sarabun), 'TH Sarabun New', 'TH Sarabun PSK', 'Sarabun', sans-serif;
   background-color: var(--bg);
   color: var(--text);
+}
+
+/* Ensure all form controls inherit the standardized Sarabun font stack */
+input, select, textarea, button, optgroup {
+  font-family: inherit;
+}
+
+/* Tabular figures for numbers, currency, summaries, and data tables */
+.tabular-nums,
+table.tbl,
+table.tbl td,
+.summary-row,
+.info-row,
+.kpi-card .num,
+.overdue-summary .num {
+  font-variant-numeric: tabular-nums;
 }
 
 /* ─── Status text color semantics (No colored borders/frames per design rule) ─ */

@@ -8,6 +8,15 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: [
+          "var(--font-sarabun)",
+          "TH Sarabun New",
+          "TH Sarabun PSK",
+          "Sarabun",
+          "sans-serif",
+        ],
+      },
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
