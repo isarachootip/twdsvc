@@ -14,6 +14,7 @@ export const TAB_KEYS = TABS.map(t => t.key)
 export const SORT = {
   id: (j: JobView) => j.jobNo, customer: (j: JobView) => j.customerName ?? '', product: (j: JobView) => j.productName,
   branch: (j: JobView) => j.branch.name, hours: (j: JobView) => j.sla?.hoursInStep ?? 0, channel: (j: JobView) => j.channel ?? '',
+  openedAt: (j: JobView) => new Date(j.openedAt).getTime(),
 }
 
 export const HANDOFF_GROUPS = [

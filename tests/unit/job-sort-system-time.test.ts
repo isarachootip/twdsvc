@@ -38,4 +38,26 @@ describe('Unit: Job Sorting by State Entry & System Date-Time Field', () => {
     expect(sorted[2].jobNo).toBe('SSM-07102026-0001')
     expect(sorted[3].jobNo).toBe('SMP-06102026-0001')
   })
+
+  it('sorts jobs by latest openedAt descending (newest repair ticket first)', () => {
+    const jobs = [
+      { id: '1', jobNo: 'JB-2609-00015', openedAt: new Date('2026-09-26T10:00:00+07:00') },
+      { id: '2', jobNo: 'BNA-09102026-0002', openedAt: new Date('2026-10-09T11:20:00+07:00') },
+      { id: '3', jobNo: 'BNA-19102026-0001', openedAt: new Date('2026-10-19T09:15:00+07:00') },
+      { id: '4', jobNo: 'BNA-08102026-0001', openedAt: new Date('2026-10-08T14:00:00+07:00') },
+    ]
+
+    const sorted = [...jobs].sort((a, b) => {
+      const av = a.openedAt ? new Date(a.openedAt).getTime() : 0
+      const bv = b.openedAt ? new Date(b.openedAt).getTime() : 0
+      return (av - bv) * -1
+    })
+
+    // BNA-19102026-0001 (Oct 19) must be first
+    expect(sorted[0].jobNo).toBe('BNA-19102026-0001')
+    expect(sorted[1].jobNo).toBe('BNA-09102026-0002')
+    expect(sorted[2].jobNo).toBe('BNA-08102026-0001')
+    expect(sorted[3].jobNo).toBe('JB-2609-00015')
+  })
 })
+

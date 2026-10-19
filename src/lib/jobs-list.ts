@@ -79,7 +79,7 @@ export async function listJobs(user: UserSession, sp: URLSearchParams): Promise<
   const rows = await prisma.job.findMany({
     where: { AND: and },
     take: limit,
-    orderBy: [{ stageEnteredAt: 'desc' }, { openedAt: 'desc' }],
+    orderBy: [{ openedAt: 'desc' }, { id: 'desc' }],
     include: JOB_LIST_INCLUDE,
   })
   const jobs = rows.map(j => serializeJob(j, user.role))

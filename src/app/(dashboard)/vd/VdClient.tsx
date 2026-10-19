@@ -30,6 +30,7 @@ const SORT = {
   branch: (j: JobView) => j.branch.name, hours: (j: JobView) => j.sla?.hoursInStep ?? 0, channel: (j: JobView) => j.channel ?? '',
   warranty: (j: JobView) => (j.hasWarranty ? 1 : 0), total: (j: JobView) => (j.quote && 'total' in j.quote ? Number(j.quote.total) : 0),
   days: (j: JobView) => j.quote?.repairDays ?? 0,
+  openedAt: (j: JobView) => new Date(j.openedAt).getTime(),
 }
 
 export default function VdClient({ role }: { role: string }) {

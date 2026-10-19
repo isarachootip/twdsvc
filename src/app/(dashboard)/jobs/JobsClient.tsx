@@ -86,10 +86,10 @@ export default function JobsClient({ role: initialRole, user, initialJobs }: Job
   // เมื่อเลือกการ์ด เซิร์ฟเวอร์คัดรายการตามการ์ดนั้นมาให้แล้ว (flag) จึงไม่กรองซ้ำฝั่ง client
   const filtered = base
 
-  // Default sorting: Latest item that entered the current state (stageEnteredAt desc)
+  // Default sorting: Latest opened job (openedAt desc)
   const { sorted, sort, toggle } = useSort(filtered, {
     id: j => j.jobNo,
-    systemTime: j => (j.stageEnteredAt ? new Date(j.stageEnteredAt).getTime() : 0),
+    systemTime: j => (j.openedAt ? new Date(j.openedAt).getTime() : (j.stageEnteredAt ? new Date(j.stageEnteredAt).getTime() : 0)),
     customer: j => j.customerName ?? '',
     product: j => j.productName,
     branch: j => j.branch.name,

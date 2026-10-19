@@ -73,7 +73,7 @@ export async function loadQueueTabs(dept: keyof typeof QUEUES, user: UserSession
     const rows = await prisma.job.findMany({
       where: { AND: [scope, { isTest: false }, t.where, dateWhere, extraScope, filterWhere] },
       include: JOB_LIST_INCLUDE,
-      orderBy: { stageEnteredAt: 'asc' },
+      orderBy: [{ openedAt: 'desc' }, { id: 'desc' }],
       take: 500,
     })
     const serialized = rows.map(r => serializeJob(r, user.role, { preferSla: t.sla }))

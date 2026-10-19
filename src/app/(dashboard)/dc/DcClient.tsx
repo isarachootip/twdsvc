@@ -25,6 +25,7 @@ const TABS = [
 const SORT = {
   id: (j: JobView) => j.jobNo, customer: (j: JobView) => j.customerName ?? '', product: (j: JobView) => j.productName,
   branch: (j: JobView) => j.branch.name, hours: (j: JobView) => j.sla?.hoursInStep ?? 0, vd: (j: JobView) => j.vendor?.code ?? '',
+  openedAt: (j: JobView) => new Date(j.openedAt).getTime(),
 }
 
 export default function DcClient({ role }: { role: string }) {
