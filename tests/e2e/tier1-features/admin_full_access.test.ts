@@ -443,6 +443,7 @@ describe('Admin Full Access & Operational Flow Integration (R1, R2, R3)', () => 
           sizeCategoryId: size.id,
           hasWarranty: true,
           shippingMethod: 'STANDARD',
+          photos: [{ fileUrl: 'https://storage.googleapis.com/test/photo1.jpg', fileName: 'photo1.jpg' }],
         }),
       })
 
@@ -455,6 +456,36 @@ describe('Admin Full Access & Operational Flow Integration (R1, R2, R3)', () => 
       const saved = await prisma.job.findUniqueOrThrow({ where: { id: data.id } })
       expect(saved.branchId).toBe(branch.id)
       expect(saved.createdBy).toBe('test_am')
+    })
+  })
+
+  it('API-T03B: Creating a job (POST /api/jobs) without photos throws 400 Bad Request', async () => {
+    const token = await getAdminToken()
+    await runWithAuthToken(token, async () => {
+      const brand = await prisma.brand.findFirstOrThrow()
+      const size = await prisma.sizeCategory.findFirstOrThrow()
+
+      const req = new NextRequest('http://localhost:3000/api/jobs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerName: 'ลูกค้าทดสอบ ไม่มีรูปภาพ',
+          customerPhone: '0812345678',
+          productName: 'สว่านไร้สาย',
+          brandId: brand.id,
+          brandName: brand.name,
+          symptom: 'เปิดไม่ติด',
+          sizeCategoryId: size.id,
+          hasWarranty: true,
+          shippingMethod: 'STANDARD',
+          photos: [],
+        }),
+      })
+
+      const res = await createJobRoute(req)
+      expect(res.status).toBe(400)
+      const data = await res.json()
+      expect(data.error).toBe('กรุณาแนบภาพถ่ายสินค้าอย่างน้อย 1 รูป')
     })
   })
 
@@ -477,6 +508,7 @@ describe('Admin Full Access & Operational Flow Integration (R1, R2, R3)', () => 
           sizeCategoryId: size.id,
           hasWarranty: false,
           shippingMethod: 'STANDARD',
+          photos: [{ fileUrl: 'https://storage.googleapis.com/test/photo1.jpg', fileName: 'photo1.jpg' }],
         }),
       })
 
@@ -542,6 +574,7 @@ describe('Admin Full Access & Operational Flow Integration (R1, R2, R3)', () => 
           sizeCategoryId: size.id,
           hasWarranty: true,
           shippingMethod: 'STANDARD',
+          photos: [{ fileUrl: 'https://storage.googleapis.com/test/photo1.jpg', fileName: 'photo1.jpg' }],
         }),
       })
       const createRes = await createJobRoute(createReq)
@@ -662,6 +695,7 @@ describe('Admin Full Access & Operational Flow Integration (R1, R2, R3)', () => 
           sizeCategoryId: size.id,
           hasWarranty: false,
           shippingMethod: 'STANDARD',
+          photos: [{ fileUrl: 'https://storage.googleapis.com/test/photo1.jpg', fileName: 'photo1.jpg' }],
         }),
       })
       const createRes = await createJobRoute(createReq)
@@ -919,6 +953,7 @@ describe('Admin Full Access & Operational Flow Integration (R1, R2, R3)', () => 
           sizeCategoryId: size.id,
           hasWarranty: false,
           shippingMethod: 'STANDARD',
+          photos: [{ fileUrl: 'https://storage.googleapis.com/test/photo1.jpg', fileName: 'photo1.jpg' }],
         }),
       })
       const res = await createJobRoute(req)

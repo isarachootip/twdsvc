@@ -12,6 +12,7 @@ export interface ValidateCsFormInput {
   feesTotal: number
   pay: string
   pos: string
+  photos?: Array<{ fileUrl?: string | null } | null | undefined>
 }
 
 export function validateCsForm(input: ValidateCsFormInput): string | null {
@@ -24,6 +25,8 @@ export function validateCsForm(input: ValidateCsFormInput): string | null {
   if (!input.brandName.trim()) return 'กรุณาระบุแบรนด์'
   if (!input.symptom.trim()) return 'กรุณากรอกอาการเสีย'
   if (!input.sizeId) return 'กรุณาเลือกขนาดสินค้า'
+  const validPhotos = (input.photos ?? []).filter(p => Boolean(p && p.fileUrl))
+  if (validPhotos.length === 0) return 'กรุณาถ่ายภาพสินค้าอย่างน้อย 1 รูปก่อนบันทึก'
   if (input.feesTotal > 0 && input.pay === 'POS_RECEIPT' && !input.pos.trim())
     return 'กรุณากรอกเลขที่ใบเสร็จ POS'
   return null

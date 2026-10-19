@@ -43,6 +43,13 @@ export async function POST(req: NextRequest) {
     if (!sizeCategoryId) throw new HttpError(400, 'กรุณาเลือกขนาดสินค้า')
     if (taxInvoiceId && !/^\d{13}$/.test(String(taxInvoiceId))) throw new HttpError(400, 'เลขผู้เสียภาษีต้องมี 13 หลัก')
 
+    const validPhotos = Array.isArray(photos)
+      ? photos.filter((p: unknown): p is { fileUrl: string; fileName?: string; mimeType?: string; fileSize?: number } =>
+          typeof p === 'object' && p !== null && 'fileUrl' in p && Boolean((p as { fileUrl?: unknown }).fileUrl)
+        )
+      : []
+    if (validPhotos.length === 0) throw new HttpError(400, 'กรุณาแนบภาพถ่ายสินค้าอย่างน้อย 1 รูป')
+
     const shippingMethod: 'STANDARD' | 'EXPRESS' = rawMethod === 'EXPRESS' ? 'EXPRESS' : 'STANDARD'
 
     let branchId: string | undefined = user.role === 'ADMIN' ? (((body.branchId as string) || user.siteId) ?? undefined) : user.siteId ?? undefined
@@ -144,9 +151,9 @@ export async function POST(req: NextRequest) {
           payload: { defectNote: defectNote || null, paymentMethod: paymentMethod || null, routing: routing ? { centerCode: routing.centerCode, channel: routing.channel } : null },
         },
       })
-      if (Array.isArray(photos) && photos.length) {
+      if (validPhotos.length) {
         await tx.attachment.createMany({
-          data: photos.slice(0, 5).map((p: { fileUrl: string; fileName?: string; mimeType?: string; fileSize?: number }) => ({
+          data: validPhotos.slice(0, 5).map(p => ({
             jobEventId: event.id, kind: 'INTAKE', fileUrl: p.fileUrl, fileName: p.fileName ?? 'photo.jpg', mimeType: p.mimeType ?? null, fileSize: p.fileSize ?? null, uploadedBy: user.id,
           })),
         })

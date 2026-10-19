@@ -22,7 +22,7 @@ export function DefectAndPhotosSection({
   const [showAllGuides, setShowAllGuides] = useState(false)
 
   return (
-    <div className="pcard">
+    <div id="defect-photos-section" className="pcard">
       <div
         style={{
           display: 'flex',

@@ -42,29 +42,14 @@ export function useCsNewForm({
   const [brands, setBrands] = useState<Brand[]>([])
   const [sizes, setSizes] = useState<Size[]>([])
 
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
-  const [phone, setPhone] = useState(initialPhone)
-  const [addr, setAddr] = useState<Address>(emptyAddress)
-  const [taxSame, setTaxSame] = useState(true)
-  const [tax, setTax] = useState<TaxInfo | null>(null)
-  const [taxModal, setTaxModal] = useState(false)
-  const [taxDraft, setTaxDraft] = useState<TaxInfo>({ name: '', id: '', addr: emptyAddress })
-  const [found, setFound] = useState<CustomerLookupResult | null>(null)
-
-  const [sku, setSku] = useState('')
-  const [skuResults, setSkuResults] = useState<Commodity[]>([])
-  const [product, setProduct] = useState(initialProduct)
-  const [brandId, setBrandId] = useState('')
-  const [brandName, setBrandName] = useState('')
-  const [symptom, setSymptom] = useState('')
-  const [serialNo, setSerialNo] = useState(initialSerialNo || '')
-  const [warranty, setWarranty] = useState<'yes' | 'no'>('yes')
-  const [allowOutside, setAllowOutside] = useState(false)
-  const [sizeId, setSizeId] = useState<number | null>(null)
-  const [method, setMethod] = useState<'STANDARD' | 'EXPRESS'>('STANDARD')
-  const [photos, setPhotos] = useState<Photo[]>([])
-  const [defect, setDefect] = useState('')
+  const [firstName, setFirstName] = useState(''), [lastName, setLastName] = useState(''), [phone, setPhone] = useState(initialPhone)
+  const [addr, setAddr] = useState<Address>(emptyAddress), [taxSame, setTaxSame] = useState(true), [tax, setTax] = useState<TaxInfo | null>(null)
+  const [taxModal, setTaxModal] = useState(false), [taxDraft, setTaxDraft] = useState<TaxInfo>({ name: '', id: '', addr: emptyAddress }), [found, setFound] = useState<CustomerLookupResult | null>(null)
+  const [sku, setSku] = useState(''), [skuResults, setSkuResults] = useState<Commodity[]>([]), [product, setProduct] = useState(initialProduct)
+  const [brandId, setBrandId] = useState(''), [brandName, setBrandName] = useState(''), [symptom, setSymptom] = useState('')
+  const [serialNo, setSerialNo] = useState(initialSerialNo || ''), [warranty, setWarranty] = useState<'yes' | 'no'>('yes'), [allowOutside, setAllowOutside] = useState(false)
+  const [sizeId, setSizeId] = useState<number | null>(null), [method, setMethod] = useState<'STANDARD' | 'EXPRESS'>('STANDARD')
+  const [photos, setPhotos] = useState<Photo[]>([]), [defect, setDefect] = useState('')
   const { extractSerialFromPhoto, extracting: extractingSerial } = useSerialExtractor(photos, setSerialNo)
 
   const [fees, setFees] = useState<FeesState>({ operationFee: 0, shippingFee: 0, total: 0 })
@@ -84,14 +69,13 @@ export function useCsNewForm({
     if (branches.length > 0) {
       setBranchList(branches)
     } else if (role === 'ADMIN') {
-      api<Array<{ id: string; code: string; name: string; type: string }>>('/api/sites')
-        .then(sites => {
-          const b = sites?.filter(s => s.type === 'BRANCH')
-          if (b?.length) {
-            setBranchList(b)
-            setSelectedBranchId(prev => prev || b.find(x => x.code === 'BN' || x.name.includes('บางนา'))?.id || b[0].id)
-          }
-        }).catch(() => {})
+      api<Array<{ id: string; code: string; name: string; type: string }>>('/api/sites').then(sites => {
+        const b = sites?.filter(s => s.type === 'BRANCH')
+        if (b?.length) {
+          setBranchList(b)
+          setSelectedBranchId(prev => prev || b.find(x => x.code === 'BN' || x.name.includes('บางนา'))?.id || b[0].id)
+        }
+      }).catch(() => {})
     }
   }, [branches, role])
 
@@ -153,8 +137,14 @@ export function useCsNewForm({
 
   const save = useCallback(async (): Promise<SavedJob | null> => {
     if (saved) return saved
-    const err = validateCsForm({ role, selectedBranchId, firstName, lastName, phone, product, brandName, symptom, sizeId, feesTotal: fees.total, pay, pos })
-    if (err) { toast(err, 'error'); return null }
+    const err = validateCsForm({ role, selectedBranchId, firstName, lastName, phone, product, brandName, symptom, sizeId, feesTotal: fees.total, pay, pos, photos })
+    if (err) {
+      toast(err, 'error')
+      if (err.includes('ภาพถ่าย')) {
+        document.getElementById('defect-photos-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+      return null
+    }
     setSaving(true)
     try {
       const fullName = [firstName.trim(), lastName.trim()].filter(Boolean).join(' ')
