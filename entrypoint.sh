@@ -17,6 +17,13 @@ if [ -n "$DATABASE_URL" ]; then
 
   echo "🌱 Seeding master data and default accounts..."
   npm run db:seed || echo "Seed finished with warnings (skipped existing data)"
+
+  echo "🧹 Running production data normalization & test-data isolation..."
+  npx tsx scripts/normalize-money-satang.ts --apply || echo "Money normalization skipped"
+  npx tsx scripts/mark-test-jobs.ts --apply || echo "Test job marking skipped"
+  if [ "$SEED_TEST_DATA" != "true" ] && [ "$SEED_TEST_DATA" != "1" ]; then
+    npx tsx scripts/test-accounts.ts --disable --confirm || echo "Test account rotation skipped"
+  fi
 fi
 
 echo "🌐 Starting Next.js web application on 0.0.0.0:${PORT:-3000}..."
