@@ -5,6 +5,8 @@ import { displayStageLabel, isWaitingIntakePayment } from '@/lib/job-status-filt
 interface Props {
   stage: JobStage | string
   intakeUnpaid?: boolean
+  managerSigned?: boolean | null
+  quote?: { managerSignedAt?: string | Date | null } | null
   size?: 'sm' | 'md'
   variant?: 'text' | 'badge'
   className?: string
@@ -59,13 +61,17 @@ const THEME_MAP: Record<string, BadgeTheme> = {
 export default function StageBadge({
   stage,
   intakeUnpaid,
+  managerSigned,
+  quote,
   size = 'md',
   variant = 'badge',
   className = '',
 }: Props) {
+  const quoteData = quote ?? (managerSigned !== undefined ? { managerSignedAt: managerSigned ? new Date() : null } : undefined)
   const isWaitingPayment = isWaitingIntakePayment({ stage, intakeUnpaid })
-  const label = displayStageLabel({ stage, intakeUnpaid })
-  const badgeKey = isWaitingPayment ? 'b-amber' : (STAGE_BADGE[stage as Stage] ?? 'b-gray')
+  const label = displayStageLabel({ stage, intakeUnpaid, quote: quoteData })
+  const isWaitingSign = stage === 'WAITING_APPROVAL' && quoteData && !quoteData.managerSignedAt
+  const badgeKey = isWaitingPayment ? 'b-amber' : isWaitingSign ? 'b-amber' : (STAGE_BADGE[stage as Stage] ?? 'b-gray')
   const theme = THEME_MAP[badgeKey] ?? THEME_MAP['b-gray']
 
   if (variant === 'text') {

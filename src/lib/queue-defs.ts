@@ -47,9 +47,10 @@ export const QUEUES: Record<string, { roles: string[]; tabs: QueueTabDef[] }> = 
   CS: {
     roles: ['CS', 'ADMIN'],
     tabs: [
+      { key: 'managerSign', label: 'รอ ผจก. ลงนาม', where: { stage: 'WAITING_APPROVAL' }, sla: ['CUSTOMER_APPROVAL'] },
+      { key: 'approval', label: 'รอลูกค้าอนุมัติ', where: { stage: 'WAITING_APPROVAL' }, sla: ['CUSTOMER_APPROVAL'] },
       { key: 'receive', label: 'รอรับของเข้า CS', where: { stage: 'READY_FOR_PICKUP', type: 'CUSTOMER' }, sla: ['GR_DELIVER_CS', 'CUSTOMER_PICKUP'] },
       { key: 'pickup', label: 'พร้อมรับที่สาขา', where: { stage: 'READY_FOR_PICKUP', type: 'CUSTOMER' }, sla: ['CUSTOMER_PICKUP'] },
-      { key: 'approval', label: 'รอลูกค้าอนุมัติ', where: { stage: 'WAITING_APPROVAL' }, sla: ['CUSTOMER_APPROVAL'] },
       { key: 'opened', label: 'เปิดวันนี้ / รอชำระ', where: { type: 'CUSTOMER', stage: { in: ['CS_OPENED', 'PENDING_VENDOR_ASSIGNMENT'] } }, sla: ['CS_HANDOVER'] },
     ],
   },

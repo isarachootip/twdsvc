@@ -16,17 +16,18 @@ import CsModals from './components/CsModals'
 import { PickupPanel, ApprovalPanel } from './components/CsPanels'
 
 const TABS = [
+  { key: 'managerSign', label: 'รอ ผจก. ลงนาม' },
+  { key: 'approval', label: 'รอลูกค้าอนุมัติ' },
   { key: 'receive', label: 'รอรับของเข้า CS' },
   { key: 'pickup', label: 'พร้อมรับที่สาขา' },
-  { key: 'approval', label: 'รอลูกค้าอนุมัติ' },
   { key: 'opened', label: 'เปิดวันนี้ / รอชำระ' },
 ]
 
-const TAB_KEYS = ['receive', 'pickup', 'approval', 'opened']
+const TAB_KEYS = ['managerSign', 'approval', 'receive', 'pickup', 'opened']
 
 export default function CsQueue({ role }: { role: string }) {
   const router = useRouter()
-  const [tab, setTab] = useState('receive')
+  const [tab, setTab] = useState('managerSign')
   const [branchFilter, setBranchFilter] = useState('')
   const [siteOptions, setSiteOptions] = useState<Array<{ id: string; name: string }>>([])
   const inp = useRowInputs()
@@ -40,6 +41,7 @@ export default function CsQueue({ role }: { role: string }) {
   const [locJob, setLocJob] = useState<JobView | null>(null)
   const [printJob, setPrintJob] = useState<JobView | null>(null)
   const [signJob, setSignJob] = useState<JobView | null>(null)
+  const [signManagerJob, setSignManagerJob] = useState<JobView | null>(null)
   const [scan, setScan] = useState('')
   const [pay, setPay] = useState<{ job: JobView; kind: 'intake' | 'repair'; amount: number } | null>(null)
   const { toast } = useToast()
@@ -117,9 +119,13 @@ export default function CsQueue({ role }: { role: string }) {
         {readOnly && <span className="text-amber-700 font-semibold text-xs">• โหมดดูอย่างเดียว</span>}
       </form>
 
-      <div style={{ display: 'grid', gridTemplateColumns: current && (tab === 'pickup' || tab === 'approval') ? 'minmax(0,1fr) 380px' : '1fr', gap: 16, alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: current && (tab === 'pickup' || tab === 'approval' || tab === 'managerSign') ? 'minmax(0,1fr) 380px' : '1fr', gap: 16, alignItems: 'start' }}>
         <div>
           {loading && <EmptyCard text="กำลังโหลด…" />}
+          {!loading && (tab === 'approval' || tab === 'managerSign') && (
+            <CsApprovalTable jobs={list(tab)} selId={sel?.id ?? null} onSelect={setSel} />
+          )}
+
           {!loading && tab === 'receive' && (
             <CsReceiveTable jobs={list('receive')} readOnly={readOnly} busy={busy} inp={inp} onOpen={setOpenId} onReceive={handleReceive} />
           )}
@@ -128,16 +134,12 @@ export default function CsQueue({ role }: { role: string }) {
             <CsPickupTable jobs={list('pickup')} selId={sel?.id ?? null} onSelect={setSel} onEditLoc={setLocJob} readOnly={readOnly} />
           )}
 
-          {!loading && tab === 'approval' && (
-            <CsApprovalTable jobs={list('approval')} selId={sel?.id ?? null} onSelect={setSel} />
-          )}
-
           {!loading && tab === 'opened' && (
             <CsOpenedTable jobs={list('opened')} readOnly={readOnly} onOpen={setOpenId} onPay={(j, a) => setPay({ job: j, kind: 'intake', amount: a })} />
           )}
         </div>
 
-        {current && (tab === 'pickup' || tab === 'approval') && (
+        {current && (tab === 'pickup' || tab === 'approval' || tab === 'managerSign') && (
           <div className="pcard" style={{ position: 'sticky', top: 0 }}>
             <button className="close-btn" style={{ position: 'static', float: 'right' }} onClick={() => setSel(null)}>✕</button>
             <p className="sub-mute" style={{ margin: 0 }}>เลขที่ใบแจ้งซ่อม</p>
@@ -158,12 +160,13 @@ export default function CsQueue({ role }: { role: string }) {
                 onSignPickup={() => setSignJob(current)}
               />
             )}
-            {tab === 'approval' && (
+            {(tab === 'approval' || tab === 'managerSign') && (
               <ApprovalPanel
                 job={current}
                 readOnly={readOnly}
                 busy={busy}
                 onDetail={() => setOpenId(current.id)}
+                onSignManager={() => setSignManagerJob(current)}
                 onRecord={async (decision, reason) => {
                   const r = await run(current, 'cs_record_decision', { decision, reason, note: reason }, decision === 'approve' ? 'บันทึก: ลูกค้าอนุมัติ' : 'บันทึก: ลูกค้าไม่อนุมัติ')
                   if (r) setSel(null)
@@ -178,6 +181,7 @@ export default function CsQueue({ role }: { role: string }) {
         role={role} openId={openId} setOpenId={setOpenId}
         pay={pay} setPay={setPay} locJob={locJob} setLocJob={setLocJob}
         printJob={printJob} setPrintJob={setPrintJob} signJob={signJob} setSignJob={setSignJob}
+        signManagerJob={signManagerJob} setSignManagerJob={setSignManagerJob}
         busy={busy} reload={reload} run={run}
         onSignConfirm={async sig => {
           if (!signJob) return

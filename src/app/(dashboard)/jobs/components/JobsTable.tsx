@@ -8,6 +8,9 @@ import type { JobView } from '@/lib/job-view'
 import { WAITING_INTAKE_PAYMENT_LABEL, isWaitingIntakePayment } from '@/lib/job-status-filter'
 
 export function ownerOf(j: JobView) {
+  if (j.stage === 'WAITING_APPROVAL' && !j.quote?.managerSignedAt) {
+    return 'CS'
+  }
   return j.overdue ? j.overdueOwner : j.sla?.owner ?? null
 }
 
@@ -119,7 +122,7 @@ export default function JobsTable({ jobs, sort, toggle, loading, onOpenJob }: Jo
                     )}
                   </td>
                   <td className="py-3 px-4 align-middle">
-                    <StageBadge stage={j.stage} intakeUnpaid={j.intakeUnpaid} />
+                    <StageBadge stage={j.stage} intakeUnpaid={j.intakeUnpaid} quote={j.quote} />
                   </td>
                   <td className="py-3 px-4 align-middle text-slate-700">
                     {OWNER_LABELS[ownerOf(j) ?? ''] ?? '-'}

@@ -161,33 +161,5 @@ export function PickupPanel({
     </div>
   )
 }
+export { default as ApprovalPanel } from './CsApprovalPanel'
 
-interface ApprovalPanelProps {
-  job: JobView
-  readOnly: boolean
-  busy: string | null
-  onRecord: (d: 'approve' | 'reject', reason: string) => void
-  onDetail: () => void
-}
-
-export function ApprovalPanel({ job, readOnly, busy, onRecord, onDetail }: ApprovalPanelProps) {
-  const [decision, setDecision] = useState<'approve' | 'reject' | null>(null)
-  const [reason, setReason] = useState('ลูกค้าแจ้งทางโทรศัพท์')
-  const expired = useMemo(() => job.quote?.expiresAt && new Date(job.quote.expiresAt) < new Date(), [job])
-
-  return (
-    <div style={{ marginTop: 14, borderTop: '1px solid var(--border)', paddingTop: 14 }}>
-      <div className="summary-row"><span>ใบเสนอราคา</span><span>{job.quote?.quoteNo}</span></div>
-      <div className="summary-row total"><span>ยอดเสนอราคา (รวม VAT)</span><span>{fmtBaht(Number(job.quote?.total ?? 0))}</span></div>
-      {expired && <div className="note amber">ลิงก์ใบเสนอราคาหมดอายุแล้ว — โทรติดตามลูกค้าและบันทึกผลแทนได้</div>}
-      <button className="link-btn" style={{ marginTop: 8 }} onClick={onDetail}>↗ ดูใบเสนอราคาฉบับเต็ม</button>
-      <p style={{ fontSize: 13, fontWeight: 500, margin: '12px 0 6px' }}>บันทึกผลแทนลูกค้า</p>
-      <div className="radio-row">
-        <button className={`radio-opt ${decision === 'approve' ? 'checked' : ''}`} onClick={() => setDecision('approve')}>✓ ลูกค้าอนุมัติซ่อม</button>
-        <button className={`radio-opt ${decision === 'reject' ? 'checked' : ''}`} onClick={() => setDecision('reject')}>✕ ไม่อนุมัติ</button>
-      </div>
-      <div className="field" style={{ marginTop: 10 }}><label>เหตุผล / ช่องทางที่ลูกค้าแจ้ง</label><input className="inp" value={reason} onChange={e => setReason(e.target.value)} /></div>
-      <button className="btn btn-primary btn-block btn-lg" style={{ marginTop: 12 }} disabled={!decision || !reason.trim() || readOnly || busy !== null} onClick={() => decision && onRecord(decision, reason)}>บันทึกผล</button>
-    </div>
-  )
-}

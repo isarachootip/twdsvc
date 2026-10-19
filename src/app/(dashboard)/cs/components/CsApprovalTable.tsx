@@ -56,12 +56,21 @@ export default function CsApprovalTable({ jobs, selId, onSelect }: CsApprovalTab
                     <div className="sub-mute">{j.vendor?.name}</div>
                   </td>
                   <td>
-                    {fmtBaht(Number(j.quote?.total ?? 0))}
+                    <div className="font-semibold text-slate-800">{fmtBaht(Number(j.quote?.total ?? 0))}</div>
+                    {j.quote?.managerSignedAt ? (
+                      <div className="text-emerald-700 font-medium text-[11.5px] mt-0.5 inline-flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                        <span>ผจก. ลงนามแล้ว</span>
+                      </div>
+                    ) : (
+                      <div className="text-amber-700 font-medium text-[11.5px] mt-0.5 inline-flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                        <span>รอ ผจก. ลงนาม</span>
+                      </div>
+                    )}
                     {expired && (
-                      <div>
-                        <span className="text-rose-600 font-medium text-xs">
-                          • ใบเสนอราคาหมดอายุ — โทรติดตาม
-                        </span>
+                      <div className="text-rose-600 font-medium text-[11px] mt-0.5">
+                        • ใบเสนอราคาหมดอายุ
                       </div>
                     )}
                   </td>

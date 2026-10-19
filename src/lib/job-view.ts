@@ -11,7 +11,7 @@ export const JOB_LIST_INCLUDE = {
   charges: { select: { amount: true, type: true } },
   payments: { select: { amount: true, status: true, chargeType: true, method: true } },
   shipments: { select: { id: true, legType: true, carrier: true, status: true, trackingNo: true, driverToken: true, dispatchedAt: true, pickedUpAt: true, deliveredAt: true, createdAt: true }, orderBy: { createdAt: 'asc' as const } },
-  quotes: { select: { id: true, quoteNo: true, version: true, status: true, total: true, subtotal: true, repairDays: true, sentAt: true, expiresAt: true, decidedAt: true }, orderBy: { version: 'desc' as const }, take: 1 },
+  quotes: { select: { id: true, quoteNo: true, version: true, status: true, total: true, subtotal: true, repairDays: true, sentAt: true, expiresAt: true, decidedAt: true, managerSignedAt: true, managerSignerName: true }, orderBy: { version: 'desc' as const }, take: 1 },
   items: true,
   events: { select: { type: true, payload: true, createdAt: true }, orderBy: { createdAt: 'desc' as const }, take: 12 },
 } satisfies Prisma.JobInclude

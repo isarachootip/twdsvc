@@ -5,6 +5,7 @@ import PaymentModal from '@/components/jobs/PaymentModal'
 import CsCustomerSignModal from '@/components/jobs/CsCustomerSignModal'
 import CsLocationModal from './CsLocationModal'
 import CsReturnReceiptModal from './CsReturnReceiptModal'
+import ManagerSignQuoteModal from '@/components/jobs/ManagerSignQuoteModal'
 import type { JobView } from '@/lib/job-view'
 import type { ActionType } from '@/lib/state-machine/types'
 
@@ -20,6 +21,8 @@ interface CsModalsProps {
   setPrintJob: (j: JobView | null) => void
   signJob: JobView | null
   setSignJob: (j: JobView | null) => void
+  signManagerJob: JobView | null
+  setSignManagerJob: (j: JobView | null) => void
   onSignConfirm: (sig: string) => Promise<void>
   busy: string | null
   reload: () => void
@@ -38,6 +41,8 @@ export default function CsModals({
   setPrintJob,
   signJob,
   setSignJob,
+  signManagerJob,
+  setSignManagerJob,
   onSignConfirm,
   busy,
   reload,
@@ -80,6 +85,18 @@ export default function CsModals({
         disclaimer="ข้าพเจ้าได้ตรวจรับสินค้าซ่อมเรียบร้อยแล้ว ถูกต้องครบถ้วนและอยู่ในสภาพสมบูรณ์"
         onConfirm={onSignConfirm}
       />
+      {signManagerJob && (
+        <ManagerSignQuoteModal
+          open={!!signManagerJob}
+          onClose={() => setSignManagerJob(null)}
+          jobId={signManagerJob.id}
+          defaultManagerName={signManagerJob.branch?.name}
+          onSigned={() => {
+            setSignManagerJob(null)
+            reload()
+          }}
+        />
+      )}
     </>
   )
 }

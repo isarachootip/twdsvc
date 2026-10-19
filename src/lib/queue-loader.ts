@@ -52,6 +52,8 @@ function applyTabRules(dept: string, tabKey: string, rows: JobView[]): JobView[]
   if (dept === 'GR' && tabKey === 'receive') return rows.filter(j => !j.intakeUnpaid)
   if (dept === 'CS' && tabKey === 'receive') return rows.filter(j => !j.location)
   if (dept === 'CS' && tabKey === 'pickup') return rows.filter(j => !!j.location)
+  if (dept === 'CS' && tabKey === 'managerSign') return rows.filter(j => !j.quote?.managerSignedAt)
+  if (dept === 'CS' && tabKey === 'approval') return rows.filter(j => !!j.quote?.managerSignedAt)
   return rows
 }
 

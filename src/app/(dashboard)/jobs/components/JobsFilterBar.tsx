@@ -50,7 +50,7 @@ export default function JobsFilterBar({
   }
 
   const getStatusLabel = (stg: string) =>
-    statusFilterOptions().find(o => o.value === stg)?.label ?? stg
+    statusFilterOptions(true).find(o => o.value === stg)?.label ?? stg
 
   return (
     <div className="bg-white p-3.5 rounded-xl border border-slate-200/90 shadow-2xs mb-4 space-y-2.5">
@@ -110,7 +110,7 @@ export default function JobsFilterBar({
             value={status}
             onChange={e => setStatus(e.target.value)}
           >
-            {statusFilterOptions().map(o => (
+            {statusFilterOptions(true).map(o => (
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>

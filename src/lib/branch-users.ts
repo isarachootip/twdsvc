@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs'
 import { PrismaClient, Role, SiteType } from '@prisma/client'
 
 export const DEFAULT_BRANCH_USER_PASSWORD = '1234'
+export const DEFAULT_BRANCH_SGM_PASSWORD = '123'
 
 export interface BranchSiteRef {
   id: string
@@ -19,7 +20,7 @@ export interface BranchUserAccountSpec {
 
 /**
  * Normalizes a branch's nickname (or code fallback) into an uppercase alphanumeric prefix
- * suitable for constructing `<SHORTCODE>CS` and `<SHORTCODE>GR` usernames.
+ * suitable for constructing `<SHORTCODE>CS`, `<SHORTCODE>GR`, and `<SHORTCODE>SGM` usernames.
  */
 export function normalizeBranchShortCode(nickname?: string | null, fallbackCode?: string | null): string {
   const raw = (nickname || fallbackCode || '').trim()
@@ -27,8 +28,8 @@ export function normalizeBranchShortCode(nickname?: string | null, fallbackCode?
 }
 
 /**
- * Builds the standard CS and GR user account definitions for a single branch site.
- * Example: Bangna (`nickname: "BNA"`, `name: "สาขาบางนา"`) -> `BNACS` and `BNAGR`.
+ * Builds the standard CS, GR, and Store Manager (SGM) user account definitions for a single branch site.
+ * Example: Bangna (`nickname: "BNA"`, `name: "สาขาบางนา"`) -> `BNACS`, `BNAGR`, and `BNASGM`.
  */
 export function buildBranchUserAccounts(branch: BranchSiteRef): BranchUserAccountSpec[] {
   const shortCode = normalizeBranchShortCode(branch.nickname, branch.code)
@@ -48,6 +49,12 @@ export function buildBranchUserAccounts(branch: BranchSiteRef): BranchUserAccoun
       role: Role.GR,
       siteId: branch.id,
     },
+    {
+      username: `${shortCode}SGM`,
+      fullName: `ผู้จัดการสาขา ${cleanName} (SGM)`,
+      role: Role.CS,
+      siteId: branch.id,
+    },
   ]
 }
 
@@ -58,7 +65,8 @@ export async function ensureBranchUsersForSite(
   db: PrismaClient,
   branch: BranchSiteRef & { type?: SiteType | string },
   plainPassword: string = DEFAULT_BRANCH_USER_PASSWORD,
-  precomputedHash?: string
+  precomputedHash?: string,
+  precomputedSgmHash?: string
 ): Promise<number> {
   if (branch.type && branch.type !== SiteType.BRANCH) return 0
   if (branch.code.startsWith('TEST_')) return 0
@@ -67,12 +75,14 @@ export async function ensureBranchUsersForSite(
   if (specs.length === 0) return 0
 
   const passwordHash = precomputedHash ?? (await bcrypt.hash(plainPassword, 12))
+  const sgmPasswordHash = precomputedSgmHash ?? (await bcrypt.hash(DEFAULT_BRANCH_SGM_PASSWORD, 12))
 
   for (const spec of specs) {
+    const finalHash = spec.username.endsWith('SGM') ? sgmPasswordHash : passwordHash
     await db.user.upsert({
       where: { username: spec.username },
       update: {
-        password: passwordHash,
+        password: finalHash,
         fullName: spec.fullName,
         role: spec.role,
         siteId: spec.siteId,
@@ -83,7 +93,7 @@ export async function ensureBranchUsersForSite(
       },
       create: {
         username: spec.username,
-        password: passwordHash,
+        password: finalHash,
         fullName: spec.fullName,
         role: spec.role,
         siteId: spec.siteId,
@@ -97,7 +107,7 @@ export async function ensureBranchUsersForSite(
 }
 
 /**
- * Syncs `<SHORTCODE>CS` and `<SHORTCODE>GR` users across all active real branches in the database.
+ * Syncs `<SHORTCODE>CS`, `<SHORTCODE>GR`, and `<SHORTCODE>SGM` users across all active real branches in the database.
  */
 export async function syncAllBranchUsers(
   db: PrismaClient,
@@ -113,13 +123,14 @@ export async function syncAllBranchUsers(
   })
 
   const passwordHash = await bcrypt.hash(plainPassword, 12)
+  const sgmPasswordHash = await bcrypt.hash(DEFAULT_BRANCH_SGM_PASSWORD, 12)
   let userCount = 0
 
   const chunkSize = 20
   for (let i = 0; i < branches.length; i += chunkSize) {
     const chunk = branches.slice(i, i + chunkSize)
     const counts = await Promise.all(
-      chunk.map(branch => ensureBranchUsersForSite(db, branch, plainPassword, passwordHash))
+      chunk.map(branch => ensureBranchUsersForSite(db, branch, plainPassword, passwordHash, sgmPasswordHash))
     )
     userCount += counts.reduce((sum, c) => sum + c, 0)
   }
