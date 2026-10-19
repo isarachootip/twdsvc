@@ -6,6 +6,8 @@ import CsCustomerSignModal from '@/components/jobs/CsCustomerSignModal'
 import CsLocationModal from './CsLocationModal'
 import CsReturnReceiptModal from './CsReturnReceiptModal'
 import ManagerSignQuoteModal from '@/components/jobs/ManagerSignQuoteModal'
+import LonPreview from '@/components/jobs/LonPreview'
+import { useMe } from '@/components/ui/useMe'
 import type { JobView } from '@/lib/job-view'
 import type { ActionType } from '@/lib/state-machine/types'
 
@@ -23,6 +25,8 @@ interface CsModalsProps {
   setSignJob: (j: JobView | null) => void
   signManagerJob: JobView | null
   setSignManagerJob: (j: JobView | null) => void
+  lonJob: JobView | null
+  setLonJob: (j: JobView | null) => void
   onSignConfirm: (sig: string) => Promise<void>
   busy: string | null
   reload: () => void
@@ -43,11 +47,15 @@ export default function CsModals({
   setSignJob,
   signManagerJob,
   setSignManagerJob,
+  lonJob,
+  setLonJob,
   onSignConfirm,
   busy,
   reload,
   run,
 }: CsModalsProps) {
+  const me = useMe()
+  const isDemo = Boolean(me?.demoMode)
   return (
     <>
       <PaymentModal
@@ -93,6 +101,17 @@ export default function CsModals({
           defaultManagerName={signManagerJob.branch?.name}
           onSigned={() => {
             setSignManagerJob(null)
+            reload()
+          }}
+        />
+      )}
+      {lonJob && (
+        <LonPreview
+          job={{ id: lonJob.id, jobNo: lonJob.jobNo, productName: lonJob.productName }}
+          demo={isDemo}
+          onClose={() => setLonJob(null)}
+          onDecided={() => {
+            setLonJob(null)
             reload()
           }}
         />

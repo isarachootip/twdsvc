@@ -11,6 +11,7 @@ interface CsApprovalPanelProps {
   onRecord: (d: 'approve' | 'reject', reason: string) => void
   onDetail: () => void
   onSignManager: () => void
+  onSendLon?: () => void
 }
 
 export default function CsApprovalPanel({
@@ -20,6 +21,7 @@ export default function CsApprovalPanel({
   onRecord,
   onDetail,
   onSignManager,
+  onSendLon,
 }: CsApprovalPanelProps) {
   const [decision, setDecision] = useState<'approve' | 'reject' | null>(null)
   const [reason, setReason] = useState('ลูกค้าแจ้งทางโทรศัพท์')
@@ -52,7 +54,22 @@ export default function CsApprovalPanel({
         )}
       </div>
 
-      {!isManagerSigned && (
+      {isManagerSigned ? (
+        <div style={{ marginTop: 10 }}>
+          <button
+            type="button"
+            className="btn btn-lg btn-primary"
+            style={{ width: '100%' }}
+            onClick={onSendLon}
+            disabled={readOnly || busy !== null}
+          >
+            ส่งให้ลูกค้าทาง LON
+          </button>
+          <p className="sub-mute" style={{ marginTop: 6, textAlign: 'center' }}>
+            ส่งข้อความแจ้งเตือนพร้อมลิงก์ใบเสนอราคาให้ลูกค้าผ่าน LINE
+          </p>
+        </div>
+      ) : (
         <div style={{ marginTop: 10 }}>
           <button
             type="button"

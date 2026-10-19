@@ -1,8 +1,6 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import LonPreview from '@/components/jobs/LonPreview'
-import { useMe } from '@/components/ui/useMe'
 import QuoteHeader from './QuoteHeader'
 import QuoteMetaCards from './QuoteMetaCards'
 import QuoteLinesTable from './QuoteLinesTable'
@@ -15,7 +13,6 @@ export default function QuoteForm({ jobId, role }: { jobId: string; role: string
   const router = useRouter()
   const sp = useSearchParams()
   const revise = sp.get('revise') === '1'
-  const me = useMe()
 
   const {
     job,
@@ -26,8 +23,6 @@ export default function QuoteForm({ jobId, role }: { jobId: string; role: string
     setNote,
     busy,
     sentQuote,
-    lon,
-    setLon,
     vendorCenters,
     selectedCenterId,
     setSelectedCenterId,
@@ -107,14 +102,6 @@ export default function QuoteForm({ jobId, role }: { jobId: string; role: string
         quote={sentQuote}
         job={job}
         onClose={() => router.push('/vd')}
-        onSendLon={() => setLon(true)}
-      />
-
-      <LonPreview
-        job={lon ? { id: job.id, jobNo: job.jobNo, productName: job.productName } : null}
-        demo={!!me?.demoMode}
-        onClose={() => router.push('/vd')}
-        onDecided={() => router.push('/vd')}
       />
     </div>
   )

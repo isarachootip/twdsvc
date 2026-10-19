@@ -8,6 +8,7 @@ import AttachmentGallery from '@/components/ui/AttachmentGallery'
 import { useToast } from '@/components/ui/Toast'
 import QuoteDoc from './QuoteDoc'
 import ManagerSignQuoteModal from './ManagerSignQuoteModal'
+import LonPreview from './LonPreview'
 import PaymentModal from './PaymentModal'
 import ShippingLabel3PLModal from '@/components/ui/ShippingLabel3PLModal'
 import { JobRepairReceiptModal } from '@/components/ui/repair-receipt/JobRepairReceiptModal'
@@ -45,6 +46,7 @@ export default function JobDetailModal({
   const [err, setErr] = useState<string | null>(null)
   const [showQuote, setShowQuote] = useState(false)
   const [showSignManager, setShowSignManager] = useState(false)
+  const [showLon, setShowLon] = useState(false)
   const [show3PlLabel, setShow3PlLabel] = useState(false)
   const [showReceipt, setShowReceipt] = useState<'INTAKE' | 'RETURN' | null>(null)
   const [assign, setAssign] = useState<{ centers: any[]; centerId: string; channel: string } | null>(null)
@@ -378,6 +380,15 @@ export default function JobDetailModal({
                       ✍️ ลงนามใบเสนอราคา (ผจก. สาขา)
                     </button>
                   )}
+                  {quote.managerSignedAt && (
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={() => setShowLon(true)}
+                    >
+                      ส่งให้ลูกค้าทาง LON
+                    </button>
+                  )}
                   {quote.managerSignedAt && d.links?.QUOTE && (
                     <button
                       type="button"
@@ -404,6 +415,19 @@ export default function JobDetailModal({
               jobId={d.id}
               defaultManagerName={d.branch?.storeManagerName}
               onSigned={() => {
+                load()
+                onChanged?.()
+              }}
+            />
+          )}
+
+          {showLon && d && (
+            <LonPreview
+              job={{ id: d.id, jobNo: d.jobNo, productName: d.productName }}
+              demo={true}
+              onClose={() => setShowLon(false)}
+              onDecided={() => {
+                setShowLon(false)
                 load()
                 onChanged?.()
               }}

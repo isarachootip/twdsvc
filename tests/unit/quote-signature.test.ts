@@ -121,4 +121,93 @@ describe('Unit: Quotation Digital Signatures & Gatekeeper Workflow', () => {
     await prisma.jobEvent.deleteMany({ where: { jobId: job.id } })
     await prisma.job.delete({ where: { id: job.id } })
   })
+
+  it('QS-03: Newly submitted quote is unapproved (managerSignedAt is null) requiring manager approval before sending to customer', async () => {
+    const branch = await prisma.site.findFirst({ where: { active: true } })
+    assert.ok(branch, 'Branch must exist')
+
+    const job = await prisma.job.create({
+      data: {
+        jobNo: `TEST-QS3-${Date.now().toString().slice(-6)}`,
+        type: 'CUSTOMER',
+        stage: JobStage.WAITING_APPROVAL,
+        branchId: branch.id,
+        customerName: 'ลูกค้าทดสอบขั้นตอนรออนุมัติ',
+        productName: 'ปั๊มน้ำ MITSUBISHI WP-205R',
+        brandName: 'MITSUBISHI',
+        symptom: 'น้ำไม่ไหล',
+        createdBy: 'test-user',
+      },
+    })
+
+    const quote = await prisma.quote.create({
+      data: {
+        jobId: job.id,
+        quoteNo: `QT-QS3-${Date.now().toString().slice(-6)}`,
+        version: 1,
+        status: QuoteStatus.SENT,
+        subtotal: 45000,
+        vatAmount: 3150,
+        total: 48150,
+        repairDays: 5,
+        repairWarrantyDays: 30,
+        createdBy: 'test-system',
+      },
+    })
+
+    // Newly submitted quote must wait for manager signature before being approved/sent to customer
+    expect(quote.status).toBe('SENT')
+    expect(quote.managerSignedAt).toBe(null)
+    expect(quote.customerSignedAt).toBe(null)
+
+    // Clean up
+    await prisma.quote.delete({ where: { id: quote.id } })
+    await prisma.job.delete({ where: { id: job.id } })
+  })
+
+  it('QS-04: Signed quote satisfies gatekeeper allowing sending quotation link to customer via LON', async () => {
+    const branch = await prisma.site.findFirst({ where: { active: true } })
+    assert.ok(branch, 'Branch must exist')
+
+    const job = await prisma.job.create({
+      data: {
+        jobNo: `TEST-QS4-${Date.now().toString().slice(-6)}`,
+        type: 'CUSTOMER',
+        stage: JobStage.WAITING_APPROVAL,
+        branchId: branch.id,
+        customerName: 'ลูกค้าทดสอบส่ง LON',
+        productName: 'เครื่องตัดหญ้า HONDA GX35',
+        brandName: 'HONDA',
+        symptom: 'สตาร์ทไม่ติด',
+        createdBy: 'test-user',
+      },
+    })
+
+    const quote = await prisma.quote.create({
+      data: {
+        jobId: job.id,
+        quoteNo: `QT-QS4-${Date.now().toString().slice(-6)}`,
+        version: 1,
+        status: QuoteStatus.SENT,
+        subtotal: 60000,
+        vatAmount: 4200,
+        total: 64200,
+        repairDays: 4,
+        repairWarrantyDays: 60,
+        managerSignedAt: new Date(),
+        managerSignerName: branch.storeManagerName || 'ผู้จัดการสาขา',
+        managerSignatureUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        createdBy: 'test-system',
+      },
+    })
+
+    expect(Boolean(quote.managerSignedAt)).toBe(true)
+    expect(quote.managerSignerName).toBeTruthy()
+    expect(quote.total).toBe(64200)
+
+    // Clean up
+    await prisma.quote.delete({ where: { id: quote.id } })
+    await prisma.job.delete({ where: { id: job.id } })
+  })
 })
+

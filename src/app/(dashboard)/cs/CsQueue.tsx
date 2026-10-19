@@ -16,10 +16,8 @@ import CsModals from './components/CsModals'
 import { PickupPanel, ApprovalPanel } from './components/CsPanels'
 
 const TABS = [
-  { key: 'managerSign', label: 'รอ ผจก. ลงนาม' },
-  { key: 'approval', label: 'รอลูกค้าอนุมัติ' },
-  { key: 'receive', label: 'รอรับของเข้า CS' },
-  { key: 'pickup', label: 'พร้อมรับที่สาขา' },
+  { key: 'managerSign', label: 'รอ ผจก. ลงนาม' }, { key: 'approval', label: 'รอลูกค้าอนุมัติ' },
+  { key: 'receive', label: 'รอรับของเข้า CS' }, { key: 'pickup', label: 'พร้อมรับที่สาขา' },
   { key: 'opened', label: 'เปิดวันนี้ / รอชำระ' },
 ]
 
@@ -33,8 +31,7 @@ export default function CsQueue({ role }: { role: string }) {
   const inp = useRowInputs()
   const scanRef = useRef<HTMLInputElement>(null)
   const { data, loading, reload, run, busy } = useQueue('CS', undefined, branchFilter ? { branchId: branchFilter } : undefined, id => {
-    inp.clear(id)
-    scanRef.current?.focus()
+    inp.clear(id); scanRef.current?.focus()
   })
   const [sel, setSel] = useState<JobView | null>(null)
   const [openId, setOpenId] = useState<string | null>(null)
@@ -42,6 +39,7 @@ export default function CsQueue({ role }: { role: string }) {
   const [printJob, setPrintJob] = useState<JobView | null>(null)
   const [signJob, setSignJob] = useState<JobView | null>(null)
   const [signManagerJob, setSignManagerJob] = useState<JobView | null>(null)
+  const [lonJob, setLonJob] = useState<JobView | null>(null)
   const [scan, setScan] = useState('')
   const [pay, setPay] = useState<{ job: JobView; kind: 'intake' | 'repair'; amount: number } | null>(null)
   const { toast } = useToast()
@@ -167,6 +165,7 @@ export default function CsQueue({ role }: { role: string }) {
                 busy={busy}
                 onDetail={() => setOpenId(current.id)}
                 onSignManager={() => setSignManagerJob(current)}
+                onSendLon={() => setLonJob(current)}
                 onRecord={async (decision, reason) => {
                   const r = await run(current, 'cs_record_decision', { decision, reason, note: reason }, decision === 'approve' ? 'บันทึก: ลูกค้าอนุมัติ' : 'บันทึก: ลูกค้าไม่อนุมัติ')
                   if (r) setSel(null)
@@ -182,6 +181,7 @@ export default function CsQueue({ role }: { role: string }) {
         pay={pay} setPay={setPay} locJob={locJob} setLocJob={setLocJob}
         printJob={printJob} setPrintJob={setPrintJob} signJob={signJob} setSignJob={setSignJob}
         signManagerJob={signManagerJob} setSignManagerJob={setSignManagerJob}
+        lonJob={lonJob} setLonJob={setLonJob}
         busy={busy} reload={reload} run={run}
         onSignConfirm={async sig => {
           if (!signJob) return

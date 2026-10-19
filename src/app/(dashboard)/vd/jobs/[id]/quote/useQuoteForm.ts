@@ -30,7 +30,6 @@ export function useQuoteForm({ jobId, role, revise }: UseQuoteFormProps) {
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
   const [sentQuote, setSentQuote] = useState<QuoteDetail | null>(null)
-  const [lon, setLon] = useState(false)
   const [vendorCenters, setVendorCenters] = useState<VendorCenterOption[]>([])
   const [selectedCenterId, setSelectedCenterId] = useState<string>('')
 
@@ -146,6 +145,8 @@ export function useQuoteForm({ jobId, role, revise }: UseQuoteFormProps) {
       setSentQuote(latest)
       if (r.extra?.quoteTotal === 0) {
         toast('ยอดรวม ฿0 — อนุมัติอัตโนมัติ งานย้ายไป "กำลังซ่อม"', 'success')
+      } else {
+        toast('บันทึกใบเสนอราคาแล้ว — อยู่ในขั้นตอนรอ ผจก. / ลูกค้าอนุมัติ', 'success')
       }
     } catch (e) {
       toast(e instanceof Error ? e.message : 'ส่งใบเสนอราคาไม่สำเร็จ', 'error')
@@ -163,8 +164,6 @@ export function useQuoteForm({ jobId, role, revise }: UseQuoteFormProps) {
     setNote,
     busy,
     sentQuote,
-    lon,
-    setLon,
     vendorCenters,
     selectedCenterId,
     setSelectedCenterId,
