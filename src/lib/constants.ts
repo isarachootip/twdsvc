@@ -138,6 +138,13 @@ export function fmtBaht(n: number | null | undefined): string {
   return (rounded < 0 ? '-฿' : '฿') + Math.abs(rounded).toLocaleString('th-TH')
 }
 
+export function fmtBahtDecimal(baht: number | null | undefined): string {
+  if (baht === null || baht === undefined || isNaN(Number(baht))) return '฿0.00'
+  const v = Number(baht)
+  return (v < 0 ? '-฿' : '฿') + Math.abs(v).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+
 export function fmtDate(d: string | Date | null | undefined): string {
   if (!d) return '-'
   const x = new Date(d)

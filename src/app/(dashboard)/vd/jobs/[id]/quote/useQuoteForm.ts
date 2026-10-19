@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useToast } from '@/components/ui/Toast'
 import { api } from '@/lib/client'
+import { calcQuoteTotalsBaht } from '@/lib/quotation-format'
 import { LineType, QuoteDetail, QuoteJobInfo, QuoteLineItem, QuoteTotals, VendorCenterOption } from './types'
 
 let seq = 1
@@ -78,25 +79,22 @@ export function useQuoteForm({ jobId, role, revise }: UseQuoteFormProps) {
 
   const openFee = useMemo(() => {
     if (!job || job.hasWarranty) return 0
-    if (typeof job.money?.operationFee === 'number') {
-      return job.money.operationFee
-    }
-    const raw = job.vendor?.inspectionFee ?? (
-      currentCenter?.vendorParent ? currentCenter.vendorParent.inspectionFeeNotCovered : 0
-    )
+    const raw =
+      typeof job.money?.operationFee === 'number'
+        ? job.money.operationFee
+        : job.vendor?.inspectionFee ??
+          (currentCenter?.vendorParent ? currentCenter.vendorParent.inspectionFeeNotCovered : 0)
     const n = Number(raw) || 0
-    return n > 0 && n < 1000 ? n * 100 : n
+    return n >= 1000 && n % 100 === 0 ? n / 100 : n
   }, [job, currentCenter])
 
   const warrantyDays = currentCenter?.vendorParent?.repairWarrantyDays ?? job?.vendor?.repairWarrantyDays ?? job?.vendorCenter?.vendorParent?.repairWarrantyDays ?? 30
 
-  const totals: QuoteTotals = useMemo(() => {
-    const partsTotal = Math.round(lines.reduce((s, l) => s + (Number(l.unitPrice) || 0), 0) * 100)
-    const safeOpenFee = Number(openFee) || 0
-    const subtotal = partsTotal
-    const vat = Math.floor(subtotal * 0.07 + 0.5)
-    return { partsTotal, openFee: safeOpenFee, subtotal, vat, total: subtotal + vat }
-  }, [lines, openFee])
+  const totals: QuoteTotals = useMemo(
+    () => calcQuoteTotalsBaht(lines, openFee),
+    [lines, openFee],
+  )
+
 
   const handleUpdateLine = (key: number, patch: Partial<QuoteLineItem>) => {
     setLines(ls => ls.map(l => (l.key === key ? { ...l, ...patch } : l)))

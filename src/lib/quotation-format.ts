@@ -135,3 +135,19 @@ export function computeQuotationFinancials(input: {
     netPayable,
   }
 }
+
+export function calcQuoteTotalsBaht(
+  lines: ReadonlyArray<{ unitPrice: string | number }>,
+  openFeeBaht: number,
+  vatRate = 0.07,
+) {
+  const partsTotal = Number(
+    lines.reduce((s, l) => s + (Number(l.unitPrice) || 0), 0).toFixed(2),
+  )
+  const openFee = Number((Number(openFeeBaht) || 0).toFixed(2))
+  const subtotal = partsTotal
+  const vat = Number((subtotal * vatRate).toFixed(2))
+  const total = Number((subtotal + vat).toFixed(2))
+  return { partsTotal, openFee, subtotal, vat, total }
+}
+

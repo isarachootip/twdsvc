@@ -111,4 +111,25 @@ describe('Unit: Standardized Repair Quotation Format & Math', () => {
     // VD report divides subtotal (75000 satang) by 100 -> ฿750 (never ฿11)
     expect(Math.round(fin.subtotal / 100)).toBe(750)
   })
+
+  it('QF-06: Direct Baht calculation & 2-decimal display — ฿50 part + 7% VAT = ฿3.50, total ฿53.50, minus ฿150 open fee = -฿53.50 discount & ฿0.00 net', async () => {
+    const { fmtBahtDecimal } = await import('../../src/lib/constants')
+    const { calcQuoteTotalsBaht } = await import('../../src/lib/quotation-format')
+
+    const totals = calcQuoteTotalsBaht([{ unitPrice: '50' }], 150)
+    expect(totals.partsTotal).toBe(50)
+    expect(totals.vat).toBe(3.5)
+    expect(totals.total).toBe(53.5)
+    expect(totals.openFee).toBe(150)
+
+    const discount = Math.min(totals.openFee, totals.total)
+    const net = Math.max(0, totals.total - discount)
+
+    expect(fmtBahtDecimal(totals.partsTotal)).toBe('฿50.00')
+    expect(fmtBahtDecimal(totals.vat)).toBe('฿3.50')
+    expect(fmtBahtDecimal(totals.total)).toBe('฿53.50')
+    expect(`-${fmtBahtDecimal(discount)}`).toBe('-฿53.50')
+    expect(fmtBahtDecimal(net)).toBe('฿0.00')
+  })
 })
+
