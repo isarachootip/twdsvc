@@ -2,7 +2,7 @@
 
 import QrImage from '@/components/ui/QrImage'
 import { absUrl } from '@/lib/client'
-import { fmtBaht } from '@/lib/constants'
+import { fmtBahtDecimal } from '@/lib/constants'
 import type { QuotationFinancials } from '@/lib/quotation-format'
 import QuoteSignatureSection, { type QuoteSignatureData } from './QuoteSignatureSection'
 
@@ -58,7 +58,7 @@ export default function QuotePricingAndFooter({
                 )}
               </td>
               <td style={{ padding: '6px 8px', textAlign: 'right', color: '#111827' }}>{l.quantity}</td>
-              <td style={{ padding: '6px 8px', textAlign: 'right', color: '#111827' }}>{fmtBaht(l.amount)}</td>
+              <td style={{ padding: '6px 8px', textAlign: 'right', color: '#111827' }}>{fmtBahtDecimal(l.amountBaht)}</td>
             </tr>
           ))}
         </tbody>
@@ -69,20 +69,20 @@ export default function QuotePricingAndFooter({
         <div style={{ width: '100%', maxWidth: 430, fontSize: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 8px' }}>
             <span style={{ color: '#334155' }}>รวมก่อน VAT</span>
-            <span>{fmtBaht(fin.subtotal)}</span>
+            <span>{fmtBahtDecimal(fin.subtotalBaht)}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 8px', borderBottom: '1px solid #cbd5e1' }}>
             <span style={{ color: '#334155' }}>VAT 7%</span>
-            <span>{fmtBaht(fin.vatAmount)}</span>
+            <span>{fmtBahtDecimal(fin.vatAmountBaht)}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 8px', fontWeight: 700, fontSize: 12.5 }}>
             <span>ยอดซ่อมรวมทั้งสิ้น</span>
-            <span>{fmtBaht(fin.total)}</span>
+            <span>{fmtBahtDecimal(fin.totalBaht)}</span>
           </div>
-          {fin.operationFeeDiscount > 0 && (
+          {fin.operationFeeDiscountBaht > 0 && (
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 8px', color: '#047857', fontWeight: 600 }}>
               <span>หัก: ส่วนลดค่าดำเนินการที่ชำระไว้ (กรณีอนุมัติซ่อม)</span>
-              <span>-{fmtBaht(fin.operationFeeDiscount)}</span>
+              <span>-{fmtBahtDecimal(fin.operationFeeDiscountBaht)}</span>
             </div>
           )}
           <div
@@ -99,14 +99,15 @@ export default function QuotePricingAndFooter({
             }}
           >
             <div style={{ fontWeight: 700, fontSize: 13 }}>
-              ยอดที่ต้องชำระ (กรณีอนุมัติ) <span style={{ fontSize: 15, fontWeight: 800, marginLeft: 4 }}>{fmtBaht(fin.netPayable)}</span>
+              ยอดที่ต้องชำระ (กรณีอนุมัติ) <span style={{ fontSize: 15, fontWeight: 800, marginLeft: 4 }}>{fmtBahtDecimal(fin.netPayableBaht)}</span>
             </div>
             <div style={{ fontSize: 10.5, opacity: 0.95, textAlign: 'right' }}>
-              ราคารวม VAT แล้ว{fin.operationFeeDiscount > 0 ? ` · หักส่วนลด ${fmtBaht(fin.operationFeeDiscount)} แล้ว` : ''}
+              ราคารวม VAT แล้ว{fin.operationFeeDiscountBaht > 0 ? ` · หักส่วนลด ${fmtBahtDecimal(fin.operationFeeDiscountBaht)} แล้ว` : ''}
             </div>
           </div>
         </div>
       </div>
+
 
       {/* ─── 8. Mobile QR Approval & Reject Options ─── */}
       <div

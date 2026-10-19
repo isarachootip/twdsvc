@@ -130,6 +130,21 @@ describe('Unit: Standardized Repair Quotation Format & Math', () => {
     expect(fmtBahtDecimal(totals.total)).toBe('฿53.50')
     expect(`-${fmtBahtDecimal(discount)}`).toBe('-฿53.50')
     expect(fmtBahtDecimal(net)).toBe('฿0.00')
+
+    const fin = computeQuotationFinancials({
+      lines: [{ type: 'PART', description: 'หลอดไฟ', quantity: 1, amount: 5000 }],
+      subtotal: 5000,
+      vatAmount: 350,
+      total: 5350,
+      operationFeePaid: 15000,
+      hasWarranty: false,
+    })
+    expect(fmtBahtDecimal(fin.subtotalBaht)).toBe('฿50.00')
+    expect(fmtBahtDecimal(fin.vatAmountBaht)).toBe('฿3.50')
+    expect(fmtBahtDecimal(fin.totalBaht)).toBe('฿53.50')
+    expect(`-${fmtBahtDecimal(fin.operationFeeDiscountBaht)}`).toBe('-฿53.50')
+    expect(fmtBahtDecimal(fin.netPayableBaht)).toBe('฿0.00')
   })
 })
+
 

@@ -6,8 +6,9 @@ import {
   CheckCircle2, XCircle, AlertCircle, Clock,
   ImageIcon, ChevronRight, X, Printer
 } from 'lucide-react'
-import { fmtBaht } from '@/lib/constants'
+import { fmtBahtDecimal } from '@/lib/constants'
 import { computeQuotationFinancials } from '@/lib/quotation-format'
+
 import CustomerSignModal from './CustomerSignModal'
 import PublicQuoteA4Modal from './PublicQuoteA4Modal'
 
@@ -346,7 +347,7 @@ export default function CustomerQuotePage({ params }: { params: Promise<{ token:
                           ) : null}
                         </div>
                         <div className="font-mono font-semibold text-[#2B2723] whitespace-nowrap">
-                          {fmtBaht(line.amount)}
+                          {fmtBahtDecimal(line.amountBaht)}
                         </div>
                       </div>
                     ))}
@@ -356,20 +357,20 @@ export default function CustomerQuotePage({ params }: { params: Promise<{ token:
                   <div className="space-y-1.5 pt-1 text-xs border-t border-[#E4DED2]">
                     <div className="flex justify-between text-[#6B6459]">
                       <span>รวมก่อน VAT</span>
-                      <span className="font-mono">{fmtBaht(fin.subtotal)}</span>
+                      <span className="font-mono">{fmtBahtDecimal(fin.subtotalBaht)}</span>
                     </div>
                     <div className="flex justify-between text-[#6B6459]">
                       <span>ภาษีมูลค่าเพิ่ม (VAT 7%)</span>
-                      <span className="font-mono">{fmtBaht(fin.vatAmount)}</span>
+                      <span className="font-mono">{fmtBahtDecimal(fin.vatAmountBaht)}</span>
                     </div>
                     <div className="flex justify-between font-semibold text-[#2B2723] pt-0.5">
                       <span>ยอดซ่อมรวมทั้งสิ้น</span>
-                      <span className="font-mono">{fmtBaht(fin.total)}</span>
+                      <span className="font-mono">{fmtBahtDecimal(fin.totalBaht)}</span>
                     </div>
-                    {fin.operationFeeDiscount > 0 && (
+                    {fin.operationFeeDiscountBaht > 0 && (
                       <div className="flex justify-between font-medium text-emerald-700">
                         <span>หัก: ส่วนลดค่าดำเนินการที่ชำระไว้</span>
-                        <span className="font-mono">-{fmtBaht(fin.operationFeeDiscount)}</span>
+                        <span className="font-mono">-{fmtBahtDecimal(fin.operationFeeDiscountBaht)}</span>
                       </div>
                     )}
                   </div>
@@ -377,13 +378,14 @@ export default function CustomerQuotePage({ params }: { params: Promise<{ token:
                   {/* Total Net Amount Box */}
                   <div className="bg-[#C8102E] text-white rounded-xl p-3.5 text-center mt-2">
                     <p className="text-xs opacity-90 mb-0.5 font-medium">ยอดที่ต้องชำระ (กรณีอนุมัติซ่อม)</p>
-                    <p className="text-2xl font-bold font-mono">{fmtBaht(fin.netPayable)}</p>
-                    {fin.operationFeeDiscount > 0 && (
+                    <p className="text-2xl font-bold font-mono">{fmtBahtDecimal(fin.netPayableBaht)}</p>
+                    {fin.operationFeeDiscountBaht > 0 && (
                       <p className="text-[10.5px] opacity-90 mt-0.5">
-                        ราคารวม VAT แล้ว · หักส่วนลด {fmtBaht(fin.operationFeeDiscount)} แล้ว
+                        ราคารวม VAT แล้ว · หักส่วนลด {fmtBahtDecimal(fin.operationFeeDiscountBaht)} แล้ว
                       </p>
                     )}
                   </div>
+
                 </div>
               )
             })()}

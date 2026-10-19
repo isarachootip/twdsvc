@@ -69,6 +69,7 @@ export interface DisplayQuotationLine {
   description: string
   quantity: number
   amount: number
+  amountBaht: number
   partWaitDays?: number
   partWarrantyDays?: number
 }
@@ -80,6 +81,11 @@ export interface QuotationFinancials {
   total: number
   operationFeeDiscount: number
   netPayable: number
+  subtotalBaht: number
+  vatAmountBaht: number
+  totalBaht: number
+  operationFeeDiscountBaht: number
+  netPayableBaht: number
 }
 
 export function computeQuotationFinancials(input: {
@@ -90,6 +96,12 @@ export function computeQuotationFinancials(input: {
   operationFeePaid?: number | null
   hasWarranty?: boolean
 }): QuotationFinancials {
+  const isSatang =
+    (input.subtotal >= 1000 && input.subtotal % 100 === 0) ||
+    input.total >= 1000 ||
+    input.lines.some(l => l.amount >= 1000 && l.amount % 100 === 0)
+  const scale = isSatang ? 100 : 1
+
   const normalizedLines: DisplayQuotationLine[] = input.lines.map((l, idx) => {
     const isInspection =
       l.type === 'INSPECTION_FEE' ||
@@ -102,6 +114,7 @@ export function computeQuotationFinancials(input: {
       description: isInspection ? 'ค่าดำเนินการ (ค่าเปิดเครื่อง/ตรวจสอบ)' : l.description,
       quantity: l.quantity && l.quantity > 0 ? l.quantity : 1,
       amount: l.amount,
+      amountBaht: Number((l.amount / scale).toFixed(2)),
       partWaitDays: l.partWaitDays,
       partWarrantyDays: l.partWarrantyDays,
     }
@@ -133,8 +146,14 @@ export function computeQuotationFinancials(input: {
     total: input.total,
     operationFeeDiscount,
     netPayable,
+    subtotalBaht: Number((input.subtotal / scale).toFixed(2)),
+    vatAmountBaht: Number((input.vatAmount / scale).toFixed(2)),
+    totalBaht: Number((input.total / scale).toFixed(2)),
+    operationFeeDiscountBaht: Number((operationFeeDiscount / scale).toFixed(2)),
+    netPayableBaht: Number((netPayable / scale).toFixed(2)),
   }
 }
+
 
 export function calcQuoteTotalsBaht(
   lines: ReadonlyArray<{ unitPrice: string | number }>,
