@@ -48,7 +48,7 @@ function unique(ids: string[]): string[] {
 }
 
 async function openJobsWhere(user: UserSession, f: SlaSummaryFilters): Promise<Prisma.JobWhereInput[]> {
-  const where: Prisma.JobWhereInput[] = [await jobScope(user), { isTest: false, stage: { notIn: CLOSED_STAGES } }]
+  const where: Prisma.JobWhereInput[] = [await jobScope(user), { stage: { notIn: CLOSED_STAGES } }]
   if (f.branchId) where.push({ branchId: f.branchId })
   if (f.channel === 'DC' || f.channel === 'DSD' || f.channel === 'TPL') where.push({ channel: f.channel })
   return where

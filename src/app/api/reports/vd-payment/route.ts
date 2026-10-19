@@ -89,7 +89,6 @@ export async function GET(req: NextRequest) {
     // Find closed jobs with approved repair
     const jobs = await prisma.job.findMany({
       where: {
-        isTest: false,
         type: 'CUSTOMER',
         stage: { in: ['CLOSED_REPAIRED', 'READY_FOR_PICKUP'] },
         closedAt: { gte: fromDate, lte: toDate },

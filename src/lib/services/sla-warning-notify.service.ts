@@ -140,7 +140,7 @@ function hasClockWarningEvent(
 }
 
 /**
- * Scans running SLA clocks on active real jobs (isTest = false) and sends a one-time
+ * Scans running SLA clocks on active jobs and sends a one-time
  * LINE alert when remaining SLA time drops below 20%.
  */
 export async function checkAndNotifySlaWarnings(
@@ -153,7 +153,6 @@ export async function checkAndNotifySlaWarnings(
       breached: false,
       dueAt: { gt: now },
       job: {
-        isTest: false,
         stage: { notIn: CLOSED_STAGES },
       },
     },

@@ -25,7 +25,6 @@ export async function searchCustomerDirectory(query: string, page = 1, limit = 2
 
   const whereClause: any = {
     type: 'CUSTOMER',
-    isTest: false,
     customerPhone: { not: null },
   }
 
@@ -96,7 +95,6 @@ export async function getCustomerDetail(phone: string): Promise<CustomerDetailPr
   const jobs = await prisma.job.findMany({
     where: {
       type: 'CUSTOMER',
-      isTest: false,
       customerPhone: { contains: normPhone },
     },
     orderBy: { openedAt: 'desc' },

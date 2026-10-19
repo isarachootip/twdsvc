@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
       getJsonSetting<Record<string, string>>('DISTRICT_MANAGERS'),
       prisma.job.groupBy({
         by: ['branchId'],
-        where: { isTest: false, stage: { notIn: [...TERMINAL_STAGES] } },
+        where: { stage: { notIn: [...TERMINAL_STAGES] } },
         _count: { id: true },
       }),
     ])

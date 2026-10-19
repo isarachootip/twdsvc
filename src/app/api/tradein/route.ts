@@ -32,7 +32,6 @@ export async function GET(req: NextRequest) {
     where: {
       AND: [
         branchWhere,
-        { OR: [{ jobId: null }, { job: { isTest: false } }] },
         q ? {
           OR: [
             { tradeInNo: { contains: q, mode: 'insensitive' } },

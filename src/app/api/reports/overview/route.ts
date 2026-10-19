@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     const sp = new URL(req.url).searchParams
     const period = sp.get('period') ?? 'weekly'
     const branchId = sp.get('branchId') || null
-    const where: Prisma.JobWhereInput = { isTest: false, ...(branchId && branchId !== 'ALL' ? { branchId } : {}) }
+    const where: Prisma.JobWhereInput = branchId && branchId !== 'ALL' ? { branchId } : {}
 
     const { cur, prior, buckets } = overviewRange(period)
     const vat = await vatRate()

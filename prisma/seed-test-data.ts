@@ -68,7 +68,7 @@ async function seedSampleJob(prisma: PrismaClient, ctx: TestSeedContext): Promis
   const { bn, vc1, brand, large } = ctx
   const sampleJob = await prisma.job.upsert({
     where: { jobNo: 'JB-2609-00001' },
-    update: { isTest: true },
+    update: {},
     create: {
       jobNo: 'JB-2609-00001',
       type: JobType.CUSTOMER,
@@ -90,7 +90,6 @@ async function seedSampleJob(prisma: PrismaClient, ctx: TestSeedContext): Promis
       shippingMethod: 'STANDARD',
       decision: QuoteDecision.PENDING,
       createdBy: 'test_cs',
-      isTest: true,
     },
   })
   await prisma.jobCharge.createMany({

@@ -88,7 +88,7 @@ describe('Phase 5 — UX, Accessibility, Phone Masking & LINE SLA < 20% Notifica
     expect(msg.includes('35 นาที')).toBe(true)
   })
 
-  it('P5-04: checkAndNotifySlaWarnings notifies linked owner once per clock and skips isTest=true jobs', async () => {
+  it('P5-04: checkAndNotifySlaWarnings notifies linked owner once per clock, including isTest=true jobs', async () => {
     const branch = await prisma.site.findFirstOrThrow({ where: { type: 'BRANCH', active: true } })
     const slaStep = await prisma.slaStep.findFirstOrThrow({ where: { code: 'GR_PACK' } })
     const now = new Date()
@@ -154,7 +154,7 @@ describe('Phase 5 — UX, Accessibility, Phone Masking & LINE SLA < 20% Notifica
       const firstRun = await checkAndNotifySlaWarnings(now, mockPush)
       expect(firstRun.notifiedClocks).toBeGreaterThanOrEqual(1)
       expect(sentLog.some(s => s.to === 'U_TEST_LINE_GR_001' && s.text.includes(realJob.jobNo))).toBe(true)
-      expect(sentLog.some(s => s.text.includes(testJob.jobNo))).toBe(false)
+      expect(sentLog.some(s => s.text.includes(testJob.jobNo))).toBe(true)
 
       const countAfterFirst = sentLog.filter(s => s.text.includes(realJob.jobNo)).length
       expect(countAfterFirst).toBe(1)

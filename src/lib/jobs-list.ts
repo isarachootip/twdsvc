@@ -52,9 +52,6 @@ export async function listJobs(user: UserSession, sp: URLSearchParams): Promise<
   const summary = needSummary ? await computeSlaSummary(user, { branchId, channel }) : null
 
   const and: Prisma.JobWhereInput[] = [await jobScope(user)]
-  if (sp.get('includeTest') !== '1') {
-    and.push({ isTest: false })
-  }
   const stages = (sp.get('stage') ?? '').split(',').filter(s => STAGE_ORDER.includes(s as never)) as JobStage[]
   if (stages.length) and.push({ stage: { in: stages } })
   const type = sp.get('type')

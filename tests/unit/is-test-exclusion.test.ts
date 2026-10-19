@@ -12,8 +12,8 @@ import { GET as getExecutiveRoute } from '../../src/app/api/reports/executive/ro
 
 setTier('Tier 1')
 
-describe('Phase 3.1 — Exclude isTest=true Jobs from SLA, Dashboard, Executive, and VD Payout', () => {
-  it('ITE-01: isTest=true open overdue job is excluded from computeSlaSummary, loadQueueTabs, listJobs, and openJobs', async () => {
+describe('isTest flag no longer hides jobs (hiding cancelled 2026-10-19)', () => {
+  it('ITE-01: isTest=true open overdue job is visible in loadQueueTabs, listJobs, and openJobs', async () => {
     const branch = await prisma.site.findFirstOrThrow({ where: { type: 'BRANCH', active: true } })
     const vc = await prisma.vendorCenter.findFirstOrThrow({ where: { active: true } })
     const stepGr = await prisma.slaStep.findFirstOrThrow({ where: { code: 'GR_PACK' } })
@@ -61,19 +61,19 @@ describe('Phase 3.1 — Exclude isTest=true Jobs from SLA, Dashboard, Executive,
       const afterSla = await computeSlaSummary(session, { branchId: branch.id })
       const afterQueue = await loadQueueTabs('GR', session, { branchId: branch.id })
       const afterOpen = await openJobs({ branchId: branch.id })
-      const listed = await listJobs(session, new URLSearchParams({ branchId: branch.id }))
+      const listed = await listJobs(session, new URLSearchParams({ branchId: branch.id, search: testJob.jobNo }))
 
-      expect(afterSla.counts.total).toBe(beforeSla.counts.total)
-      expect(afterSla.counts.GR).toBe(beforeSla.counts.GR)
-      expect(afterQueue.overdue.some(o => o.id === testJob.id)).toBe(false)
-      expect(afterOpen.some(j => j.id === testJob.id)).toBe(false)
-      expect(listed.jobs.some(j => j.id === testJob.id)).toBe(false)
+      expect(afterSla.counts.total).toBe(beforeSla.counts.total + 1)
+      expect(afterQueue.overdue.length).toBeGreaterThanOrEqual(beforeQueue.overdue.length)
+      expect(afterOpen.length).toBe(beforeOpen.length + 1)
+      expect(afterOpen.some(j => j.id === testJob.id)).toBe(true)
+      expect(listed.jobs.some(j => j.id === testJob.id)).toBe(true)
     } finally {
       await prisma.job.delete({ where: { id: testJob.id } })
     }
   })
 
-  it('ITE-02: isTest=true closed repaired job is excluded from Dashboard, Executive, and VD Payment report', async () => {
+  it('ITE-02: isTest=true closed repaired job is included in closed-jobs report and VD Payment report', async () => {
     const branch = await prisma.site.findFirstOrThrow({ where: { type: 'BRANCH', active: true } })
     const vc = await prisma.vendorCenter.findFirstOrThrow({ where: { active: true } })
     const admin = await prisma.user.findUniqueOrThrow({ where: { username: 'test_am' } })
@@ -121,7 +121,7 @@ describe('Phase 3.1 — Exclude isTest=true Jobs from SLA, Dashboard, Executive,
 
     try {
       const closedList = await loadClosedJobs(new Date(now.getTime() - 3600000), new Date(now.getTime() + 3600000))
-      expect(closedList.some(j => j.id === testJob.id)).toBe(false)
+      expect(closedList.some(j => j.id === testJob.id)).toBe(true)
 
       await runWithAuthToken(token, async () => {
         const headers = { authorization: `Bearer ${token}` }
@@ -129,7 +129,7 @@ describe('Phase 3.1 — Exclude isTest=true Jobs from SLA, Dashboard, Executive,
           new NextRequest(`http://localhost:3000/api/reports/vd-payment?from=${todayStr}&to=${todayStr}`, { headers })
         )
         const vdData = await vdRes.json()
-        expect(vdData.rows.some((r: { id: string }) => r.id === testJob.id)).toBe(false)
+        expect(vdData.rows.some((r: { id: string }) => r.id === testJob.id)).toBe(true)
 
         const ovRes = await getOverviewRoute(new NextRequest('http://localhost:3000/api/reports/overview?period=weekly', { headers }))
         expect(ovRes.status).toBe(200)

@@ -26,7 +26,6 @@ export async function POST(req: NextRequest) {
     const jobs = await prisma.job.findMany({
       where: {
         id: { in: jobIds },
-        isTest: false,
         payoutLines: { none: { status: { in: ['SENT', 'PAID'] } } },
       },
       include: {

@@ -161,7 +161,7 @@ export const ROLE_GUIDES: ManualRoleGuide[] = [
       },
       {
         title: '4. ตรวจสอบ Dashboard และรอบทำจ่ายเวนเดอร์ (/exec, /reports/vd-payment)',
-        detail: 'ติดตามภาพรวม SLA Compliance และสร้างชุดทำจ่าย (Payout Batch) สำหรับงานซ่อมสำเร็จโดยไม่รวมใบงานทดสอบ (isTest = false)',
+        detail: 'ติดตามภาพรวม SLA Compliance และสร้างชุดทำจ่าย (Payout Batch) สำหรับงานซ่อมสำเร็จ',
       },
     ],
   },
