@@ -94,17 +94,22 @@ describe('Tier 4: Scenario 1 - High-Value Power Tool Warranty Repair with Expres
     expect(vdRecRes.job?.stage).toBe('VD_INSPECTING')
   })
 
-  it('SCN-01-E: Technician confirms manufacturing defect covered under warranty; quote total is ฿0 which auto-approves into REPAIRING', () => {
+  it('SCN-01-E: Technician confirms defect under warranty (฿0); quote enters WAITING_APPROVAL and transitions to REPAIRING upon manager sign-off', () => {
     const vdUser = createMockUser({ role: 'VD', vendorCenterId: 'vc-bosch' })
-    const job = createMockJob({ stage: 'VD_INSPECTING', vendorCenterId: 'vc-bosch' })
+    const csUser = createMockUser({ role: 'CS', siteId: 'BKK-01' })
+    const job = createMockJob({ stage: 'VD_INSPECTING', branchId: 'BKK-01', vendorCenterId: 'vc-bosch' })
 
     const quoteRes = simulateAction(job, 'vd_submit_quote', vdUser, {
       lines: [{ unitPriceSatang: 0, quantity: 1 }], // ฿0 warranty parts & labor
       repairDays: 2,
     })
     expect(quoteRes.success).toBe(true)
-    expect(quoteRes.job?.stage).toBe('REPAIRING')
-    expect(quoteRes.job?.decision).toBe('AUTO_APPROVED')
+    expect(quoteRes.job?.stage).toBe('WAITING_APPROVAL')
+
+    const signRes = simulateAction(quoteRes.job!, 'manager_sign', csUser, { signerName: 'ผู้จัดการสาขา' })
+    expect(signRes.success).toBe(true)
+    expect(signRes.job?.stage).toBe('REPAIRING')
+    expect(signRes.job?.decision).toBe('AUTO_APPROVED')
   })
 
   it('SCN-01-F: Bosch technician replaces armature and piston rings, tests under load, and dispatches via express 3PL return', () => {

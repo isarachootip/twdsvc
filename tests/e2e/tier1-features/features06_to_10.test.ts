@@ -299,16 +299,23 @@ describe('Feature 10: VD Fullscreen Quote (/vd/jobs/[id]/quote)', () => {
     expect(validDays).toBe(7)
   })
 
-  it('F10-T03: Quotation with 0 total auto-approves immediately without customer interaction', () => {
+  it('F10-T03: Quotation with 0 total transitions to WAITING_APPROVAL and advances to REPAIRING upon manager sign-off', () => {
     const vdUser = createMockUser({ role: 'VD', vendorCenterId: 'vc-001' })
-    const job = createMockJob({ stage: 'VD_INSPECTING', vendorCenterId: 'vc-001' })
+    const csUser = createMockUser({ role: 'CS', siteId: 'BKK-01' })
+    const job = createMockJob({ stage: 'VD_INSPECTING', branchId: 'BKK-01', vendorCenterId: 'vc-001' })
     const result = simulateAction(job, 'vd_submit_quote', vdUser, {
       lines: [{ unitPriceSatang: 0, quantity: 1 }],
       repairDays: 2,
     })
     expect(result.success).toBe(true)
-    expect(result.job?.stage).toBe('REPAIRING')
-    expect(result.job?.decision).toBe('AUTO_APPROVED')
+    expect(result.job?.stage).toBe('WAITING_APPROVAL')
+    expect(result.job?.quotes[0]?.status).toBe('SENT')
+
+    // Manager signs off ฿0 quote -> auto advances to REPAIRING
+    const signRes = simulateAction(result.job!, 'manager_sign', csUser, { signerName: 'สมหมาย ผจก.' })
+    expect(signRes.success).toBe(true)
+    expect(signRes.job?.stage).toBe('REPAIRING')
+    expect(signRes.job?.decision).toBe('AUTO_APPROVED')
   })
 
   it('F10-T04: Submitting quote for STOCK job is rejected as stock jobs do not require quotations', () => {

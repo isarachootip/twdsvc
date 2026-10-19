@@ -143,11 +143,7 @@ export function useQuoteForm({ jobId, role, revise }: UseQuoteFormProps) {
       setJob(d)
       const latest = d.quotes?.[0] ?? null
       setSentQuote(latest)
-      if (r.extra?.quoteTotal === 0) {
-        toast('ยอดรวม ฿0 — อนุมัติอัตโนมัติ งานย้ายไป "กำลังซ่อม"', 'success')
-      } else {
-        toast('บันทึกใบเสนอราคาแล้ว — อยู่ในขั้นตอนรอ ผจก. / ลูกค้าอนุมัติ', 'success')
-      }
+      toast('บันทึกใบเสนอราคาแล้ว — อยู่ในขั้นตอนรอ ผจก. อนุมัติ', 'success')
     } catch (e) {
       toast(e instanceof Error ? e.message : 'ส่งใบเสนอราคาไม่สำเร็จ', 'error')
     } finally {

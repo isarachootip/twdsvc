@@ -17,27 +17,52 @@ export function handleVendorSimAction(
       if (!payload.lines || payload.lines.length === 0) return { handled: true, result: { success: false, error: 'Quote lines required' } }
 
       const totals = SPEC_ORACLE.calcQuoteTotals(payload.lines)
-      const isZero = totals.totalSatang === 0
 
       updatedJob.quotes.push({
         version: updatedJob.quotes.length + 1,
         subtotalSatang: totals.subtotalSatang,
         vatSatang: totals.vatSatang,
         totalSatang: totals.totalSatang,
-        status: isZero ? 'APPROVED' : 'SENT',
+        status: 'SENT',
       })
 
-      if (isZero) {
+      updatedJob.tokens.push({
+        type: 'QUOTE',
+        token: crypto.randomBytes(16).toString('hex'),
+        expiresAt: new Date(now.getTime() + 7 * 24 * 3600000),
+        usedAt: null,
+      })
+      updatedJob.stage = 'WAITING_APPROVAL'
+      return { handled: true }
+    }
+
+    case 'manager_sign': {
+      if (!['CS', 'ADMIN', 'EXECUTIVE'].includes(actor.role)) {
+        return { handled: true, result: { success: false, error: '403: Forbidden' } }
+      }
+      if (updatedJob.stage !== 'WAITING_APPROVAL') {
+        return { handled: true, result: { success: false, error: `Cannot manager_sign from ${updatedJob.stage}` } }
+      }
+      const latestQuote = updatedJob.quotes[updatedJob.quotes.length - 1]
+      if (!latestQuote) return { handled: true, result: { success: false, error: 'No quote found' } }
+
+      if (payload.action === 'request_revision') {
+        latestQuote.status = 'SUPERSEDED'
+        updatedJob.stage = 'VD_INSPECTING'
+        return { handled: true }
+      }
+      if (payload.action === 'reject') {
+        latestQuote.status = 'REJECTED'
+        updatedJob.stage = 'RETURN_PACKING'
+        updatedJob.decision = 'REJECTED'
+        return { handled: true }
+      }
+
+      // Default: sign
+      if (latestQuote.totalSatang === 0) {
+        latestQuote.status = 'APPROVED'
         updatedJob.decision = 'AUTO_APPROVED'
         updatedJob.stage = 'REPAIRING'
-      } else {
-        updatedJob.tokens.push({
-          type: 'QUOTE',
-          token: crypto.randomBytes(16).toString('hex'),
-          expiresAt: new Date(now.getTime() + 7 * 24 * 3600000),
-          usedAt: null,
-        })
-        updatedJob.stage = 'WAITING_APPROVAL'
       }
       return { handled: true }
     }

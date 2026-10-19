@@ -43,15 +43,20 @@ describe('Tier 2: Boundary - State Machine Transitions & Edge Conditions', () =>
     expect(res.error).toContain('Quote lines required')
   })
 
-  it('BND-TRN-05: Quotation with 0 total automatically skips WAITING_APPROVAL and transitions directly to REPAIRING', () => {
+  it('BND-TRN-05: Quotation with 0 total transitions to WAITING_APPROVAL requiring manager approval', () => {
     const vdUser = createMockUser({ role: 'VD', vendorCenterId: 'vc-001' })
-    const job = createMockJob({ stage: 'VD_INSPECTING', vendorCenterId: 'vc-001' })
+    const csUser = createMockUser({ role: 'CS', siteId: 'BKK-01' })
+    const job = createMockJob({ stage: 'VD_INSPECTING', branchId: 'BKK-01', vendorCenterId: 'vc-001' })
     const res = simulateAction(job, 'vd_submit_quote', vdUser, {
       lines: [{ unitPriceSatang: 0, quantity: 1 }],
     })
     expect(res.success).toBe(true)
-    expect(res.job?.stage).toBe('REPAIRING')
-    expect(res.job?.decision).toBe('AUTO_APPROVED')
+    expect(res.job?.stage).toBe('WAITING_APPROVAL')
+
+    const signRes = simulateAction(res.job!, 'manager_sign', csUser)
+    expect(signRes.success).toBe(true)
+    expect(signRes.job?.stage).toBe('REPAIRING')
+    expect(signRes.job?.decision).toBe('AUTO_APPROVED')
   })
 
   it('BND-TRN-06: Stock job at VD_INSPECTING cannot submit a quote', () => {

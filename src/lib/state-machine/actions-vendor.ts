@@ -27,17 +27,11 @@ export const VENDOR_ACTIONS: Record<string, ActionDef> = {
     roles: ['VD', 'ADMIN'],
     from: [JobStage.VD_INSPECTING],
     event: 'QUOTE_SENT',
-    to: c => ((c.extra.quoteTotal as number) === 0 ? JobStage.REPAIRING : JobStage.WAITING_APPROVAL),
+    to: () => JobStage.WAITING_APPROVAL,
     validate: c => { if (c.job.type !== 'CUSTOMER') throw new ActionError('งานสต็อกไม่มีขั้นตอนเสนอราคา — ใช้ "เริ่มซ่อม"') },
     effects: async c => {
       const version = c.job.quotes.reduce((m, q) => Math.max(m, q.version), 0) + 1
-      const q = await buildQuote(c, version)
-      if (q.total === 0) {
-        await c.tx.quote.update({ where: { id: q.id }, data: { status: QuoteStatus.APPROVED, decidedAt: c.now } })
-        await c.tx.job.update({ where: { id: c.job.id }, data: { decision: QuoteDecision.AUTO_APPROVED } })
-        await c.tx.publicToken.updateMany({ where: { jobId: c.job.id, type: 'QUOTE', usedAt: null }, data: { usedAt: c.now } })
-        c.extraEvents.push('CUSTOMER_APPROVED')
-      }
+      await buildQuote(c, version)
     },
   },
 
