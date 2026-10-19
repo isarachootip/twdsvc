@@ -48,26 +48,38 @@ async function dryRun(rows: AccountRow[]): Promise<void> {
   printRows('Not found in this database', missing.map(username => ({ username })))
 }
 
+import crypto from 'crypto'
+import bcrypt from 'bcryptjs'
+
 async function apply(rows: AccountRow[]): Promise<void> {
   const plan = planDisable(rows)
-  if (plan.toDisable.length === 0) {
-    console.log('Nothing to do: no active test accounts found.')
+  const allMatchedIds = [...plan.toDisable, ...plan.alreadyInactive].map(r => r.id)
+  if (allMatchedIds.length === 0) {
+    console.log('Nothing to do: no test accounts found.')
     return
   }
   const snapshot = buildSnapshot(rows, new Date())
-  fs.mkdirSync(STATE_DIR, { recursive: true })
+  fs.mkdirSync(STATE_DIR, recursiveDirOpts)
   const file = path.join(STATE_DIR, `test-accounts-${snapshot.createdAt.replace(/[:.]/g, '-')}.json`)
   fs.writeFileSync(file, JSON.stringify(snapshot, null, 2), 'utf-8')
   console.log(`Snapshot written: ${file}`)
 
-  const ids = plan.toDisable.map(r => r.id)
+  const rotatedHash = await bcrypt.hash(crypto.randomBytes(24).toString('base64url'), 10)
   await prisma.$transaction([
-    prisma.user.updateMany({ where: { id: { in: ids } }, data: { active: false } }),
-    prisma.refreshToken.updateMany({ where: { userId: { in: ids }, revokedAt: null }, data: { revokedAt: new Date() } }),
+    prisma.user.updateMany({
+      where: { id: { in: allMatchedIds } },
+      data: { active: false, password: rotatedHash },
+    }),
+    prisma.refreshToken.updateMany({
+      where: { userId: { in: allMatchedIds }, revokedAt: null },
+      data: { revokedAt: new Date() },
+    }),
   ])
-  printRows('Deactivated', plan.toDisable)
+  printRows('Deactivated & rotated passwords for', [...plan.toDisable, ...plan.alreadyInactive])
   console.log(`Rollback with: npx tsx scripts/test-accounts.ts --rollback "${file}" --confirm-db <dbname>`)
 }
+
+const recursiveDirOpts = { recursive: true } as const
 
 async function rollback(snapshotPath: string, rows: AccountRow[]): Promise<void> {
   const snapshot = parseSnapshot(JSON.parse(fs.readFileSync(snapshotPath, 'utf-8')))

@@ -26,9 +26,8 @@ export default function JobsClient({ role: initialRole, user, initialJobs }: Job
   const sp = useSearchParams()
   const router = useRouter()
 
-  const hasSpecificFilter = Boolean(sp.get('open') || sp.get('search') || sp.get('stage') || sp.get('stages') || sp.get('flag') || sp.get('overdue'))
-  const [from, setFrom] = useState(hasSpecificFilter ? '' : monthStartBkk())
-  const [to, setTo] = useState(hasSpecificFilter ? '' : todayBkk())
+  const [from, setFrom] = useState(sp.get('from') ?? '')
+  const [to, setTo] = useState(sp.get('to') ?? '')
 
   const initialFlag = sp.get('flag') ?? (sp.get('overdue') === 'true' || sp.get('overdue') === '1' ? 'overdue' : null)
   const [flag, setFlag] = useState<string | null>(initialFlag)
@@ -39,7 +38,7 @@ export default function JobsClient({ role: initialRole, user, initialJobs }: Job
   const [search, setSearch] = useState(sp.get('search') ?? '')
   const [openId, setOpenId] = useState<string | null>(sp.get('open'))
   const [sysTime, setSysTime] = useState<string>('')
-  const { jobs, loading, kpis, reloadAll } = useJobsData({ from, to, flag, branch, channel, search, initialJobs })
+  const { jobs, loading, kpis, reloadAll } = useJobsData({ from, to, flag, branch, channel, status, stageGroup, search, initialJobs })
 
   useEffect(() => {
     const update = () => setSysTime(fmtDateTime(new Date()))
@@ -123,10 +122,24 @@ export default function JobsClient({ role: initialRole, user, initialJobs }: Job
         </div>
       </div>
 
-      <JobsKpiCards kpis={kpis} flag={flag} onToggleFlag={k => setFlag(flag === k ? null : k)} />
-      {flag && (
+      <JobsKpiCards
+        kpis={kpis}
+        flag={flag}
+        onToggleFlag={k => {
+          if (k === null) {
+            setFlag(null)
+            setFrom('')
+            setTo('')
+            setStatus('')
+            setStageGroup([])
+          } else {
+            setFlag(flag === k ? null : k)
+          }
+        }}
+      />
+      {(flag || (!from && !to && !status && stageGroup.length === 0)) && (
         <p className="text-[11px] text-slate-500 -mt-3 mb-4">
-          รายการด้านล่างแสดงงานที่ยังไม่ปิดทั้งหมดของการ์ดที่เลือก (ไม่ใช้ช่วงวันที่)
+          รายการด้านล่างแสดงงานที่ยังไม่ปิดทั้งหมดของการ์ดที่เลือก (ไม่จำกัดช่วงวันที่)
         </p>
       )}
 

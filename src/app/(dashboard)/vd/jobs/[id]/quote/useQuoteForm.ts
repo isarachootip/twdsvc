@@ -50,14 +50,18 @@ export function useQuoteForm({ jobId, role, revise }: UseQuoteFormProps) {
       if (revise && q) {
         const ls: QuoteLineItem[] = q.lines
           .filter(l => l.type !== 'INSPECTION_FEE')
-          .map(l => ({
-            key: seq++,
-            type: (['PART', 'LABOR', 'OTHER'].includes(l.type) ? l.type : 'PART') as LineType,
-            description: l.description,
-            unitPrice: String(l.unitPrice * l.quantity),
-            partWaitDays: l.partWaitDays ? String(l.partWaitDays) : '',
-            partWarrantyDays: l.partWarrantyDays ? String(l.partWarrantyDays) : '',
-          }))
+          .map(l => {
+            const rawLineAmount = l.unitPrice * l.quantity
+            const bahtAmount = rawLineAmount >= 1000 && rawLineAmount % 100 === 0 ? rawLineAmount / 100 : rawLineAmount
+            return {
+              key: seq++,
+              type: (['PART', 'LABOR', 'OTHER'].includes(l.type) ? l.type : 'PART') as LineType,
+              description: l.description,
+              unitPrice: String(bahtAmount),
+              partWaitDays: l.partWaitDays ? String(l.partWaitDays) : '',
+              partWarrantyDays: l.partWarrantyDays ? String(l.partWarrantyDays) : '',
+            }
+          })
         setLines(ls.length ? ls : [createBlankLine()])
         setRepairDays(String(q.repairDays || ''))
         setNote(q.vendorNote ?? '')
@@ -73,21 +77,23 @@ export function useQuoteForm({ jobId, role, revise }: UseQuoteFormProps) {
   }, [selectedCenterId, vendorCenters, job])
 
   const openFee = useMemo(() => {
-    if (!job) return 0
+    if (!job || job.hasWarranty) return 0
+    if (typeof job.money?.operationFee === 'number') {
+      return job.money.operationFee
+    }
     const raw = job.vendor?.inspectionFee ?? (
-      currentCenter?.vendorParent ? (
-        job.hasWarranty ? currentCenter.vendorParent.inspectionFeeCovered : currentCenter.vendorParent.inspectionFeeNotCovered
-      ) : 0
+      currentCenter?.vendorParent ? currentCenter.vendorParent.inspectionFeeNotCovered : 0
     )
-    return Number(raw) || 0
+    const n = Number(raw) || 0
+    return n > 0 && n < 1000 ? n * 100 : n
   }, [job, currentCenter])
 
   const warrantyDays = currentCenter?.vendorParent?.repairWarrantyDays ?? job?.vendor?.repairWarrantyDays ?? job?.vendorCenter?.vendorParent?.repairWarrantyDays ?? 30
 
   const totals: QuoteTotals = useMemo(() => {
-    const partsTotal = lines.reduce((s, l) => s + (Number(l.unitPrice) || 0), 0)
+    const partsTotal = Math.round(lines.reduce((s, l) => s + (Number(l.unitPrice) || 0), 0) * 100)
     const safeOpenFee = Number(openFee) || 0
-    const subtotal = safeOpenFee + partsTotal
+    const subtotal = partsTotal
     const vat = Math.floor(subtotal * 0.07 + 0.5)
     return { partsTotal, openFee: safeOpenFee, subtotal, vat, total: subtotal + vat }
   }, [lines, openFee])

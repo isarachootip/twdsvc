@@ -86,4 +86,29 @@ describe('Unit: Standardized Repair Quotation Format & Math', () => {
     expect(dates.validUntilText).toBe('22 ต.ค. 2569')
     expect(dates.inspectedDateText).toBe('13 ต.ค. 2569')
   })
+
+  it('QF-05: Audit Slide Scenario — ฿750 repair quote (75000 satang) with ฿150 intake fee (15000 satang) deducts ฿150 and leaves ฿652.50 (65250 satang) net payable', async () => {
+    const { fmtBaht } = await import('../../src/lib/constants')
+    const fin = computeQuotationFinancials({
+      lines: [
+        { type: 'PART', description: 'ซ่อมชุดมอเตอร์', quantity: 1, amount: 75000 },
+      ],
+      subtotal: 75000,
+      vatAmount: 5250,
+      total: 80250,
+      operationFeePaid: 15000,
+      hasWarranty: false,
+    })
+
+    expect(fin.subtotal).toBe(75000)
+    expect(fin.vatAmount).toBe(5250)
+    expect(fin.total).toBe(80250)
+    expect(fin.operationFeeDiscount).toBe(15000)
+    expect(fin.netPayable).toBe(65250)
+    expect(fmtBaht(fin.subtotal)).toBe('฿750')
+    expect(fmtBaht(fin.operationFeeDiscount)).toBe('฿150')
+    expect(fmtBaht(fin.netPayable)).toBe('฿653')
+    // VD report divides subtotal (75000 satang) by 100 -> ฿750 (never ฿11)
+    expect(Math.round(fin.subtotal / 100)).toBe(750)
+  })
 })

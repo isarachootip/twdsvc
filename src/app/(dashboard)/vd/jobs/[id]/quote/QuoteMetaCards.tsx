@@ -105,10 +105,10 @@ export default function QuoteMetaCards({
         >
           <div>
             <div style={{ fontSize: 12, color: 'var(--text-mute)', marginBottom: 2 }}>
-              ค่าตรวจเช็คเบื้องต้น (เปิดเครื่อง)
+              ค่าดำเนินการวันเปิดงาน (ชำระแล้ว)
             </div>
             <div style={{ fontSize: 11.5, color: 'var(--text-2)' }}>
-              ตามข้อตกลงอัตโนมัติของศูนย์ซ่อม
+              นำมาหักเป็นส่วนลดเมื่อลูกค้าอนุมัติซ่อม
             </div>
           </div>
           <div style={{ textAlign: 'right' }}>

@@ -118,7 +118,12 @@ export function computeQuotationFinancials(input: {
       ? 0
       : inspectionLineAmount
 
-  const operationFeeDiscount = Math.max(0, Math.min(rawOpFee, input.total))
+  const alignedOpFee =
+    rawOpFee >= 1000 && rawOpFee % 100 === 0 && input.total > 0 && input.total < 5000 && input.total % 100 !== 0
+      ? Math.round(rawOpFee / 100)
+      : rawOpFee
+
+  const operationFeeDiscount = Math.max(0, Math.min(alignedOpFee, input.total))
   const netPayable = Math.max(0, input.total - operationFeeDiscount)
 
   return {

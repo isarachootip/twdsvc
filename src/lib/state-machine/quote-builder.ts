@@ -72,20 +72,24 @@ export async function buildQuote(c: Ctx, version: number) {
   const vatRate = await getNumberSetting(c.tx, 'VAT_RATE', 0.07)
   const expiryDays = await getNumberSetting(c.tx, 'QUOTE_EXPIRY_DAYS', 7)
   const userLines = (c.input.lines ?? [])
-    .filter(l => (l.description ?? '').trim() || Number(l.unitPrice) > 0)
-    .map(l => ({
-      type: (['PART', 'LABOR', 'OTHER'].includes(l.type) ? l.type : 'PART') as 'PART' | 'LABOR' | 'OTHER',
-      description: ((l.description ?? '').trim() || (l.type === 'LABOR' ? 'ค่าแรงช่าง' : 'รายการอะไหล่')),
-      unitPrice: Math.max(0, Math.round(Number(l.unitPrice) || 0)),
-      quantity: Math.max(1, Math.round(Number(l.quantity) || 1)),
-      partWaitDays: Math.max(0, Math.round(Number(l.partWaitDays) || 0)),
-      partWarrantyDays: Math.max(0, Math.round(Number(l.partWarrantyDays) || 0)),
-    }))
-  const inspectionFee = c.job.hasWarranty ? vendor.inspectionFeeCovered : vendor.inspectionFeeNotCovered
-  const lines = [
-    { type: 'INSPECTION_FEE' as const, description: 'ค่าดำเนินการ (ค่าเปิดเครื่อง)', unitPrice: inspectionFee, quantity: 1, partWaitDays: 0, partWarrantyDays: 0 },
-    ...userLines,
-  ]
+    .filter(l => (l.description ?? '').trim() || Number(l.unitPrice) > 0 || Number((l as Record<string, unknown>).unitPriceSatang) > 0)
+    .map(l => {
+      const rec = l as Record<string, unknown>
+      const unitPriceSatang = typeof rec.unitPriceSatang === 'number'
+        ? Math.max(0, Math.round(rec.unitPriceSatang))
+        : Math.max(0, Math.round((Number(l.unitPrice) || 0) * 100))
+      return {
+        type: (['PART', 'LABOR', 'OTHER'].includes(l.type) ? l.type : 'PART') as 'PART' | 'LABOR' | 'OTHER',
+        description: ((l.description ?? '').trim() || (l.type === 'LABOR' ? 'ค่าแรงช่าง' : 'รายการอะไหล่')),
+        unitPrice: unitPriceSatang,
+        quantity: Math.max(1, Math.round(Number(l.quantity) || 1)),
+        partWaitDays: Math.max(0, Math.round(Number(l.partWaitDays) || 0)),
+        partWarrantyDays: Math.max(0, Math.round(Number(l.partWarrantyDays) || 0)),
+      }
+    })
+  const lines = userLines.length > 0
+    ? userLines
+    : [{ type: 'LABOR' as const, description: 'ตรวจเช็ค/ซ่อมตามเงื่อนไข', unitPrice: 0, quantity: 1, partWaitDays: 0, partWarrantyDays: 0 }]
   const repairDays = Math.round(Number(c.input.repairDays) || 0)
   if (repairDays < 1) throw new ActionError('กรุณาระบุระยะเวลาซ่อมโดยประมาณ (อย่างน้อย 1 วัน)')
   const totals = calcQuoteTotals(lines, vatRate)

@@ -9,12 +9,12 @@ export async function GET(req: NextRequest) {
     const phone = (new URL(req.url).searchParams.get('phone') ?? '').replace(/\D/g, '')
     if (phone.length < 9) return NextResponse.json(null)
     const job = await prisma.job.findFirst({
-      where: { customerPhone: phone, type: 'CUSTOMER' },
+      where: { customerPhone: phone, type: 'CUSTOMER', isTest: false },
       orderBy: { openedAt: 'desc' },
       select: { customerName: true, customerPhone: true, customerAddress: true, customerZip: true, taxInvoiceName: true, taxInvoiceId: true, taxInvoiceAddr: true, openedAt: true },
     })
     if (!job) return NextResponse.json(null)
-    const count = await prisma.job.count({ where: { customerPhone: phone } })
+    const count = await prisma.job.count({ where: { customerPhone: phone, isTest: false } })
     return NextResponse.json({ ...job, jobCount: count })
   } catch (e) {
     return handleError(e)

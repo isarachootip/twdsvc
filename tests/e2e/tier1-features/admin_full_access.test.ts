@@ -981,7 +981,7 @@ describe('Admin Full Access & Operational Flow Integration (R1, R2, R3)', () => 
     expect(data.success).toBe(true)
     expect(data.quote).not.toBeNull()
     expect(data.quote.repairDays).toBe(4)
-    expect(data.quote.lines.length).toBeGreaterThanOrEqual(4) // 3 user lines + 1 inspection fee
+    expect(data.quote.lines.length).toBe(3) // 3 user lines without duplicate inspection fee
 
     // Verify job stage is now WAITING_APPROVAL
     const updatedJob = await prisma.job.findUniqueOrThrow({ where: { id: job.id } })

@@ -468,7 +468,7 @@ export default function JobDetailModal({
                 posReceiptNo: info.posReceiptNo ?? null,
                 repairDays: quote?.repairDays ?? null,
                 repairedSummary: quote?.lines?.map((l: any) => l.description).join(', ') || d.symptom || '-',
-                amountBaht: showReceipt === 'RETURN' ? (m?.repair ?? 0) : (m?.intakeCharges ?? 0),
+                amountBaht: showReceipt === 'RETURN' ? Math.max(0, (m?.repair ?? 0) + (m?.credit ?? 0)) : (m?.intakeCharges ?? 0),
                 paid: showReceipt === 'RETURN' ? (m?.balance ?? 0) <= 0 : !d.intakeUnpaid,
                 trackingUrl: d.links?.TRACKING ? absUrl(String(d.links.TRACKING)) : null,
               }}

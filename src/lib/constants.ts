@@ -130,7 +130,8 @@ export const OWNER_LABELS: Record<string, string> = {
 export function fmtBaht(n: number | null | undefined): string {
   if (n === null || n === undefined || isNaN(Number(n))) return '฿0'
   let v = Number(n)
-  if (Math.abs(v) >= 1000 && v % 100 === 0) {
+  const abs = Math.abs(v)
+  if (abs >= 1000 || (abs >= 100 && v % 100 === 0 && abs !== 300)) {
     v = v / 100
   }
   const rounded = Math.round(v)

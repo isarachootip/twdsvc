@@ -45,25 +45,25 @@ export default function QuoteSummaryCard({
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13 }}>
         <div className="summary-row" style={{ padding: '4px 0', borderBottom: '1px solid var(--border)' }}>
-          <span style={{ color: 'var(--text-2)' }}>ค่าอะไหล่และค่าแรง</span>
+          <span style={{ color: 'var(--text-2)' }}>ค่าอะไหล่และค่าแรง (ก่อน VAT)</span>
           <span style={{ fontWeight: 600 }}>{fmtBaht(totals.partsTotal)}</span>
-        </div>
-
-        <div className="summary-row" style={{ padding: '4px 0', borderBottom: '1px solid var(--border)' }}>
-          <span style={{ color: 'var(--text-2)' }}>ค่าตรวจเช็ค (เปิดเครื่อง)</span>
-          <span style={{ fontWeight: 600 }}>
-            {totals.openFee === 0 ? '฿0 (ฟรี)' : fmtBaht(totals.openFee)}
-          </span>
-        </div>
-
-        <div className="summary-row" style={{ padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
-          <span style={{ color: 'var(--text)' }}>รวมก่อน VAT</span>
-          <span style={{ fontWeight: 600 }}>{fmtBaht(totals.subtotal)}</span>
         </div>
 
         <div className="summary-row" style={{ padding: '4px 0', borderBottom: '1px dashed var(--border-strong)' }}>
           <span style={{ color: 'var(--text-2)' }}>ภาษีมูลค่าเพิ่ม (VAT 7%)</span>
           <span style={{ fontWeight: 500, color: 'var(--text-2)' }}>{fmtBaht(totals.vat)}</span>
+        </div>
+
+        <div className="summary-row" style={{ padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
+          <span style={{ color: 'var(--text)' }}>ยอดซ่อมรวม VAT</span>
+          <span style={{ fontWeight: 600 }}>{fmtBaht(totals.total)}</span>
+        </div>
+
+        <div className="summary-row" style={{ padding: '4px 0', borderBottom: '1px solid var(--border)' }}>
+          <span style={{ color: 'var(--text-2)' }}>หัก: ค่าดำเนินการที่ชำระไว้</span>
+          <span style={{ fontWeight: 600, color: totals.openFee > 0 ? 'var(--green)' : 'var(--text-2)' }}>
+            {totals.openFee === 0 ? '฿0 (ฟรี)' : `-${fmtBaht(Math.min(totals.openFee, totals.total))}`}
+          </span>
         </div>
 
         <div
@@ -76,9 +76,9 @@ export default function QuoteSummaryCard({
             borderTop: '2px solid var(--border-strong)',
           }}
         >
-          <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>ยอดสุทธิรวมทั้งสิ้น</span>
+          <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>ยอดสุทธิที่ต้องชำระ</span>
           <span style={{ fontSize: 22, fontWeight: 700, color: 'var(--red)' }}>
-            {fmtBaht(totals.total)}
+            {fmtBaht(Math.max(0, totals.total - Math.min(totals.openFee, totals.total)))}
           </span>
         </div>
       </div>
