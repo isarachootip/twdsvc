@@ -45,6 +45,8 @@ import './unit/phase5-ux-a11y-line.test'
 import './unit/vendor-admin-crud.test'
 import './unit/cs-form-validation.test'
 import './unit/date-input-utils.test'
+import './unit/thai-address-search.test'
+import './unit/vendor-application-v6.test'
 
 // Tier 2: Boundary & Corner Cases
 import './e2e/tier2-boundaries/boundary_financial_satang.test'

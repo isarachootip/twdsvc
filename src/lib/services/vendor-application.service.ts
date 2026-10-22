@@ -120,19 +120,23 @@ export async function approveVendorApplication(id: string, adminUserId: string) 
 
     const createdCenters: Array<{ id: string; code: string }> = []
     for (let i = 0; i < branches.length; i++) {
-      const b = branches[i]
+      const b = branches[i] as Record<string, any>
       const centerCode = `${parentCode}-${i + 1}`
+      const fullAddress = b.line1
+        ? `${b.line1} ${b.subdistrict || ''} ${b.district || ''} ${b.province || ''} ${b.zip || ''}`.trim()
+        : `${b.address || ''} ${b.amphoe || ''} ${b.province || ''}`.trim()
+
       const center = await tx.vendorCenter.upsert({
         where: { code: centerCode },
         update: {
-          address: `${b.address} ${b.amphoe} ${b.province}`.trim(),
+          address: fullAddress,
           phone: b.phone,
           active: true,
         },
         create: {
           code: centerCode,
           vendorParentId: parent.id,
-          address: `${b.address} ${b.amphoe} ${b.province}`.trim(),
+          address: fullAddress,
           phone: b.phone,
           deliveryMethod: 'DC',
           active: true,
@@ -144,7 +148,9 @@ export async function approveVendorApplication(id: string, adminUserId: string) 
     // Connect routes for selected SVC sites
     const primaryCenterId = createdCenters[0]?.id
     if (primaryCenterId) {
-      const siteCodes = Object.keys(coverage)
+      const rawCov = app.coverage as Record<string, any>
+      const covMap = (rawCov?.routes || rawCov || {}) as Record<string, any>
+      const siteCodes = Object.keys(covMap)
       const sites = await tx.site.findMany({
         where: {
           OR: [{ code: { in: siteCodes } }, { nickname: { in: siteCodes } }],
@@ -152,14 +158,17 @@ export async function approveVendorApplication(id: string, adminUserId: string) 
       })
 
       for (const site of sites) {
-        const routeConfig = coverage[site.code] || coverage[site.nickname]
+        const routeConfig = covMap[site.code] || covMap[site.nickname]
         const channel = routeConfig?.transport === 'tpl' ? 'TPL' : routeConfig?.transport === 'pickup' ? 'DSD' : 'DC'
+        const centerIdx = typeof routeConfig?.respBranchIdx === 'number' ? routeConfig.respBranchIdx : 0
+        const assignedCenterId = createdCenters[centerIdx]?.id || primaryCenterId
+
         // Policy: never displace incumbent vendors — append as next backup; admin can re-order on the Routes page
         const { _max } = await tx.branchVendorRoute.aggregate({ where: { branchId: site.id }, _max: { priority: true } })
         await tx.branchVendorRoute.create({
           data: {
             branchId: site.id,
-            primaryCenterId,
+            primaryCenterId: assignedCenterId,
             standardChannel: channel,
             priority: (_max.priority ?? 0) + 1,
           },

@@ -6,6 +6,7 @@ const SECRET = new TextEncoder().encode(process.env.JWT_SECRET ?? 'svc-new-secre
 // Public routes that bypass auth
 const PUBLIC_PREFIXES = [
   '/login',
+  '/status',
   '/q/',
   '/t/',
   '/pay/',
@@ -16,8 +17,8 @@ const PUBLIC_PREFIXES = [
   '/api/settings/branding',
   '/api/webhooks/',
   '/api/files/',
-  '/vendor/',        // public vendor onboarding portal (/vendor/register)
-  '/api/vendors/',   // public onboarding APIs: apply, upload, public-sites
+  '/vendor/',        // public vendor onboarding portal (/vendor/register, /vendor/status)
+  '/api/vendors/',   // public onboarding APIs: apply, upload, public-sites, status
   '/_next/',
   '/favicon',
   '/logo.png',
@@ -60,6 +61,19 @@ async function verifyToken(token?: string) {
 
 export async function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl
+  const host = req.headers.get('host') || ''
+  const isVendorSubdomain = host.startsWith('vendor.') || host.startsWith('vendor-')
+
+  // Subdomain routing for vendor.vhomesvc.online
+  if (isVendorSubdomain) {
+    if (pathname === '/' || pathname === '/register') {
+      return NextResponse.rewrite(new URL('/vendor/register', req.url))
+    }
+    if (pathname === '/status') {
+      return NextResponse.rewrite(new URL('/vendor/status', req.url))
+    }
+  }
+
   if (PUBLIC_PREFIXES.some(p => pathname.startsWith(p))) return NextResponse.next()
 
   const payload = await verifyToken(req.cookies.get('access_token')?.value)
