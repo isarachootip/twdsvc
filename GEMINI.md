@@ -60,3 +60,14 @@
 - **Typography & Semantic Color First**: แสดงความแตกต่างของสถานะและความเร่งด่วนด้วยสีตัวอักษรโดยตรง (Colored Typography เช่น `text-emerald-700`, `text-amber-700`, `text-rose-600`, `text-slate-600`) และสามารถใช้จุดสีสัญลักษณ์ขนาดเล็ก (`w-1.5 h-1.5 rounded-full`) ประกอบได้ โดยไม่มีกรอบกล่องครอบ
 - **System-Wide Uniformity**: เงื่อนไขนี้บังคับใช้กับทุกหน้าจอและทุกโมดูลในระบบ (CS, GR, DC, VD, S2, Jobs, Admin, Customer Portal) เพื่อความสะอาดตา เรียบหรู และอ่านง่ายตามหลัก Ergonomic UI
 
+---
+
+## 7. System-Wide Typography & Font Standards (Sarabun Design Font)
+- **Mandatory Design Font**: ทุกหน้าจอ ทุกโมดูล และทุกคอมโพเนนต์ของระบบ (CS, GR, DC, VD, S2, Jobs, Admin, Exec, Manual, Public Portals, Print Documents, Shipping Labels) ต้องใช้ชุดฟอนต์ **Sarabun** (ตามรูปต้นแบบระบบ) เป็นมาตรฐานเดียว 100%
+- **Zero Font Fragmentation**: ห้ามประกาศใช้ฟอนต์อื่น (เช่น 'IBM Plex Sans Thai', system-ui, Arial, Tahoma, Helvetica ฯลฯ) ในหน้าจอหรือคอมโพเนนต์ใดๆ ทั้งสิ้น ยกเว้นเฉพาะตัวเลขอ้างอิงทางเทคนิคหรือรหัสบาร์โค้ดที่ระบุให้ใช้ Monospace (`font-mono`)
+- **Standardized Font Stack**:
+  - `font-family: var(--font-sarabun), 'Sarabun', 'TH Sarabun New', 'TH Sarabun PSK', sans-serif;`
+  - Input, select, textarea, button, optgroup, option ต้องสืบทอด `font-family: inherit` เสมอ
+  - Print elements และ Iframe preview ต้องคง Sarabun font stack และโหลด Google Fonts Sarabun เสมอ
+
+

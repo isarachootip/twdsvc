@@ -31,7 +31,7 @@ export default function PickupSlipSheet({
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        fontFamily: 'var(--font-sarabun), system-ui, -apple-system, sans-serif',
+        fontFamily: 'var(--font-sarabun), "Sarabun", "TH Sarabun New", "TH Sarabun PSK", sans-serif',
         fontSize: 12,
         lineHeight: 1.35,
         pageBreakAfter: pageBreakAfter ? 'always' : undefined,

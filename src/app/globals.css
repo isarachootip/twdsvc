@@ -31,13 +31,13 @@
 
 /* ─── Base ───────────────────────────────────────────────────────────── */
 html, body {
-  font-family: var(--font-sarabun), 'TH Sarabun New', 'TH Sarabun PSK', 'Sarabun', sans-serif;
+  font-family: var(--font-sarabun), 'Sarabun', 'TH Sarabun New', 'TH Sarabun PSK', sans-serif;
   background-color: var(--bg);
   color: var(--text);
 }
 
 /* Ensure all form controls inherit the standardized Sarabun font stack */
-input, select, textarea, button, optgroup {
+input, select, textarea, button, optgroup, option {
   font-family: inherit;
 }
 

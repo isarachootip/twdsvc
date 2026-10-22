@@ -36,6 +36,7 @@ export function printElement(element: HTMLElement | null, title = 'ใบแจ�
     .join('\n')
 
   const printOverrideStyles = `
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap">
     <style>
       @page { size: A4 portrait; margin: 0mm; }
       html, body {
@@ -44,7 +45,7 @@ export function printElement(element: HTMLElement | null, title = 'ใบแจ�
         width: 210mm !important;
         background: #ffffff !important;
         color: #111827 !important;
-        font-family: var(--font-sarabun), 'TH Sarabun New', 'TH Sarabun PSK', 'Sarabun', sans-serif !important;
+        font-family: var(--font-sarabun), 'Sarabun', 'TH Sarabun New', 'TH Sarabun PSK', sans-serif !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }

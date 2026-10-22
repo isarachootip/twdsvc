@@ -107,7 +107,7 @@ function StickerModal({
                   style={{
                     width: '144px',
                     height: '144px',
-                    fontFamily: 'Sarabun, sans-serif',
+                    fontFamily: 'var(--font-sarabun), "Sarabun", "TH Sarabun New", "TH Sarabun PSK", sans-serif',
                   }}
                 >
                   <div className="w-12 h-12 border border-[#333] flex items-center justify-center text-2xl text-[#555] bg-gray-50">

@@ -53,10 +53,7 @@ export default function ManualClient({ catalog }: ManualClientProps) {
   }
 
   return (
-    <div
-      className="max-w-7xl mx-auto space-y-6 pb-16 overflow-x-hidden"
-      style={{ fontFamily: "'IBM Plex Sans Thai', 'Sarabun', sans-serif" }}
-    >
+    <div className="max-w-7xl mx-auto space-y-6 pb-16 overflow-x-hidden">
       {/* Section 1: Header + Real-time Search */}
       <header
         className="rounded-2xl p-5 sm:p-7 text-white shadow-md space-y-5"

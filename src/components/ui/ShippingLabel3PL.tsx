@@ -19,7 +19,7 @@ export default function ShippingLabel3PL({ data }: ShippingLabel3PLProps) {
         backgroundColor: '#ffffff',
         color: '#000000',
         border: '2px solid #000000',
-        fontFamily: 'system-ui, -apple-system, sans-serif',
+        fontFamily: 'var(--font-sarabun), "Sarabun", "TH Sarabun New", "TH Sarabun PSK", sans-serif',
         fontSize: 12,
         lineHeight: 1.35,
         boxSizing: 'border-box',

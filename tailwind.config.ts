@@ -11,9 +11,9 @@ export default {
       fontFamily: {
         sans: [
           "var(--font-sarabun)",
+          "Sarabun",
           "TH Sarabun New",
           "TH Sarabun PSK",
-          "Sarabun",
           "sans-serif",
         ],
       },
