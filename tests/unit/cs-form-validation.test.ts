@@ -1,3 +1,5 @@
+import fs from 'fs'
+import path from 'path'
 import { describe, it, expect, setTier } from '../framework/core'
 import { validateCsForm, type ValidateCsFormInput } from '../../src/app/(dashboard)/cs/new/components/formValidation'
 
@@ -55,5 +57,18 @@ describe('Unit: CS Form Photo & Field Validation', () => {
       ],
     })
     expect(err).toBe(null)
+  })
+
+  it('VAL-06: FeesAndPaymentSection keeps post-save secondary buttons visible but disabled', () => {
+    const src = fs.readFileSync(
+      path.join(process.cwd(), 'src/app/(dashboard)/cs/new/components/FeesAndPaymentSection.tsx'),
+      'utf8'
+    )
+    expect(src.includes('พิมพ์ใบแจ้งซ่อม')).toBe(true)
+    expect(src.includes('+ เปิดใบแจ้งซ่อมใหม่')).toBe(true)
+    expect(src.includes('กลับคิว CS')).toBe(true)
+    expect(src.includes('disabled onClick={onOpenPrint}')).toBe(true)
+    expect(src.includes('disabled onClick={onReset}')).toBe(true)
+    expect(src.includes('disabled onClick={onBackToCs}')).toBe(true)
   })
 })
