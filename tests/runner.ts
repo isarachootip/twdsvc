@@ -49,6 +49,7 @@ import './unit/thai-address-search.test'
 import './unit/vendor-application-v6.test'
 import './unit/customer-lookup-autofill.test'
 import './unit/customer-tracking-milestones.test'
+import './unit/job-timeline-detail.test'
 
 // Tier 2: Boundary & Corner Cases
 import './e2e/tier2-boundaries/boundary_financial_satang.test'

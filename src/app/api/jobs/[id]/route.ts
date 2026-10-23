@@ -5,6 +5,8 @@ import { calcBalance, getHoursInStep } from '@/lib/fees'
 import { calcMoney, maskPhone } from '@/lib/job-view'
 import { resolveOwner } from '@/lib/sla-engine'
 import { executeAction } from '@/lib/state-machine'
+import { buildJobStageTimeline, enrichJobEvents } from '@/lib/job-timeline'
+import type { Stage } from '@/lib/constants'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser(req)
@@ -72,8 +74,36 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       }
     })
 
+    // Resolve actor user names for events and timeline
+    const actorIds = Array.from(
+      new Set(job.events.map((e) => e.actorUserId).filter((uid): uid is string => Boolean(uid)))
+    )
+    const actors = actorIds.length
+      ? await prisma.user.findMany({
+          where: { id: { in: actorIds } },
+          select: { id: true, fullName: true, role: true },
+        })
+      : []
+    const actorNames: Record<string, string> = {}
+    for (const a of actors) {
+      actorNames[a.id] = `${a.fullName} (${a.role})`
+    }
+
+    const timeline = buildJobStageTimeline({
+      stage: job.stage as Stage,
+      channel: job.channel,
+      openedAt: job.openedAt,
+      events: job.events,
+      slaClocks: job.slaClocks,
+      actorNames,
+    })
+
+    const enrichedEvents = enrichJobEvents(job.events, actorNames)
+
     return NextResponse.json({
       ...job,
+      events: enrichedEvents,
+      timeline,
       customerPhone: maskPhone(job.customerPhone, user.role),
       balance,
       money,

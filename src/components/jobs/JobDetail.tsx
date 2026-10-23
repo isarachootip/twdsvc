@@ -15,13 +15,13 @@ import { JobRepairReceiptModal } from '@/components/ui/repair-receipt/JobRepairR
 import { buildCaseA3PlLabel } from '@/lib/threepl-label'
 import { printElement } from '@/lib/print-element'
 import { JobNextActionCard } from './JobNextActionCard'
+import { JobTimelineColumn } from './JobTimelineColumn'
 import { api, absUrl } from '@/lib/client'
-import { CHANNEL_LABELS, OWNER_LABELS, fmtBaht, fmtDate, fmtDateTime, fmtPhone } from '@/lib/constants'
+import { CHANNEL_LABELS, OWNER_LABELS, fmtBaht, fmtDate, fmtPhone } from '@/lib/constants'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Detail = any
 
-const DOT: Record<string, string> = { done: 'dot-green', done_late: 'dot-green', running: 'dot-amber', paused: 'dot-amber', overdue: 'dot-red', pending: 'dot-gray' }
 const PAY_METHOD: Record<string, string> = { PROMPTPAY_QR: 'QR Payment', CARD_LINK: 'Link ตัดบัตรเครดิต', POS_RECEIPT: 'เลขที่ใบเสร็จ POS', CASH: 'เงินสด' }
 
 export function useJobDetail() {
@@ -128,43 +128,7 @@ export default function JobDetailModal({
           </h2>
 
           <div className="detail-cols">
-            <div>
-              <h3 style={{ fontSize: 14, margin: '0 0 8px' }}>อัปเดตสถานะแต่ละขั้นตอน</h3>
-              {timeline.map((s: any) => (
-                <div className="step-item" key={s.code}>
-                  <div className={`step-dot ${DOT[s.status] ?? 'dot-gray'}`} />
-                  <div>
-                    <div className="step-title">{s.name} <span className="sub-mute">({OWNER_LABELS[s.owner] ?? s.owner})</span></div>
-                    <div className="step-meta">
-                      {s.status === 'pending' && 'รอดำเนินการ'}
-                      {s.status === 'running' && `กำลังดำเนินการ — ${s.hours} ชม. จาก SLA ${s.slaHours} ชม.`}
-                      {s.status === 'paused' && `หยุดนับเวลา (รออะไหล่) — ใช้ไป ${s.hours} ชม. จาก SLA ${s.slaHours} ชม.`}
-                      {s.status === 'overdue' && <span style={{ color: 'var(--red-dark)' }}>เกิน SLA — ค้างมา ${s.hours} ชม. (SLA ${s.slaHours} ชม.)</span>}
-                      {(s.status === 'done' || s.status === 'done_late') && (
-                        <>เสร็จแล้ว {fmtDateTime(s.doneAt)} ({s.hours} ชม.{s.status === 'done_late' ? <span style={{ color: 'var(--red-dark)' }}> — เกิน SLA</span> : ''}){s.doneBy ? ` — ผู้ทำ: ${s.doneBy}` : ''}</>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              <h3 style={{ fontSize: 14, margin: '18px 0 8px' }}>ประวัติการดำเนินการ</h3>
-              <div style={{ maxHeight: 320, overflowY: 'auto' }}>
-                {events.map((e: any) => (
-                  <div className="step-item" key={e.id}>
-                    <div className="step-dot dot-gray" />
-                    <div style={{ flex: 1 }}>
-                      <div className="step-title" style={{ fontSize: 13 }}>{e.label ?? e.type}</div>
-                      <div className="step-meta">{fmtDateTime(e.createdAt)} — {e.actor ?? e.actorRole ?? '-'}{e.location ? ` · Location ${e.location}` : ''}</div>
-                      {e.note && <div className="step-meta">{e.note}</div>}
-                      {e.attachments && e.attachments.length > 0 && (
-                        <AttachmentGallery attachments={e.attachments} />
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <JobTimelineColumn timeline={timeline} events={events} />
 
             <div>
               <JobNextActionCard
