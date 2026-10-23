@@ -61,6 +61,25 @@ export function formatAddress(a: Address) {
 export default function AddressFields({ value, onChange }: { value: Address; onChange: (a: Address) => void }) {
   const [db, setDb] = useState<Db>(DEFAULT_BKK)
   useEffect(() => { loadDb().then(setDb) }, [])
+
+  useEffect(() => {
+    if (value.zip.length === 5 && !value.province) {
+      for (const [p, amps] of Object.entries(db)) {
+        for (const [a, ds] of Object.entries(amps)) {
+          const hit = ds.find(d => d[1] === value.zip)
+          if (hit) {
+            onChange({
+              ...value,
+              province: p,
+              district: value.district || a,
+              subdistrict: value.subdistrict || (ds.filter(d => d[1] === value.zip).length === 1 ? hit[0] : ''),
+            })
+            return
+          }
+        }
+      }
+    }
+  }, [value.zip, value.province, value.district, value.subdistrict, db, onChange, value])
   const provinces = useMemo(() => Object.keys(db).sort((a, b) => (a === 'กรุงเทพมหานคร' ? -1 : b === 'กรุงเทพมหานคร' ? 1 : a.localeCompare(b, 'th'))), [db])
   const districts = useMemo(() => (value.province && db[value.province] ? Object.keys(db[value.province]).sort((a, b) => a.localeCompare(b, 'th')) : []), [db, value.province])
   const subs = useMemo(() => (value.province && value.district ? db[value.province]?.[value.district] ?? [] : []), [db, value.province, value.district])

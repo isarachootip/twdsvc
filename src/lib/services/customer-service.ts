@@ -3,6 +3,7 @@ import { CLOSED_STAGES } from '@/lib/constants'
 import type {
   CustomerSummary,
   CustomerDetailProfile,
+  CustomerLookupItem,
 } from '@/lib/validations/customer'
 import {
   normalizePhoneNumber,
@@ -122,3 +123,8 @@ export async function getCustomerDetail(phone: string): Promise<CustomerDetailPr
     devices,
   }
 }
+
+export {
+  lookupCustomerByExactPhone,
+  lookupCustomersByPhonePrefix,
+} from './customer-lookup'

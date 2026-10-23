@@ -80,6 +80,11 @@ export default function CsNewForm({
               firstName={form.firstName} setFirstName={form.setFirstName}
               lastName={form.lastName} setLastName={form.setLastName}
               phone={form.phone} setPhone={form.setPhone}
+              phoneCandidates={form.phoneCandidates}
+              searchingPhone={form.searchingPhone}
+              isNewCustomer={form.isNewCustomer}
+              onPickCustomer={form.pickCustomer}
+              onClosePhoneDropdown={form.closePhoneDropdown}
               addr={form.addr} setAddr={form.setAddr}
               found={form.found} setFound={form.setFound}
               taxSame={form.taxSame} tax={form.tax}

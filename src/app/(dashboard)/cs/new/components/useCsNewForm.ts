@@ -5,12 +5,14 @@ import { emptyAddress, formatAddress, type Address } from '@/components/ui/Addre
 import { type Photo } from '@/components/ui/PhotoButton'
 import { useToast } from '@/components/ui/Toast'
 import { api } from '@/lib/client'
+import { parseFormattedAddress, splitCustomerFullName } from '@/lib/address-parser'
 import type { JobStage } from '@prisma/client'
 import type {
   BranchOption, CustomerLookupResult, Brand, Size, Commodity, TaxInfo, FeesState,
 } from './index'
 import { validateCsForm } from './formValidation'
 import { useSerialExtractor } from './useSerialExtractor'
+import { useCustomerLookup } from './useCustomerLookup'
 
 export interface SavedJob {
   id: string
@@ -42,15 +44,34 @@ export function useCsNewForm({
   const [brands, setBrands] = useState<Brand[]>([])
   const [sizes, setSizes] = useState<Size[]>([])
 
-  const [firstName, setFirstName] = useState(''), [lastName, setLastName] = useState(''), [phone, setPhone] = useState(initialPhone)
+  const [firstName, setFirstName] = useState(''), [lastName, setLastName] = useState('')
   const [addr, setAddr] = useState<Address>(emptyAddress), [taxSame, setTaxSame] = useState(true), [tax, setTax] = useState<TaxInfo | null>(null)
-  const [taxModal, setTaxModal] = useState(false), [taxDraft, setTaxDraft] = useState<TaxInfo>({ name: '', id: '', addr: emptyAddress }), [found, setFound] = useState<CustomerLookupResult | null>(null)
+  const [taxModal, setTaxModal] = useState(false), [taxDraft, setTaxDraft] = useState<TaxInfo>({ name: '', id: '', addr: emptyAddress })
   const [sku, setSku] = useState(''), [skuResults, setSkuResults] = useState<Commodity[]>([]), [product, setProduct] = useState(initialProduct)
   const [brandId, setBrandId] = useState(''), [brandName, setBrandName] = useState(''), [symptom, setSymptom] = useState('')
   const [serialNo, setSerialNo] = useState(initialSerialNo || ''), [warranty, setWarranty] = useState<'yes' | 'no'>('yes'), [allowOutside, setAllowOutside] = useState(false)
   const [sizeId, setSizeId] = useState<number | null>(null), [method, setMethod] = useState<'STANDARD' | 'EXPRESS'>('STANDARD')
   const [photos, setPhotos] = useState<Photo[]>([]), [defect, setDefect] = useState('')
   const { extractSerialFromPhoto, extracting: extractingSerial } = useSerialExtractor(photos, setSerialNo)
+
+  const handleApplyCustomer = useCallback((cust: CustomerLookupResult) => {
+    const { firstName: fName, lastName: lName } = splitCustomerFullName(cust.customerName)
+    setFirstName(fName)
+    setLastName(lName)
+    setAddr(parseFormattedAddress(cust.customerAddress, cust.customerZip))
+    if (cust.taxInvoiceId && cust.taxInvoiceName) {
+      setTaxSame(false)
+      setTax({ name: cust.taxInvoiceName, id: cust.taxInvoiceId, addr: parseFormattedAddress(cust.taxInvoiceAddr, null) })
+    } else {
+      setTaxSame(true)
+      setTax(null)
+    }
+  }, [])
+
+  const {
+    phone, setPhone, candidates: phoneCandidates, searching: searchingPhone,
+    found, setFound, isNewCustomer, pickCustomer, closeDropdown: closePhoneDropdown,
+  } = useCustomerLookup({ initialPhone, onApplyCustomer: handleApplyCustomer })
 
   const [fees, setFees] = useState<FeesState>({ operationFee: 0, shippingFee: 0, total: 0 })
   const [pay, setPay] = useState<'PROMPTPAY_QR' | 'CARD_LINK' | 'POS_RECEIPT'>('PROMPTPAY_QR')
@@ -89,14 +110,6 @@ export function useCsNewForm({
       })).catch(() => {})
   }, [sizeId, warranty, method])
 
-  useEffect(() => {
-    const d = phone.replace(/\D/g, '')
-    setFound(null)
-    if (!/^0\d{8,9}$/.test(d)) return
-    const t = setTimeout(() => { api<CustomerLookupResult>(`/api/customers/lookup?phone=${d}`).then(setFound).catch(() => {}) }, 400)
-    return () => clearTimeout(t)
-  }, [phone])
-
   const onSku = (v: string) => {
     setSku(v)
     clearTimeout(skuTimer.current)
@@ -111,12 +124,9 @@ export function useCsNewForm({
   }
 
   const pickSku = (c: Commodity) => {
-    setSku(c.sku)
-    setProduct(c.name)
-    setBrandName(c.brand)
+    setSku(c.sku); setProduct(c.name); setBrandName(c.brand)
     const b = brands.find(x => x.name.trim().toLowerCase() === c.brand.trim().toLowerCase())
-    setBrandId(b ? String(b.id) : '')
-    setSkuResults([])
+    setBrandId(b ? String(b.id) : ''); setSkuResults([])
   }
 
   const onTaxCheckbox = (checked: boolean) => {
@@ -140,9 +150,7 @@ export function useCsNewForm({
     const err = validateCsForm({ role, selectedBranchId, firstName, lastName, phone, product, brandName, symptom, sizeId, feesTotal: fees.total, pay, pos, photos })
     if (err) {
       toast(err, 'error')
-      if (err.includes('ภาพถ่าย')) {
-        document.getElementById('defect-photos-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      }
+      if (err.includes('ภาพถ่าย')) document.getElementById('defect-photos-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
       return null
     }
     setSaving(true)
@@ -161,8 +169,7 @@ export function useCsNewForm({
           paymentMethod: fees.total > 0 ? pay : null, posReceiptNo: pay === 'POS_RECEIPT' ? pos.trim() : null,
         },
       })
-      setSaved(r)
-      setPaid(fees.total === 0 || pay === 'POS_RECEIPT')
+      setSaved(r); setPaid(fees.total === 0 || pay === 'POS_RECEIPT')
       toast(`บันทึกใบแจ้งซ่อม ${r.jobNo} แล้ว`, 'success')
       return r
     } catch (e) {
@@ -173,8 +180,9 @@ export function useCsNewForm({
 
   return {
     branchList, selectedBranchId, setSelectedBranchId, brands, sizes,
-    firstName, setFirstName, lastName, setLastName, phone, setPhone, addr, setAddr,
-    taxSame, tax, setTax, taxModal, setTaxModal, taxDraft, setTaxDraft, found, setFound,
+    firstName, setFirstName, lastName, setLastName, phone, setPhone,
+    phoneCandidates, searchingPhone, isNewCustomer, pickCustomer, closePhoneDropdown,
+    addr, setAddr, taxSame, tax, setTax, taxModal, setTaxModal, taxDraft, setTaxDraft, found, setFound,
     sku, skuResults, setSkuResults, product, setProduct, brandId, setBrandId, brandName, setBrandName: onBrandChange,
     symptom, setSymptom, serialNo, setSerialNo, extractSerialFromPhoto, extractingSerial,
     warranty, setWarranty, allowOutside, setAllowOutside, sizeId, setSizeId, method, setMethod,

@@ -47,6 +47,7 @@ import './unit/cs-form-validation.test'
 import './unit/date-input-utils.test'
 import './unit/thai-address-search.test'
 import './unit/vendor-application-v6.test'
+import './unit/customer-lookup-autofill.test'
 
 // Tier 2: Boundary & Corner Cases
 import './e2e/tier2-boundaries/boundary_financial_satang.test'

@@ -1,8 +1,8 @@
 'use client'
 
 import AddressFields, { formatAddress, type Address } from '@/components/ui/AddressFields'
-import PhoneInput from '@/components/ui/PhoneInput'
 import { type TaxInfo } from './TaxInvoiceModal'
+import { PhoneSearchInput } from './PhoneSearchInput'
 
 export interface BranchOption {
   id: string
@@ -20,8 +20,12 @@ export interface BranchOption {
 
 export interface CustomerLookupResult {
   customerName: string
+  customerPhone: string
   customerAddress: string | null
   customerZip: string | null
+  taxInvoiceName?: string | null
+  taxInvoiceId?: string | null
+  taxInvoiceAddr?: string | null
   jobCount: number
 }
 
@@ -36,10 +40,15 @@ interface CustomerSectionProps {
   setLastName: (val: string) => void
   phone: string
   setPhone: (val: string) => void
+  phoneCandidates?: CustomerLookupResult[]
+  searchingPhone?: boolean
+  isNewCustomer?: boolean
+  onPickCustomer?: (cust: CustomerLookupResult) => void
+  onClosePhoneDropdown?: () => void
   addr: Address
   setAddr: React.Dispatch<React.SetStateAction<Address>>
   found: CustomerLookupResult | null
-  setFound: (val: CustomerLookupResult | null) => void
+  setFound?: (val: CustomerLookupResult | null) => void
   taxSame: boolean
   tax: TaxInfo | null
   onTaxCheckbox: (checked: boolean) => void
@@ -58,33 +67,24 @@ export function CustomerSection({
   setLastName,
   phone,
   setPhone,
+  phoneCandidates = [],
+  searchingPhone = false,
+  isNewCustomer = false,
+  onPickCustomer = () => {},
+  onClosePhoneDropdown = () => {},
   addr,
   setAddr,
   found,
-  setFound,
   taxSame,
   tax,
   onTaxCheckbox,
   onEditTax,
   saved,
 }: CustomerSectionProps) {
-  const handleUseFoundCustomer = () => {
-    if (!found) return
-    const parts = (found.customerName || '').trim().split(/\s+/)
-    setFirstName(parts[0] || '')
-    setLastName(parts.slice(1).join(' ') || '')
-    setAddr(a => ({
-      ...a,
-      street: found.customerAddress ?? a.street,
-      zip: found.customerZip ?? a.zip,
-    }))
-    setFound(null)
-  }
-
   return (
     <div className="pcard">
       <h3>ข้อมูลลูกค้า</h3>
-      <p className="hint">ข้อมูลพื้นฐานลูกค้าและที่อยู่สำหรับติดต่อ/ออกใบกำกับภาษี</p>
+      <p className="hint">เริ่มต้นด้วยการค้นหาเบอร์โทรศัพท์เพื่อดึงข้อมูลลูกค้าเดิมอัตโนมัติ หรือกรอกข้อมูลลูกค้าใหม่</p>
       {role === 'ADMIN' && (
         <div className="field" style={{ marginBottom: 12 }}>
           <label>
@@ -103,7 +103,20 @@ export function CustomerSection({
           </select>
         </div>
       )}
-      <div className="grid3">
+
+      <PhoneSearchInput
+        phone={phone}
+        onPhoneChange={setPhone}
+        candidates={phoneCandidates}
+        searching={searchingPhone}
+        found={found}
+        isNewCustomer={isNewCustomer}
+        onPickCustomer={onPickCustomer}
+        onCloseDropdown={onClosePhoneDropdown}
+        saved={saved}
+      />
+
+      <div className="grid2">
         <div className="field">
           <label>ชื่อลูกค้า <span style={{ color: 'var(--red)' }}>*</span></label>
           <input className="inp" placeholder="ชื่อ" value={firstName} onChange={e => setFirstName(e.target.value)} />
@@ -112,28 +125,8 @@ export function CustomerSection({
           <label>นามสกุล <span style={{ color: 'var(--red)' }}>*</span></label>
           <input className="inp" placeholder="นามสกุล" value={lastName} onChange={e => setLastName(e.target.value)} />
         </div>
-        <div className="field">
-          <label>เบอร์โทรศัพท์ <span style={{ color: 'var(--red)' }}>*</span></label>
-          <PhoneInput
-            className="inp"
-            placeholder="08xxxxxxxx"
-            value={phone}
-            onChange={setPhone}
-            required
-          />
-        </div>
       </div>
-      {found && !saved && (
-        <div className="note blue" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-          <span>
-            พบลูกค้าเดิม: <b>{found.customerName}</b> ({found.jobCount} งาน)
-            {found.customerAddress ? ` · ${found.customerAddress}` : ''}
-          </span>
-          <button type="button" className="btn" onClick={handleUseFoundCustomer}>
-            ใช้ข้อมูลนี้
-          </button>
-        </div>
-      )}
+
       <div className="divider" />
       <p className="hint" style={{ marginBottom: 8 }}>
         ที่อยู่ (กรอกรหัสไปรษณีย์เพื่อดึงข้อมูลอัตโนมัติ หรือเลือกจาก dropdown)

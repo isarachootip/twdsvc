@@ -12,6 +12,34 @@ export const customerPhoneParamSchema = z.object({
   phone: z.string().min(8, 'เบอร์โทรศัพท์ต้องมีอย่างน้อย 8 หลัก').max(20),
 })
 
+export const customerLookupQuerySchema = z.object({
+  phone: z
+    .string()
+    .optional()
+    .default('')
+    .transform(val => val.replace(/\D/g, '')),
+  q: z
+    .string()
+    .optional()
+    .default('')
+    .transform(val => val.replace(/\D/g, '')),
+  limit: z.coerce.number().int().min(1).max(20).optional().default(6),
+})
+
+export type CustomerLookupQueryInput = z.infer<typeof customerLookupQuerySchema>
+
+export interface CustomerLookupItem {
+  customerName: string
+  customerPhone: string
+  customerAddress: string | null
+  customerZip: string | null
+  taxInvoiceName: string | null
+  taxInvoiceId: string | null
+  taxInvoiceAddr: string | null
+  openedAt: Date | string
+  jobCount: number
+}
+
 export interface CustomerSummary {
   phone: string
   name: string
