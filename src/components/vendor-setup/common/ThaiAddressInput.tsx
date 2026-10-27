@@ -40,7 +40,8 @@ export function ThaiAddressInput({ value, onChange, placeholder, required }: Tha
   }, [])
 
   useEffect(() => {
-    if (query.trim().length < 2) {
+    const trimmed = query.trim()
+    if (trimmed.length < 2 || trimmed.includes('»')) {
       setResults([])
       setOpen(false)
       return
@@ -49,10 +50,11 @@ export function ThaiAddressInput({ value, onChange, placeholder, required }: Tha
     const timer = setTimeout(async () => {
       setLoading(true)
       try {
-        const res = await fetch(`/api/vendors/address-search?q=${encodeURIComponent(query.trim())}`)
+        const res = await fetch(`/api/vendors/address-search?q=${encodeURIComponent(trimmed)}`)
         const data = await res.json()
-        setResults(data.results || [])
-        setOpen((data.results || []).length > 0)
+        const list: ThaiAddressItem[] = data.results || []
+        setResults(list)
+        setOpen(list.length > 0)
       } catch (err) {
         console.error(err)
       } finally {
@@ -74,6 +76,14 @@ export function ThaiAddressInput({ value, onChange, placeholder, required }: Tha
     setOpen(false)
   }
 
+  const handleBlur = () => {
+    setTimeout(() => {
+      if (!value.subdistrict && results.length > 0) {
+        handleSelect(results[0])
+      }
+    }, 180)
+  }
+
   return (
     <div className="relative w-full" ref={wrapperRef}>
       <div className="relative">
@@ -89,6 +99,7 @@ export function ThaiAddressInput({ value, onChange, placeholder, required }: Tha
           onFocus={() => {
             if (results.length > 0) setOpen(true)
           }}
+          onBlur={handleBlur}
           placeholder={placeholder || 'พิมพ์ตำบล, อำเภอ, จังหวัด หรือรหัสไปรษณีย์'}
           required={required}
           className="w-full h-11 px-3.5 pr-8 border border-slate-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition"
@@ -108,7 +119,10 @@ export function ThaiAddressInput({ value, onChange, placeholder, required }: Tha
             <button
               key={`${r.subdistrict}-${r.district}-${r.postalCode}-${idx}`}
               type="button"
-              onClick={() => handleSelect(r)}
+              onMouseDown={e => {
+                e.preventDefault()
+                handleSelect(r)
+              }}
               className="w-full text-left px-3.5 py-2.5 text-xs hover:bg-red-50 text-slate-700 hover:text-red-900 transition flex items-center justify-between"
             >
               <span>

@@ -1,43 +1,51 @@
 import { z } from 'zod'
 
-const phoneRegex = /^[0-9+\-\s()]{8,20}$/
 const taxIdRegex = /^\d{13}$/
 const spcodeRegex = /^\d{6}$/
 
 export const addressSchema = z.object({
-  line1: z.string().min(1, 'กรุณาระบุที่อยู่'),
-  subdistrict: z.string().min(1, 'กรุณาระบุตำบล/แขวง'),
-  district: z.string().min(1, 'กรุณาระบุอำเภอ/เขต'),
-  province: z.string().min(1, 'กรุณาระบุจังหวัด'),
-  zip: z.string().regex(/^\d{5}$/, 'รหัสไปรษณีย์ต้องเป็นเลข 5 หลัก'),
+  line1: z.string().trim().min(1, 'กรุณาระบุที่อยู่สำนักงานใหญ่ (ข้อ 1.2)'),
+  subdistrict: z.string().trim().min(1, 'กรุณาเลือกตำบล/แขวงสำนักงานใหญ่ (ข้อ 1.2)'),
+  district: z.string().optional().default(''),
+  province: z.string().optional().default(''),
+  zip: z.string().optional().default(''),
   phone: z.string().optional().default(''),
   note: z.string().optional().default(''),
 })
 
-export const centerBranchSchema = addressSchema.extend({
-  contactName: z.string().min(1, 'กรุณาระบุชื่อผู้ดูแลสาขา'),
+export const centerBranchSchema = z.object({
+  line1: z.string().trim().min(1, 'กรุณาระบุที่อยู่สาขาศูนย์บริการ (ข้อ 1.3)'),
+  subdistrict: z.string().optional().default(''),
+  district: z.string().optional().default(''),
+  province: z.string().optional().default(''),
+  zip: z.string().optional().default(''),
+  phone: z.string().optional().default(''),
+  note: z.string().optional().default(''),
+  contactName: z.string().trim().min(1, 'กรุณาระบุชื่อผู้ดูแลสาขา (ข้อ 1.3)'),
 })
 
 export const contactPersonSchema = z.object({
-  name: z.string().min(2, 'กรุณาระบุชื่อ-นามสกุล'),
-  pos: z.string().min(1, 'กรุณาระบุตำแหน่ง'),
-  phone: z.string().regex(phoneRegex, 'เบอร์โทรศัพท์ 8-20 หลัก'),
-  email: z.string().email('กรุณาระบุอีเมลที่ถูกต้อง'),
+  name: z.string().trim().min(1, 'กรุณาระบุชื่อผู้ประสานงานหลัก (ข้อ 1.5)'),
+  pos: z.string().optional().default(''),
+  phone: z.string().trim().min(8, 'กรุณาระบุเบอร์โทรศัพท์ผู้ประสานงานหลัก (ข้อ 1.5)'),
+  email: z.string().trim().email('กรุณาระบุอีเมลผู้ประสานงานหลักที่ถูกต้อง (ข้อ 1.5)'),
   line: z.string().optional().default(''),
 })
 
 export const vendorApplicationV6Schema = z.object({
   // 1
-  supplierRegistered: z.enum(['เคยลงทะเบียนทำการค้ากับไทวัสดุ', 'ไม่เคยลงทะเบียนทำการค้ากับไทวัสดุ']),
+  supplierRegistered: z.enum(['เคยลงทะเบียนทำการค้ากับไทวัสดุ', 'ไม่เคยลงทะเบียนทำการค้ากับไทวัสดุ'], {
+    errorMap: () => ({ message: 'กรุณาเลือกสถานะการลงทะเบียนคู่ค้า (ข้อ 1.0)' }),
+  }),
   spcode: z.string().optional().default(''),
-  entityType: z.string().min(1, 'กรุณาเลือกประเภทธุรกิจ'),
-  company: z.string().min(2, 'กรุณาระบุชื่อบริษัท/ร้านค้า'),
+  entityType: z.string().min(1, 'กรุณาเลือกประเภทธุรกิจ (ข้อ 1.1)'),
+  company: z.string().trim().min(1, 'กรุณาระบุชื่อบริษัท/ร้านค้า (ข้อ 1.1)'),
   regNo: z.string().optional().default(''),
-  taxId: z.string().regex(taxIdRegex, 'เลขประจำตัวผู้เสียภาษีต้องเป็นตัวเลข 13 หลัก'),
+  taxId: z.string().trim().regex(taxIdRegex, 'เลขประจำตัวผู้เสียภาษีต้องเป็นตัวเลข 13 หลัก (ข้อ 1.1)'),
   companyAddr: addressSchema,
-  branchType: z.enum(['มีศูนย์บริการหลายสาขา', 'ศูนย์บริการเดียว']),
-  branches: z.array(centerBranchSchema).min(1, 'ต้องมีศูนย์บริการอย่างน้อย 1 สาขา'),
-  authorized: z.string(),
+  branchType: z.enum(['มีศูนย์บริการหลายสาขา', 'ศูนย์บริการเดียว']).default('ศูนย์บริการเดียว'),
+  branches: z.array(centerBranchSchema).min(1, 'ต้องมีศูนย์บริการอย่างน้อย 1 สาขา (ข้อ 1.3)'),
+  authorized: z.string().optional().default(''),
   authorizedBrands: z.array(z.object({
     brand: z.string(),
     productType: z.string(),
@@ -46,23 +54,23 @@ export const vendorApplicationV6Schema = z.object({
   })).optional().default([]),
   primaryContact: contactPersonSchema,
   backupContact: z.object({
-    name: z.string().min(2, 'กรุณาระบุชื่อผู้ติดต่อสำรอง'),
-    phone: z.string().regex(phoneRegex, 'เบอร์โทรศัพท์ 8-20 หลัก'),
+    name: z.string().optional().default(''),
+    phone: z.string().optional().default(''),
     timeStart: z.string().optional().default(''),
     timeEnd: z.string().optional().default(''),
-  }),
+  }).optional().default({ name: '', phone: '', timeStart: '', timeEnd: '' }),
   authorizer: z.object({
-    name: z.string().min(2, 'กรุณาระบุชื่อผู้มีอำนาจอนุมัติ'),
-    pos: z.string().min(1, 'กรุณาระบุตำแหน่ง'),
-    phone: z.string().regex(phoneRegex, 'เบอร์โทรศัพท์ 8-20 หลัก'),
-    email: z.string().email('กรุณาระบุอีเมลที่ถูกต้อง'),
-  }),
+    name: z.string().optional().default(''),
+    pos: z.string().optional().default(''),
+    phone: z.string().optional().default(''),
+    email: z.string().optional().default(''),
+  }).optional().default({ name: '', pos: '', phone: '', email: '' }),
   bank: z.object({
-    accName: z.string().min(2, 'กรุณาระบุชื่อบัญชี'),
-    accNo: z.string().min(8, 'เลขที่บัญชีอย่างน้อย 8 หลัก'),
-    bank: z.string().min(1, 'กรุณาระบุธนาคาร'),
+    accName: z.string().trim().min(1, 'กรุณาระบุชื่อบัญชีธนาคาร (ข้อ 1.8)'),
+    accNo: z.string().trim().min(1, 'กรุณาระบุเลขที่บัญชีธนาคาร (ข้อ 1.8)'),
+    bank: z.string().trim().min(1, 'กรุณาระบุชื่อธนาคาร (ข้อ 1.8)'),
     bankBranch: z.string().optional().default(''),
-    vat20: z.enum(['มี', 'ไม่มี']),
+    vat20: z.enum(['มี', 'ไม่มี']).default('มี'),
   }),
 
   // 2
@@ -131,20 +139,20 @@ export const vendorApplicationV6Schema = z.object({
   // 10
   documents: z.record(z.string(), z.string()).default({}),
   agreements: z.object({
-    sla: z.literal(true, { errorMap: () => ({ message: 'กรุณายินยอม SLA' }) }),
-    inspect: z.literal(true, { errorMap: () => ({ message: 'กรุณายินยอมให้ตรวจสถานที่' }) }),
-    reportApp: z.literal(true, { errorMap: () => ({ message: 'กรุณายินยอมใช้ระบบปิดงาน' }) }),
-    training: z.literal(true, { errorMap: () => ({ message: 'กรุณายินยอมเข้าอบรม' }) }),
-    pdpa: z.literal(true, { errorMap: () => ({ message: 'กรุณายินยอมเงื่อนไข PDPA' }) }),
-    truth: z.literal(true, { errorMap: () => ({ message: 'กรุณารับรองว่าข้อมูลเป็นความจริง' }) }),
+    sla: z.literal(true, { errorMap: () => ({ message: 'กรุณายินยอม SLA (ข้อ 10.2)' }) }),
+    inspect: z.literal(true, { errorMap: () => ({ message: 'กรุณายินยอมให้ตรวจสถานที่ (ข้อ 10.2)' }) }),
+    reportApp: z.literal(true, { errorMap: () => ({ message: 'กรุณายินยอมใช้ระบบปิดงาน (ข้อ 10.2)' }) }),
+    training: z.literal(true, { errorMap: () => ({ message: 'กรุณายินยอมเข้าอบรม (ข้อ 10.2)' }) }),
+    pdpa: z.literal(true, { errorMap: () => ({ message: 'กรุณายินยอมเงื่อนไข PDPA (ข้อ 10.2)' }) }),
+    truth: z.literal(true, { errorMap: () => ({ message: 'กรุณารับรองว่าข้อมูลเป็นความจริง (ข้อ 10.2)' }) }),
   }),
-  signName: z.string().min(2, 'กรุณาระบุชื่อผู้ลงนาม'),
-  signPos: z.string().min(1, 'กรุณาระบุตำแหน่งผู้ลงนาม'),
+  signName: z.string().trim().min(1, 'กรุณาระบุชื่อผู้มีอำนาจลงนาม (ข้อ 10.3)'),
+  signPos: z.string().trim().min(1, 'กรุณาระบุตำแหน่งผู้มีอำนาจลงนาม (ข้อ 10.3)'),
 }).refine(data => {
   if (data.supplierRegistered === 'เคยลงทะเบียนทำการค้ากับไทวัสดุ') {
     return spcodeRegex.test(data.spcode)
   }
   return true
-}, { message: 'กรุณากรอก SPCODE เป็นตัวเลข 6 หลัก', path: ['spcode'] })
+}, { message: 'กรุณากรอก SPCODE เป็นตัวเลข 6 หลัก (ข้อ 1.0)', path: ['spcode'] })
 
 export type VendorApplicationV6Input = z.infer<typeof vendorApplicationV6Schema>

@@ -6,6 +6,36 @@ import { INITIAL_FORM_V6 } from './initial-form-v6'
 
 const STORAGE_KEY = 'svc_vendor_v6_draft'
 
+export function normalizeVendorFormV6(form: VendorApplicationFormV6): VendorApplicationFormV6 {
+  const companyAddr = form.companyAddr
+  const branches = form.branches.map(b => ({
+    ...b,
+    line1: b.line1?.trim() || companyAddr.line1?.trim() || '',
+    subdistrict: b.subdistrict?.trim() || companyAddr.subdistrict?.trim() || '',
+    district: b.district?.trim() || companyAddr.district?.trim() || '',
+    province: b.province?.trim() || companyAddr.province?.trim() || '',
+    zip: b.zip?.trim() || companyAddr.zip?.trim() || '',
+    phone: b.phone?.trim() || companyAddr.phone?.trim() || form.primaryContact.phone?.trim() || '',
+    contactName: b.contactName?.trim() || form.primaryContact.name?.trim() || form.signName?.trim() || '',
+  }))
+
+  return {
+    ...form,
+    branches,
+    authorizer: {
+      name: form.authorizer.name?.trim() || form.signName?.trim() || form.primaryContact.name?.trim() || '',
+      pos: form.authorizer.pos?.trim() || form.signPos?.trim() || form.primaryContact.pos?.trim() || '',
+      phone: form.authorizer.phone?.trim() || form.primaryContact.phone?.trim() || '',
+      email: form.authorizer.email?.trim() || form.primaryContact.email?.trim() || '',
+    },
+    backupContact: {
+      ...form.backupContact,
+      name: form.backupContact.name?.trim() || form.primaryContact.name?.trim() || '',
+      phone: form.backupContact.phone?.trim() || form.primaryContact.phone?.trim() || '',
+    },
+  }
+}
+
 export function useVendorSetupV6() {
   const [currentStep, setCurrentStep] = useState(1)
   const [form, setForm] = useState<VendorApplicationFormV6>(INITIAL_FORM_V6)
@@ -19,7 +49,7 @@ export function useVendorSetupV6() {
       const saved = localStorage.getItem(STORAGE_KEY)
       if (saved) {
         const parsed = JSON.parse(saved)
-        if (parsed.form) setForm(parsed.form)
+        if (parsed.form) setForm({ ...INITIAL_FORM_V6, ...parsed.form })
         if (parsed.step) setCurrentStep(parsed.step)
       }
     } catch (e) {
@@ -39,6 +69,7 @@ export function useVendorSetupV6() {
   }, [form, currentStep, submittedAppNo])
 
   const updateForm = (patch: Partial<VendorApplicationFormV6>) => {
+    setSubmitError(null)
     setForm(prev => ({ ...prev, ...patch }))
   }
 
@@ -46,11 +77,11 @@ export function useVendorSetupV6() {
     if (step === 1) {
       if (!form.supplierRegistered) return false
       if (form.supplierRegistered === 'เคยลงทะเบียนทำการค้ากับไทวัสดุ' && !/^\d{6}$/.test(form.spcode)) return false
-      if (!form.company.trim() || form.taxId.length !== 13) return false
-      if (!form.companyAddr.line1 || !form.companyAddr.subdistrict) return false
-      if (form.branches.length === 0 || !form.branches[0].line1 || !form.branches[0].contactName) return false
-      if (!form.primaryContact.name || !form.primaryContact.phone || !form.primaryContact.email) return false
-      if (!form.bank.accName || !form.bank.accNo || !form.bank.bank) return false
+      if (!form.company.trim() || !/^\d{13}$/.test(form.taxId.trim())) return false
+      if (!form.companyAddr.line1.trim() || !form.companyAddr.subdistrict.trim()) return false
+      if (form.branches.length === 0 || !form.branches[0].line1.trim() || !form.branches[0].contactName.trim()) return false
+      if (!form.primaryContact.name.trim() || !form.primaryContact.phone.trim() || !form.primaryContact.email.trim()) return false
+      if (!form.bank.accName.trim() || !form.bank.accNo.trim() || !form.bank.bank.trim()) return false
     }
     if (step === 2) {
       if (form.cinProducts.length === 0 && form.onsProducts.length === 0) return false
@@ -78,13 +109,26 @@ export function useVendorSetupV6() {
   }
 
   const submitApplication = async () => {
+    if (!validateStep(1)) {
+      setCurrentStep(1)
+      setSubmitError('กรุณาตรวจสอบและกรอกข้อมูลในขั้นตอนที่ 1 (ข้อมูลบริษัทและศูนย์บริการ) ให้ครบถ้วน')
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
+    if (!validateStep(2)) {
+      setCurrentStep(2)
+      setSubmitError('กรุณาเลือกประเภทสินค้าที่รับบริการอย่างน้อย 1 รายการ ในขั้นตอนที่ 2')
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
     setSubmitting(true)
     setSubmitError(null)
     try {
+      const payload = normalizeVendorFormV6(form)
       const res = await fetch('/api/vendors/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'เกิดข้อผิดพลาดในการส่งข้อมูล')

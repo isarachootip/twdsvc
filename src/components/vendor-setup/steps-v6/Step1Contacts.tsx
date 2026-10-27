@@ -42,9 +42,8 @@ export function Step1Contacts({
             type="text"
             value={primaryContact.pos}
             onChange={e => onChangePrimary({ pos: e.target.value })}
-            placeholder="ตำแหน่ง *"
+            placeholder="ตำแหน่ง"
             className="h-10 px-3 border border-slate-300 rounded-lg bg-white"
-            required
           />
           <input
             type="tel"
@@ -75,54 +74,58 @@ export function Step1Contacts({
       {/* 1.6 & 1.7 ผู้ติดต่อสำรอง & ผู้มีอำนาจอนุมัติ */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <label className="text-xs font-bold text-slate-800">1.6 ผู้ติดต่อฉุกเฉินนอกเวลาทำการ *</label>
+          <label className="text-xs font-bold text-slate-800">1.6 ผู้ติดต่อฉุกเฉินนอกเวลาทำการ</label>
           <div className="space-y-2 text-xs">
             <input
               type="text"
               value={backupContact.name}
               onChange={e => onChangeBackup({ name: e.target.value })}
-              placeholder="ชื่อ-นามสกุล *"
+              placeholder="ชื่อ-นามสกุล"
               className="w-full h-10 px-3 border border-slate-300 rounded-lg bg-white"
-              required
             />
             <input
               type="tel"
               value={backupContact.phone}
               onChange={e => onChangeBackup({ phone: e.target.value })}
-              placeholder="เบอร์โทรศัพท์ *"
+              placeholder="เบอร์โทรศัพท์"
               className="w-full h-10 px-3 border border-slate-300 rounded-lg bg-white"
-              required
             />
           </div>
         </div>
 
         <div className="space-y-2">
-          <label className="text-xs font-bold text-slate-800">1.7 ผู้มีอำนาจอนุมัติ / กรรมการ *</label>
+          <label className="text-xs font-bold text-slate-800">1.7 ผู้มีอำนาจอนุมัติ / กรรมการ</label>
           <div className="space-y-2 text-xs">
-            <input
-              type="text"
-              value={authorizer.name}
-              onChange={e => onChangeAuthorizer({ name: e.target.value })}
-              placeholder="ชื่อ-นามสกุล *"
-              className="w-full h-10 px-3 border border-slate-300 rounded-lg bg-white"
-              required
-            />
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                type="text"
+                value={authorizer.name}
+                onChange={e => onChangeAuthorizer({ name: e.target.value })}
+                placeholder="ชื่อ-นามสกุล"
+                className="h-10 px-3 border border-slate-300 rounded-lg bg-white"
+              />
+              <input
+                type="text"
+                value={authorizer.pos}
+                onChange={e => onChangeAuthorizer({ pos: e.target.value })}
+                placeholder="ตำแหน่ง"
+                className="h-10 px-3 border border-slate-300 rounded-lg bg-white"
+              />
+            </div>
             <div className="grid grid-cols-2 gap-2">
               <input
                 type="tel"
                 value={authorizer.phone}
                 onChange={e => onChangeAuthorizer({ phone: e.target.value })}
-                placeholder="เบอร์โทรศัพท์ *"
+                placeholder="เบอร์โทรศัพท์"
                 className="h-10 px-3 border border-slate-300 rounded-lg bg-white"
-                required
               />
               <input
                 type="email"
                 value={authorizer.email}
                 onChange={e => onChangeAuthorizer({ email: e.target.value })}
-                placeholder="อีเมล *"
+                placeholder="อีเมล"
                 className="h-10 px-3 border border-slate-300 rounded-lg bg-white"
-                required
               />
             </div>
           </div>

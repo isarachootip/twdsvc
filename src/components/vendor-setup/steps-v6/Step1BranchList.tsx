@@ -1,13 +1,14 @@
 'use client'
 
 import React from 'react'
-import type { CenterBranchItem } from '../types-v6'
+import type { AddressInfo, CenterBranchItem } from '../types-v6'
 import { ThaiAddressInput } from '../common/ThaiAddressInput'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, Copy } from 'lucide-react'
 
 interface Step1BranchListProps {
   branches: CenterBranchItem[]
   branchType: string
+  companyAddr?: AddressInfo
   onChangeBranchType: (type: 'มีศูนย์บริการหลายสาขา' | 'ศูนย์บริการเดียว') => void
   onChangeBranches: (branches: CenterBranchItem[]) => void
 }
@@ -15,6 +16,7 @@ interface Step1BranchListProps {
 export function Step1BranchList({
   branches,
   branchType,
+  companyAddr,
   onChangeBranchType,
   onChangeBranches,
 }: Step1BranchListProps) {
@@ -48,10 +50,23 @@ export function Step1BranchList({
     onChangeBranches(updated)
   }
 
+  const copyFromCompany = (idx: number) => {
+    if (!companyAddr) return
+    updateBranch(idx, {
+      line1: companyAddr.line1 || branches[idx].line1,
+      subdistrict: companyAddr.subdistrict,
+      district: companyAddr.district,
+      province: companyAddr.province,
+      zip: companyAddr.zip,
+      phone: companyAddr.phone || branches[idx].phone,
+      note: companyAddr.note || branches[idx].note,
+    })
+  }
+
   return (
     <div className="space-y-3 pt-2">
-      <div className="flex items-center justify-between">
-        <label className="text-xs font-bold text-slate-700">1.3 ข้อมูลศูนย์บริการ (ที่ตั้งจริง)</label>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <label className="text-xs font-bold text-slate-700">1.3 ข้อมูลศูนย์บริการ (ที่ตั้งจริง) *</label>
         <div className="flex gap-4 text-xs">
           <label className="inline-flex items-center gap-1.5 cursor-pointer">
             <input
@@ -82,17 +97,28 @@ export function Step1BranchList({
       <div className="space-y-3">
         {branches.map((b, idx) => (
           <div key={idx} className="p-3.5 border border-dashed border-slate-300 rounded-xl bg-slate-50/50 space-y-3">
-            <div className="flex items-center justify-between text-xs font-semibold text-slate-800">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-slate-800">
               <span>สาขาที่ {idx + 1}</span>
-              {isMulti && branches.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => removeBranch(idx)}
-                  className="text-red-700 hover:text-red-800 flex items-center gap-1 text-[11px]"
-                >
-                  <Trash2 className="w-3.5 h-3.5" /> ลบสาขา
-                </button>
-              )}
+              <div className="flex items-center gap-3">
+                {companyAddr && (companyAddr.line1 || companyAddr.subdistrict) && (
+                  <button
+                    type="button"
+                    onClick={() => copyFromCompany(idx)}
+                    className="text-red-700 hover:text-red-800 flex items-center gap-1 text-[11px] font-semibold"
+                  >
+                    <Copy className="w-3.5 h-3.5" /> ใช้ที่อยู่เดียวกับสำนักงานใหญ่ (1.2)
+                  </button>
+                )}
+                {isMulti && branches.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeBranch(idx)}
+                    className="text-red-700 hover:text-red-800 flex items-center gap-1 text-[11px]"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> ลบสาขา
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">

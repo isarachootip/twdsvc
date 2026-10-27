@@ -110,4 +110,43 @@ describe('Unit: Vendor Application V6 Zod Validation & Schema Rules', () => {
     })
     expect(res.success).toBe(false)
   })
+
+  it('V6-VAL-06: Passes when authorizer.pos or optional secondary contact/branch address fields are empty (matches UI Step 1)', () => {
+    const uiRealisticPayload = {
+      ...validPayload,
+      primaryContact: {
+        name: 'นายสมศักดิ์ บริการดี',
+        pos: '',
+        phone: '081-234-5678',
+        email: 'somsak@siamair.co.th',
+        line: '',
+      },
+      backupContact: {
+        name: '',
+        phone: '',
+        timeStart: '08:00',
+        timeEnd: '17:00',
+      },
+      authorizer: {
+        name: '',
+        pos: '',
+        phone: '',
+        email: '',
+      },
+      branches: [
+        {
+          line1: '99/12 ถนนบางนา-ตราด',
+          subdistrict: '',
+          district: '',
+          province: '',
+          zip: '',
+          phone: '',
+          contactName: 'นายสมชาย ผู้ดูแล',
+          note: '',
+        },
+      ],
+    }
+    const res = vendorApplicationV6Schema.safeParse(uiRealisticPayload)
+    expect(res.success).toBe(true)
+  })
 })

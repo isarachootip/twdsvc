@@ -35,7 +35,7 @@ export function Step1CompanyInfo({ form, onChange }: Step1CompanyInfoProps) {
               name="supplierRegistered"
               value="เคยลงทะเบียนทำการค้ากับไทวัสดุ"
               checked={form.supplierRegistered === 'เคยลงทะเบียนทำการค้ากับไทวัสดุ'}
-              onChange={e => onChange({ supplierRegistered: e.target.value as any })}
+              onChange={() => onChange({ supplierRegistered: 'เคยลงทะเบียนทำการค้ากับไทวัสดุ' })}
               className="accent-red-700"
             />
             <span>เคยลงทะเบียนทำการค้ากับไทวัสดุ</span>
@@ -46,7 +46,7 @@ export function Step1CompanyInfo({ form, onChange }: Step1CompanyInfoProps) {
               name="supplierRegistered"
               value="ไม่เคยลงทะเบียนทำการค้ากับไทวัสดุ"
               checked={form.supplierRegistered === 'ไม่เคยลงทะเบียนทำการค้ากับไทวัสดุ'}
-              onChange={e => onChange({ supplierRegistered: e.target.value as any })}
+              onChange={() => onChange({ supplierRegistered: 'ไม่เคยลงทะเบียนทำการค้ากับไทวัสดุ' })}
               className="accent-red-700"
             />
             <span>ไม่เคยลงทะเบียนทำการค้ากับไทวัสดุ</span>
@@ -169,6 +169,7 @@ export function Step1CompanyInfo({ form, onChange }: Step1CompanyInfoProps) {
       <Step1BranchList
         branches={form.branches}
         branchType={form.branchType}
+        companyAddr={form.companyAddr}
         onChangeBranchType={type => onChange({ branchType: type })}
         onChangeBranches={branches => onChange({ branches })}
       />

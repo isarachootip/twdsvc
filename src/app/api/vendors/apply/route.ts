@@ -27,8 +27,14 @@ export async function POST(req: NextRequest) {
     if (isV6) {
       const validation = vendorApplicationV6Schema.safeParse(body)
       if (!validation.success) {
+        const issueMessages = Array.from(
+          new Set(validation.error.issues.map(i => i.message).filter(Boolean))
+        )
+        const errorMsg = issueMessages.length > 0
+          ? `ข้อมูลไม่ถูกต้อง: ${issueMessages.slice(0, 3).join(', ')}`
+          : 'ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบข้อมูลที่กรอก'
         return NextResponse.json(
-          { error: 'ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบข้อมูลที่กรอก', details: validation.error.flatten() },
+          { error: errorMsg, details: validation.error.flatten() },
           { status: 400 }
         )
       }
