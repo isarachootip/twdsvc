@@ -8,19 +8,21 @@ interface BrandSelectorInputProps {
   selectedBrands: string[]
   onChange: (brands: string[]) => void
   placeholder?: string
+  disabled?: boolean
 }
 
-export function BrandSelectorInput({ selectedBrands, onChange, placeholder }: BrandSelectorInputProps) {
+export function BrandSelectorInput({ selectedBrands, onChange, placeholder, disabled = false }: BrandSelectorInputProps) {
   const [search, setSearch] = useState('')
   const [open, setOpen] = useState(false)
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return []
+    if (disabled || !search.trim()) return []
     const q = search.trim().toUpperCase()
     return DEFAULT_VENDOR_BRANDS.filter(b => b.toUpperCase().includes(q) && !selectedBrands.includes(b)).slice(0, 15)
-  }, [search, selectedBrands])
+  }, [search, selectedBrands, disabled])
 
   const addBrand = (brand: string) => {
+    if (disabled) return
     if (!selectedBrands.includes(brand)) {
       onChange([...selectedBrands, brand])
     }
@@ -29,6 +31,7 @@ export function BrandSelectorInput({ selectedBrands, onChange, placeholder }: Br
   }
 
   const removeBrand = (brand: string) => {
+    if (disabled) return
     onChange(selectedBrands.filter(b => b !== brand))
   }
 
@@ -37,16 +40,17 @@ export function BrandSelectorInput({ selectedBrands, onChange, placeholder }: Br
       <div className="relative">
         <input
           type="text"
+          disabled={disabled}
           value={search}
           onChange={e => {
             setSearch(e.target.value)
             setOpen(Boolean(e.target.value.trim()))
           }}
           onFocus={() => {
-            if (search.trim()) setOpen(true)
+            if (!disabled && search.trim()) setOpen(true)
           }}
           placeholder={placeholder || 'ค้นหาแบรนด์ เช่น PANASONIC, TOSHIBA, MITSUBISHI...'}
-          className="w-full h-10 px-3.5 pr-8 border border-slate-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition"
+          className="w-full h-10 px-3.5 pr-8 border border-slate-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
         />
         <Search className="w-4 h-4 text-slate-400 absolute right-3 top-3 pointer-events-none" />
 
@@ -77,8 +81,9 @@ export function BrandSelectorInput({ selectedBrands, onChange, placeholder }: Br
               <span>{b}</span>
               <button
                 type="button"
+                disabled={disabled}
                 onClick={() => removeBrand(b)}
-                className="hover:text-red-300 transition focus:outline-none"
+                className="hover:text-red-300 transition focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <X className="w-3 h-3" />
               </button>

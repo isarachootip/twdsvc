@@ -3,6 +3,7 @@
 import React from 'react'
 import type { VendorApplicationFormV6 } from '../types-v6'
 import { SectionHeader } from '../common/SectionHeader'
+import { OnsiteLockNotice } from '../common/OnsiteLockNotice'
 
 interface Step6PricingFeesProps {
   form: VendorApplicationFormV6
@@ -10,6 +11,8 @@ interface Step6PricingFeesProps {
 }
 
 export function Step6PricingFees({ form, onChange }: Step6PricingFeesProps) {
+  const hasOnsite = form.onsProducts.length > 0
+
   return (
     <div className="space-y-5">
       <SectionHeader
@@ -34,19 +37,23 @@ export function Step6PricingFees({ form, onChange }: Step6PricingFeesProps) {
             <p className="text-[11px] text-slate-500 mt-1">อัตราค่าบริการตรวจเช็คสินค้าที่ส่งมาซ่อมที่ศูนย์</p>
           </div>
 
-          <div>
-            <label className="block font-bold text-slate-800 mb-1">
-              6.2 ค่าเปิดเครื่อง / เข้าหน้างาน On-site (บาท) *
-            </label>
+          <fieldset disabled={!hasOnsite} className={!hasOnsite ? 'opacity-50 pointer-events-none' : ''}>
+            <div className="flex flex-wrap items-center justify-between gap-1 mb-1">
+              <label className="font-bold text-slate-800">
+                6.2 ค่าเปิดเครื่อง / เข้าหน้างาน On-site (บาท) {hasOnsite ? '*' : ''}
+              </label>
+              {!hasOnsite && <OnsiteLockNotice />}
+            </div>
             <input
               type="text"
-              value={form.onsFee}
+              disabled={!hasOnsite}
+              value={hasOnsite ? form.onsFee : ''}
               onChange={e => onChange({ onsFee: e.target.value })}
               placeholder="เช่น 500"
-              className="w-full h-10 px-3 border border-slate-300 rounded-lg bg-white"
+              className="w-full h-10 px-3 border border-slate-300 rounded-lg bg-white disabled:bg-slate-100 disabled:text-slate-400"
             />
             <p className="text-[11px] text-slate-500 mt-1">อัตราค่าบริการเดินทางและตรวจเช็คหน้างานลูกค้า</p>
-          </div>
+          </fieldset>
         </div>
 
         <div className="pt-2 border-t border-slate-100">

@@ -1,6 +1,7 @@
 import { describe, it, expect, setTier } from '../framework/core'
 import { vendorApplicationV6Schema } from '../../src/lib/validations/vendor-application-v6.schema'
 import { INITIAL_FORM_V6 } from '../../src/components/vendor-setup/initial-form-v6'
+import { normalizeVendorFormV6 } from '../../src/components/vendor-setup/useVendorSetupV6'
 
 setTier('Tier 1')
 
@@ -114,39 +115,65 @@ describe('Unit: Vendor Application V6 Zod Validation & Schema Rules', () => {
   it('V6-VAL-06: Passes when authorizer.pos or optional secondary contact/branch address fields are empty (matches UI Step 1)', () => {
     const uiRealisticPayload = {
       ...validPayload,
-      primaryContact: {
-        name: 'นายสมศักดิ์ บริการดี',
-        pos: '',
-        phone: '081-234-5678',
-        email: 'somsak@siamair.co.th',
-        line: '',
-      },
-      backupContact: {
-        name: '',
-        phone: '',
-        timeStart: '08:00',
-        timeEnd: '17:00',
-      },
-      authorizer: {
-        name: '',
-        pos: '',
-        phone: '',
-        email: '',
-      },
-      branches: [
-        {
-          line1: '99/12 ถนนบางนา-ตราด',
-          subdistrict: '',
-          district: '',
-          province: '',
-          zip: '',
-          phone: '',
-          contactName: 'นายสมชาย ผู้ดูแล',
-          note: '',
-        },
-      ],
+      primaryContact: { name: 'นายสมศักดิ์ บริการดี', pos: '', phone: '081-234-5678', email: 'somsak@siamair.co.th', line: '' },
+      backupContact: { name: '', phone: '', timeStart: '08:00', timeEnd: '17:00' },
+      authorizer: { name: '', pos: '', phone: '', email: '' },
+      branches: [{ line1: '99/12 ถนนบางนา-ตราด', subdistrict: '', district: '', province: '', zip: '', phone: '', contactName: 'นายสมชาย ผู้ดูแล', note: '' }],
     }
     const res = vendorApplicationV6Schema.safeParse(uiRealisticPayload)
     expect(res.success).toBe(true)
+  })
+
+  it('V6-VAL-07: Clears all On-site defaults when Vendor does not select any 2.2 On-site products (onsProducts is empty)', () => {
+    const carryInOnlyForm = {
+      ...validPayload,
+      onsProducts: [],
+      onsBrands: ['DAIKIN'],
+      productDetails: { 'เครื่องปรับอากาศ': { repair: true, replacePart: true, install: false } },
+      productNote: 'หมายเหตุเดิม',
+      onsTech: 2,
+      onsTeams: 1,
+      onsCapDay: 5,
+      onsCapMonth: 100,
+      onsBackup: 1,
+      onsDays: ['จันทร์', 'อังคาร'],
+      onsHours: '08:30',
+      onsAppt: '17:00',
+      onsFast: 2,
+      onsQueue: 8,
+      onsRadius: '30 กม.',
+      coverage: { BKK01: { onsite: true, respBranchIdx: 0 } },
+      onsFee: '500',
+      onsSlaApptHours: 'ภายใน 24 ชม.',
+      onsSlaArrivalDays: 'ภายใน 3 วัน',
+      safetyStandards: ['แต่งเครื่องแบบ'],
+      onsiteTools: ['มัลติมิเตอร์'],
+    }
+
+    const normalized = normalizeVendorFormV6(carryInOnlyForm)
+    expect(normalized.onsProducts.length).toBe(0)
+    expect(normalized.onsBrands.length).toBe(0)
+    expect(Object.keys(normalized.productDetails).length).toBe(0)
+    expect(normalized.productNote).toBe('')
+    expect(normalized.onsTech).toBe(0)
+    expect(normalized.onsTeams).toBe(0)
+    expect(normalized.onsCapDay).toBe(0)
+    expect(normalized.onsCapMonth).toBe(0)
+    expect(normalized.onsBackup).toBe(0)
+    expect(normalized.onsDays.length).toBe(0)
+    expect(normalized.onsHours).toBe('')
+    expect(normalized.onsAppt).toBe('')
+    expect(normalized.onsFast).toBe(0)
+    expect(normalized.onsQueue).toBe(0)
+    expect(normalized.onsRadius).toBe('')
+    expect(Object.keys(normalized.coverage).length).toBe(0)
+    expect(normalized.onsFee).toBe('')
+    expect(normalized.onsSlaApptHours).toBe('')
+    expect(normalized.onsSlaArrivalDays).toBe('')
+    expect(normalized.safetyStandards.length).toBe(0)
+    expect(normalized.onsiteTools.length).toBe(0)
+
+    const parsed = vendorApplicationV6Schema.safeParse(normalized)
+    expect(parsed.success).toBe(true)
   })
 })

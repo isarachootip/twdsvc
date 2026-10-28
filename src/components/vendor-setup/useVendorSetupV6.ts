@@ -19,8 +19,35 @@ export function normalizeVendorFormV6(form: VendorApplicationFormV6): VendorAppl
     contactName: b.contactName?.trim() || form.primaryContact.name?.trim() || form.signName?.trim() || '',
   }))
 
+  const hasOnsite = form.onsProducts.length > 0
+  const onsiteOverrides: Partial<VendorApplicationFormV6> = hasOnsite
+    ? {}
+    : {
+        onsBrands: [],
+        productDetails: {},
+        productNote: '',
+        onsTech: 0,
+        onsTeams: 0,
+        onsCapDay: 0,
+        onsCapMonth: 0,
+        onsBackup: 0,
+        onsDays: [],
+        onsHours: '',
+        onsAppt: '',
+        onsFast: 0,
+        onsQueue: 0,
+        onsRadius: '',
+        coverage: {},
+        onsFee: '',
+        onsSlaApptHours: '',
+        onsSlaArrivalDays: '',
+        safetyStandards: [],
+        onsiteTools: [],
+      }
+
   return {
     ...form,
+    ...onsiteOverrides,
     branches,
     authorizer: {
       name: form.authorizer.name?.trim() || form.signName?.trim() || form.primaryContact.name?.trim() || '',
