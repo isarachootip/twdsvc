@@ -111,6 +111,7 @@ model VendorParent {
   updatedAt               DateTime       @updatedAt
   brands                  VendorBrand[]
   centers                 VendorCenter[]
+  productRates            VendorProductRate[]
 
   @@map("vendor_parents")
 }
@@ -806,4 +807,46 @@ model StoredFile {
 
   @@map("stored_files")
 }
+
+enum VendorServiceType {
+  CARRY_IN
+  ON_SITE
+}
+
+model VendorServiceGroup {
+  id               Int               @id @default(autoincrement())
+  serviceType      VendorServiceType
+  name             String
+  minInspectionFee Int               @default(0)
+  recommendedFee   Int               @default(300)
+  minGpPct         Float             @default(0)
+  defaultGpPct     Float             @default(18.0)
+  sortOrder        Int               @default(0)
+  active           Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@unique([serviceType, name])
+  @@map("vendor_service_groups")
+}
+
+model VendorProductRate {
+  id               String            @id @default(cuid())
+  vendorParentId   String
+  serviceType      VendorServiceType
+  groupName        String
+  minInspectionFee Int               @default(0)
+  gpPct            Float             @default(18.0)
+  isCustomGroup    Boolean           @default(false)
+  canRepair        Boolean           @default(true)
+  canReplacePart   Boolean           @default(true)
+  canInstall       Boolean           @default(false)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  vendorParent     VendorParent      @relation(fields: [vendorParentId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorParentId, serviceType, groupName])
+  @@map("vendor_product_rates")
+}
+
 

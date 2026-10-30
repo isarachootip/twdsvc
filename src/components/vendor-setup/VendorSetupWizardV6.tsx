@@ -127,8 +127,8 @@ export function VendorSetupWizardV6() {
         {currentStep === 3 && <Step3Capacity form={form} onChange={updateForm} />}
         {currentStep === 4 && <Step4WorkingHours form={form} onChange={updateForm} />}
         {currentStep === 5 && <Step5BranchCoverage form={form} branches={form.branches} onChange={updateForm} />}
-        {currentStep === 6 && <Step6PricingFees form={form} onChange={updateForm} />}
-        {currentStep === 7 && <Step7CommercialGP form={form} onChange={updateForm} />}
+        {currentStep === 6 && <Step6PricingFees form={form} onChange={updateForm} onEditStep2={() => setCurrentStep(2)} />}
+        {currentStep === 7 && <Step7CommercialGP form={form} onChange={updateForm} onEditStep2={() => setCurrentStep(2)} />}
         {currentStep === 8 && <Step8SLA form={form} onChange={updateForm} />}
         {currentStep === 9 && <Step9SafetyCompliance form={form} onChange={updateForm} />}
         {currentStep === 10 && <Step10DocsAgreements form={form} onChange={updateForm} />}

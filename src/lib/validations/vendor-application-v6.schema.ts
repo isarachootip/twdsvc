@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { productGroupRateSchema } from './vendor-product-group.schema'
 
 const taxIdRegex = /^\d{13}$/
 const spcodeRegex = /^\d{6}$/
@@ -84,6 +85,7 @@ export const vendorApplicationV6Schema = z.object({
     replacePart: z.boolean(),
     install: z.boolean(),
   })).default({}),
+  productGroupRates: z.array(productGroupRateSchema).default([]),
   productNote: z.string().optional().default(''),
 
   // 3

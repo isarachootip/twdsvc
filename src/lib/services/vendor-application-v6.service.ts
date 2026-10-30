@@ -19,6 +19,15 @@ export async function createVendorApplicationV6(input: VendorApplicationV6Input)
   const phone = input.primaryContact.phone.trim()
   const email = input.primaryContact.email.trim().toLowerCase()
 
+  const cinRates = input.productGroupRates.filter(r => r.serviceType === 'CARRY_IN')
+  const onsRates = input.productGroupRates.filter(r => r.serviceType === 'ON_SITE')
+  const summaryCinFee = cinRates.length > 0 ? String(cinRates[0].minInspectionFee) : input.cinFee
+  const summaryOnsFee = onsRates.length > 0 ? String(onsRates[0].minInspectionFee) : input.onsFee
+  const summaryGpPct =
+    input.productGroupRates.length > 0
+      ? `${input.productGroupRates[0].gpPct}%`
+      : input.gpPct
+
   const data = {
     status: VendorApplicationStatus.PENDING_APPROVAL,
     storeName,
@@ -27,33 +36,36 @@ export async function createVendorApplicationV6(input: VendorApplicationV6Input)
     phone,
     email,
     lineId: input.primaryContact.line?.trim() || null,
-    branches: input.branches as unknown as object,
+    branches: input.branches as unknown as Prisma.InputJsonValue,
     appliances: {
       carryIn: input.cinProducts,
       carryInBrands: input.cinBrands,
       onSite: input.onsProducts,
       onSiteBrands: input.onsBrands,
       productDetails: input.productDetails,
-    } as unknown as object,
+      productGroupRates: input.productGroupRates,
+      productNote: input.productNote,
+    } as unknown as Prisma.InputJsonValue,
     isBrandAuthorized: input.authorized.includes('Authorized ของแบรนด์'),
     coverage: {
       radius: input.onsRadius,
       routes: input.coverage,
       carryInReceiveMethod: input.cinReceiveMethod,
-    } as unknown as object,
-    documents: input.documents as unknown as object,
-    bank: input.bank as unknown as object,
+    } as unknown as Prisma.InputJsonValue,
+    documents: input.documents as unknown as Prisma.InputJsonValue,
+    bank: input.bank as unknown as Prisma.InputJsonValue,
     agreements: {
       terms: input.agreements,
       signName: input.signName,
       signPos: input.signPos,
       pricing: {
-        cinFee: input.cinFee,
-        onsFee: input.onsFee,
+        cinFee: summaryCinFee,
+        onsFee: summaryOnsFee,
         feeCondition: input.feeCondition,
+        priceNote: input.priceNote,
       },
       commercial: {
-        gpPct: input.gpPct,
+        gpPct: summaryGpPct,
         creditTerm: input.creditTerm,
         billingCycle: input.billingCycle,
       },
@@ -68,7 +80,7 @@ export async function createVendorApplicationV6(input: VendorApplicationV6Input)
         onsCapMonth: input.onsCapMonth,
       },
       authorizedBrands: input.authorizedBrands,
-    } as unknown as object,
+    } as unknown as Prisma.InputJsonValue,
     estimatedTier: 'STANDARD',
     score: 80,
   }

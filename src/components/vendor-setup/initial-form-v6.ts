@@ -47,6 +47,7 @@ export const INITIAL_FORM_V6: VendorApplicationFormV6 = {
   onsProducts: [],
   onsBrands: [],
   productDetails: {},
+  productGroupRates: [],
   productNote: '',
 
   // 3

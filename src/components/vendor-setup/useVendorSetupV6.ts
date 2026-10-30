@@ -20,6 +20,11 @@ export function normalizeVendorFormV6(form: VendorApplicationFormV6): VendorAppl
   }))
 
   const hasOnsite = form.onsProducts.length > 0
+  const filteredRates = (form.productGroupRates || []).filter(r =>
+    r.serviceType === 'CARRY_IN'
+      ? form.cinProducts.includes(r.groupName)
+      : hasOnsite && form.onsProducts.includes(r.groupName)
+  )
   const onsiteOverrides: Partial<VendorApplicationFormV6> = hasOnsite
     ? {}
     : {
@@ -48,6 +53,7 @@ export function normalizeVendorFormV6(form: VendorApplicationFormV6): VendorAppl
   return {
     ...form,
     ...onsiteOverrides,
+    productGroupRates: filteredRates,
     branches,
     authorizer: {
       name: form.authorizer.name?.trim() || form.signName?.trim() || form.primaryContact.name?.trim() || '',
@@ -112,6 +118,14 @@ export function useVendorSetupV6() {
     }
     if (step === 2) {
       if (form.cinProducts.length === 0 && form.onsProducts.length === 0) return false
+      const rates = form.productGroupRates || []
+      const allCinConfigured = form.cinProducts.every(name =>
+        rates.some(r => r.serviceType === 'CARRY_IN' && r.groupName === name && r.minInspectionFee >= 0 && r.gpPct >= 0)
+      )
+      const allOnsConfigured = form.onsProducts.every(name =>
+        rates.some(r => r.serviceType === 'ON_SITE' && r.groupName === name && r.minInspectionFee >= 0 && r.gpPct >= 0)
+      )
+      if (!allCinConfigured || !allOnsConfigured) return false
     }
     if (step === 10) {
       const a = form.agreements

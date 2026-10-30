@@ -1,3 +1,7 @@
+import type { ProductGroupRateConfig } from '@/lib/validations/vendor-product-group.schema'
+
+export type { ProductGroupRateConfig }
+
 export interface AuthorizedBrandItem {
   brand: string
   productType: string
@@ -73,6 +77,7 @@ export interface VendorApplicationFormV6 {
   onsProducts: string[]
   onsBrands: string[]
   productDetails: Record<string, ProductDetailItem>
+  productGroupRates: ProductGroupRateConfig[]
   productNote: string
 
   // Step 3: ทีมช่างและกำลังการให้บริการ

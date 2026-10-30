@@ -10,6 +10,18 @@ export interface VendorCenterRow {
   repairSlaDaysOverride?: number | string
 }
 
+export interface VendorProductRateRow {
+  id: string
+  serviceType: 'CARRY_IN' | 'ON_SITE'
+  groupName: string
+  minInspectionFee: number
+  gpPct: number
+  isCustomGroup: boolean
+  canRepair: boolean
+  canReplacePart: boolean
+  canInstall: boolean
+}
+
 export interface VendorParentRow {
   id?: string
   code: string
@@ -23,6 +35,7 @@ export interface VendorParentRow {
   brandIds: number[]
   sizeIds: number[]
   centers: VendorCenterRow[]
+  productRates?: VendorProductRateRow[]
   active?: boolean
 }
 

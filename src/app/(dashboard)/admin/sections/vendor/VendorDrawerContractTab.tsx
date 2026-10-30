@@ -9,9 +9,10 @@ interface VendorDrawerContractTabProps {
 }
 
 export function VendorDrawerContractTab({ form, onChange }: VendorDrawerContractTabProps) {
+  const rates = form.productRates ?? []
+
   return (
     <div className="space-y-4">
-      {/* Basic Profile */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -39,7 +40,6 @@ export function VendorDrawerContractTab({ form, onChange }: VendorDrawerContract
         </div>
       </div>
 
-      {/* Authorized Checkbox */}
       <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
         <label className="flex items-start gap-2.5 cursor-pointer">
           <input
@@ -59,9 +59,8 @@ export function VendorDrawerContractTab({ form, onChange }: VendorDrawerContract
         </label>
       </div>
 
-      {/* Contract & Financial Parameters */}
       <div>
-        <h4 className="text-xs font-bold text-slate-800 mb-2">เงื่อนไขสัญญา & ค่าบริการเริ่มต้น</h4>
+        <h4 className="text-xs font-bold text-slate-800 mb-2">เงื่อนไขสัญญา &amp; ค่าบริการเริ่มต้น</h4>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs text-slate-600 mb-1">GP% ส่วนแบ่งเริ่มต้น (%)</label>
@@ -110,6 +109,56 @@ export function VendorDrawerContractTab({ form, onChange }: VendorDrawerContract
           </div>
         </div>
       </div>
+
+      {rates.length > 0 && (
+        <div className="pt-3 border-t border-slate-100 space-y-2">
+          <h4 className="text-xs font-bold text-slate-800">
+            อัตราค่าเปิดเครื่องขั้นต่ำและ GP (%) รายกลุ่มสินค้าตามใบสมัคร
+          </h4>
+          <div className="border border-slate-200 rounded-xl overflow-x-auto">
+            <table className="w-full text-xs text-left">
+              <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
+                <tr>
+                  <th className="py-2 px-3 font-semibold">รูปแบบบริการ</th>
+                  <th className="py-2 px-3 font-semibold">กลุ่มสินค้า</th>
+                  <th className="py-2 px-3 font-semibold text-right">ค่าเปิดเครื่องขั้นต่ำ</th>
+                  <th className="py-2 px-3 font-semibold text-right">GP (%)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {rates.map(r => (
+                  <tr key={r.id}>
+                    <td className="py-2 px-3">
+                      <span
+                        className={`inline-flex items-center gap-1 font-semibold ${
+                          r.serviceType === 'CARRY_IN' ? 'text-red-700' : 'text-sky-700'
+                        }`}
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            r.serviceType === 'CARRY_IN' ? 'bg-red-600' : 'bg-sky-600'
+                          }`}
+                        />
+                        {r.serviceType === 'CARRY_IN' ? 'Carry-in' : 'On-site'}
+                      </span>
+                    </td>
+                    <td className="py-2 px-3 font-medium text-slate-800">
+                      {r.groupName}
+                      {r.isCustomGroup && (
+                        <span className="ml-2 text-[11px] font-medium text-amber-700">• กลุ่มเพิ่มเติม</span>
+                      )}
+                    </td>
+                    <td className="py-2 px-3 text-right font-semibold text-emerald-700">
+                      ฿{r.minInspectionFee.toLocaleString()}
+                    </td>
+                    <td className="py-2 px-3 text-right font-semibold text-slate-800">{r.gpPct}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -17,6 +17,7 @@ export async function GET(req: NextRequest) {
         include: {
           brands: { include: { brand: true } },
           centers: { where: { active: true }, orderBy: { code: 'asc' } },
+          productRates: { orderBy: [{ serviceType: 'asc' }, { groupName: 'asc' }] },
         },
         orderBy: { code: 'asc' },
       }),

@@ -5,17 +5,10 @@ import type { VendorApplicationFormV6 } from '../types-v6'
 import { SectionHeader } from '../common/SectionHeader'
 import { BrandSelectorInput } from '../common/BrandSelectorInput'
 import { OnsiteLockNotice } from '../common/OnsiteLockNotice'
+import { ProductGroupSelectorCard } from './ProductGroupSelectorCard'
+import { ProductGroupRateModal } from './ProductGroupRateModal'
+import { useStep2ProductGroups } from './useStep2ProductGroups'
 import { Copy } from 'lucide-react'
-
-const CIN_PRODUCT_OPTIONS = [
-  'เครื่องใช้ไฟฟ้าขนาดเล็ก', 'เครื่องใช้ไฟฟ้าในครัว', 'เครื่องใช้ไฟฟ้าประปา',
-  'เครื่องใช้ไฟฟ้าภายในสวน', 'ปั๊มน้ำ', 'ปั๊มน้ำอัตโนมัติ', 'เครื่องมือช่าง',
-]
-
-const ONS_PRODUCT_OPTIONS = [
-  'ปั๊มน้ำ', 'เครื่องปรับอากาศ', 'เครื่องซักผ้า', 'ตู้เย็น', 'ตู้แช่',
-  'ปั๊มน้ำอัตโนมัติ', 'ทีวี', 'เครื่องใช้ไฟฟ้าขนาดใหญ่',
-]
 
 const RECEIVE_METHODS = [
   'รับสินค้าจากสาขา', 'รับสินค้าจาก DC',
@@ -28,67 +21,46 @@ interface Step2ProductsServicesProps {
 }
 
 export function Step2ProductsServices({ form, onChange }: Step2ProductsServicesProps) {
+  const {
+    cinNames,
+    onsNames,
+    rates,
+    modalState,
+    activeMetaList,
+    activeExistingNames,
+    openModal,
+    closeModal,
+    handleToggleCheckbox,
+    handleSaveRate,
+    removeGroupSelection,
+  } = useStep2ProductGroups(form, onChange)
+
   const hasOnsite = form.onsProducts.length > 0
-
-  const toggleCinProduct = (item: string) => {
-    const list = form.cinProducts.includes(item)
-      ? form.cinProducts.filter(p => p !== item)
-      : [...form.cinProducts, item]
-    onChange({ cinProducts: list })
-  }
-
-  const toggleOnsProduct = (item: string) => {
-    const list = form.onsProducts.includes(item)
-      ? form.onsProducts.filter(p => p !== item)
-      : [...form.onsProducts, item]
-
-    const details = { ...form.productDetails }
-    if (!details[item]) {
-      details[item] = { repair: true, replacePart: true, install: false }
-    }
-    onChange({ onsProducts: list, productDetails: details })
-  }
-
-  const copyCinBrandsToOns = () => {
-    if (!hasOnsite) return
-    onChange({ onsBrands: [...form.cinBrands] })
-  }
-
-  const toggleTask = (product: string, task: 'repair' | 'replacePart' | 'install') => {
-    const details = { ...form.productDetails }
-    const current = details[product] || { repair: true, replacePart: true, install: false }
-    details[product] = { ...current, [task]: !current[task] }
-    onChange({ productDetails: details })
-  }
 
   return (
     <div className="space-y-5">
       <SectionHeader
         stepNo={2}
         title="ประเภทสินค้าและรูปแบบบริการ"
-        subtitle="เลือกกลุ่มสินค้าและแบรนด์ที่พร้อมรับซ่อมทั้งรูปแบบศูนย์รับซ่อม (Carry-in) และช่างเข้าบริการ (On-site)"
+        subtitle="ติ๊กเลือกกลุ่มสินค้าเพื่อระบุค่าเปิดเครื่องขั้นต่ำและส่วนแบ่ง GP% รายกลุ่มสินค้า หรือกด + เพิ่มกลุ่มสินค้า"
       />
 
       {/* 2.1 Carry-in */}
       <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-3">
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-red-700">2.1 Carry-in (รับสินค้าจากสาขา / DC มาซ่อมที่ศูนย์)</span>
-          <span className="text-[11px] font-semibold text-red-700">• Carry-in</span>
+          <span className="text-[11px] font-semibold text-red-700">• คลิกเลือกเพื่อระบุค่าเปิดเครื่อง &amp; GP</span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-          {CIN_PRODUCT_OPTIONS.map(prod => (
-            <label key={prod} className="inline-flex items-center gap-2 p-2 border border-slate-100 rounded-lg hover:bg-slate-50 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={form.cinProducts.includes(prod)}
-                onChange={() => toggleCinProduct(prod)}
-                className="accent-red-700"
-              />
-              <span>{prod}</span>
-            </label>
-          ))}
-        </div>
+        <ProductGroupSelectorCard
+          serviceType="CARRY_IN"
+          availableNames={cinNames}
+          selectedNames={form.cinProducts}
+          rates={rates}
+          onToggleCheckbox={(name, checked) => handleToggleCheckbox('CARRY_IN', name, checked)}
+          onEditGroup={name => openModal('CARRY_IN', name, false)}
+          onAddCustomClick={() => openModal('CARRY_IN', '', true)}
+        />
 
         <div className="space-y-1.5 pt-2">
           <label className="text-xs font-semibold text-slate-700">แบรนด์ที่รับซ่อม (Carry-in)</label>
@@ -129,19 +101,15 @@ export function Step2ProductsServices({ form, onChange }: Step2ProductsServicesP
           {!hasOnsite && <OnsiteLockNotice />}
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-          {ONS_PRODUCT_OPTIONS.map(prod => (
-            <label key={prod} className="inline-flex items-center gap-2 p-2 border border-slate-100 rounded-lg hover:bg-slate-50 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={form.onsProducts.includes(prod)}
-                onChange={() => toggleOnsProduct(prod)}
-                className="accent-red-700"
-              />
-              <span>{prod}</span>
-            </label>
-          ))}
-        </div>
+        <ProductGroupSelectorCard
+          serviceType="ON_SITE"
+          availableNames={onsNames}
+          selectedNames={form.onsProducts}
+          rates={rates}
+          onToggleCheckbox={(name, checked) => handleToggleCheckbox('ON_SITE', name, checked)}
+          onEditGroup={name => openModal('ON_SITE', name, false)}
+          onAddCustomClick={() => openModal('ON_SITE', '', true)}
+        />
 
         <fieldset disabled={!hasOnsite} className={!hasOnsite ? 'opacity-50 pointer-events-none space-y-3' : 'space-y-3'}>
           <div className="space-y-1.5 pt-2">
@@ -150,7 +118,7 @@ export function Step2ProductsServices({ form, onChange }: Step2ProductsServicesP
               {hasOnsite && form.cinBrands.length > 0 && (
                 <button
                   type="button"
-                  onClick={copyCinBrandsToOns}
+                  onClick={() => onChange({ onsBrands: [...form.cinBrands] })}
                   className="text-[11px] text-amber-700 hover:text-amber-800 flex items-center gap-1 font-semibold"
                 >
                   <Copy className="w-3 h-3" /> คัดลอกแบรนด์จาก Carry-in
@@ -165,36 +133,6 @@ export function Step2ProductsServices({ form, onChange }: Step2ProductsServicesP
             />
           </div>
 
-          {/* 2.3 รายละเอียดงาน On-site */}
-          {hasOnsite && (
-            <div className="pt-2 border-t border-slate-100 space-y-2">
-              <label className="text-xs font-bold text-slate-800">2.3 งานที่รับทำตามประเภทสินค้า On-site</label>
-              <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden">
-                {form.onsProducts.map(prod => {
-                  const item = form.productDetails[prod] || { repair: true, replacePart: true, install: false }
-                  return (
-                    <div key={prod} className="p-2.5 flex items-center justify-between text-xs bg-slate-50/50">
-                      <span className="font-semibold text-slate-800">{prod}</span>
-                      <div className="flex items-center gap-4">
-                        {(['repair', 'replacePart', 'install'] as const).map(task => (
-                          <label key={task} className="inline-flex items-center gap-1 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={item[task]}
-                              onChange={() => toggleTask(prod, task)}
-                              className="accent-red-700"
-                            />
-                            <span>{task === 'repair' ? 'ซ่อม' : task === 'replacePart' ? 'เปลี่ยนอะไหล่' : 'ติดตั้ง'}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
           <div className="pt-2">
             <label className="block text-xs font-semibold text-slate-700 mb-1">หมายเหตุ / ข้อจำกัดในการรับงาน</label>
             <textarea
@@ -208,6 +146,19 @@ export function Step2ProductsServices({ form, onChange }: Step2ProductsServicesP
           </div>
         </fieldset>
       </div>
+
+      <ProductGroupRateModal
+        open={modalState.open}
+        serviceType={modalState.serviceType}
+        isAddingCustom={modalState.isAddingCustom}
+        initialGroupName={modalState.groupName}
+        existingRate={rates.find(r => r.serviceType === modalState.serviceType && r.groupName === modalState.groupName)}
+        masterMeta={activeMetaList.find(m => m.name === modalState.groupName)}
+        existingNames={activeExistingNames}
+        onSave={handleSaveRate}
+        onRemove={name => removeGroupSelection(modalState.serviceType, name)}
+        onClose={closeModal}
+      />
     </div>
   )
 }

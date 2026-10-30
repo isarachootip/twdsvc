@@ -4,35 +4,33 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { api } from '@/lib/client'
 import { fmtDate, fmtPhone } from '@/lib/constants'
 import { useToast } from '@/components/ui/Toast'
-import { CheckCircle2, XCircle, Eye, Building2, ShieldCheck, ArrowLeft } from 'lucide-react'
+import { Eye, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { CopyRegisterLinkButton } from '@/components/vendor-setup/CopyRegisterLinkButton'
-import { ApprovedCredentialsModal, type ApprovedCredentials, type EmailStatus } from '@/components/vendor-setup/ApprovedCredentialsModal'
-
-interface ApplicationRow {
-  id: string
-  applicationNo: string
-  status: 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED'
-  storeName: string
-  businessType: string
-  phone: string
-  estimatedTier: string
-  score: number
-  signatureUrl: string | null
-  createdAt: string
-  branches: unknown[]
-}
+import {
+  ApprovedCredentialsModal,
+  type ApprovedCredentials,
+  type EmailStatus,
+} from '@/components/vendor-setup/ApprovedCredentialsModal'
+import {
+  ApplicationReviewModal,
+  type VendorApplicationDetail,
+} from './ApplicationReviewModal'
 
 export default function VendorApplicationsPage() {
-  const [list, setList] = useState<ApplicationRow[] | null>(null)
-  const [selected, setSelected] = useState<ApplicationRow | null>(null)
+  const [list, setList] = useState<VendorApplicationDetail[] | null>(null)
+  const [selected, setSelected] = useState<VendorApplicationDetail | null>(null)
   const [rejectReason, setRejectReason] = useState('')
   const [busy, setBusy] = useState(false)
-  const [approved, setApproved] = useState<{ credentials: ApprovedCredentials; storeName: string; emailStatus?: EmailStatus } | null>(null)
+  const [approved, setApproved] = useState<{
+    credentials: ApprovedCredentials
+    storeName: string
+    emailStatus?: EmailStatus
+  } | null>(null)
   const { toast } = useToast()
 
   const load = useCallback(() => {
-    api<ApplicationRow[]>('/api/admin/vendor-applications')
+    api<VendorApplicationDetail[]>('/api/admin/vendor-applications')
       .then(setList)
       .catch(() => setList([]))
   }, [])
@@ -56,7 +54,11 @@ export default function VendorApplicationsPage() {
         action === 'APPROVE' ? 'success' : 'info'
       )
       if (action === 'APPROVE' && data.credentials) {
-        setApproved({ credentials: data.credentials, storeName: selected?.storeName ?? '', emailStatus: data.email })
+        setApproved({
+          credentials: data.credentials,
+          storeName: selected?.storeName ?? '',
+          emailStatus: data.email,
+        })
       }
       setSelected(null)
       setRejectReason('')
@@ -79,9 +81,12 @@ export default function VendorApplicationsPage() {
             ใบสมัครคู่ค้าใหม่ (Vendor Applications)
           </h2>
         </div>
-        <div className="flex items-center gap-2"><CopyRegisterLinkButton /><Link href="/vendor/register" target="_blank" className="btn btn-primary text-xs">
-          เปิดหน้าสมัคร (Portal)
-        </Link></div>
+        <div className="flex items-center gap-2">
+          <CopyRegisterLinkButton />
+          <Link href="/vendor/register" target="_blank" className="btn btn-primary text-xs">
+            เปิดหน้าสมัคร (Portal)
+          </Link>
+        </div>
       </div>
 
       <div className="pcard">
@@ -108,92 +113,85 @@ export default function VendorApplicationsPage() {
                   </td>
                 </tr>
               )}
-              {list && list.map(app => (
-                <tr key={app.id}>
-                  <td><b>{app.applicationNo}</b></td>
-                  <td>{app.storeName}</td>
-                  <td><span className="badge b-gray">{app.businessType}</span></td>
-                  <td>{fmtPhone(app.phone)}</td>
-                  <td>
-                    <span className={`badge ${app.estimatedTier === 'VIP' ? 'b-purple' : app.estimatedTier === 'PRO' ? 'b-amber' : 'b-gray'}`}>
-                      {app.estimatedTier}
-                    </span>
-                  </td>
-                  <td><b>{app.score}/100</b></td>
-                  <td>{fmtDate(app.createdAt)}</td>
-                  <td>
-                    <span className={`badge ${app.status === 'APPROVED' ? 'b-green' : app.status === 'REJECTED' ? 'b-red' : 'b-amber'}`}>
-                      {app.status === 'APPROVED' ? 'อนุมัติแล้ว' : app.status === 'REJECTED' ? 'ปฏิเสธ' : 'รอตรวจสอบ'}
-                    </span>
-                  </td>
-                  <td>
-                    <button
-                      type="button"
-                      onClick={() => setSelected(app)}
-                      className="btn btn-secondary text-xs py-1 px-2.5 flex items-center gap-1"
-                    >
-                      <Eye className="w-3.5 h-3.5" /> ตรวจสอบ
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {list &&
+                list.map(app => (
+                  <tr key={app.id}>
+                    <td>
+                      <b className="font-mono">{app.applicationNo}</b>
+                    </td>
+                    <td>{app.storeName}</td>
+                    <td>
+                      <span className="text-xs font-medium text-slate-600">{app.businessType}</span>
+                    </td>
+                    <td>{fmtPhone(app.phone)}</td>
+                    <td>
+                      <span
+                        className={`text-xs font-semibold ${
+                          app.estimatedTier === 'VIP'
+                            ? 'text-purple-700'
+                            : app.estimatedTier === 'PRO'
+                              ? 'text-amber-700'
+                              : 'text-slate-600'
+                        }`}
+                      >
+                        {app.estimatedTier}
+                      </span>
+                    </td>
+                    <td>
+                      <b>{app.score}/100</b>
+                    </td>
+                    <td>{fmtDate(app.createdAt)}</td>
+                    <td>
+                      <span
+                        className={`inline-flex items-center gap-1.5 text-xs font-semibold ${
+                          app.status === 'APPROVED'
+                            ? 'text-emerald-700'
+                            : app.status === 'REJECTED'
+                              ? 'text-rose-600'
+                              : 'text-amber-700'
+                        }`}
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            app.status === 'APPROVED'
+                              ? 'bg-emerald-500'
+                              : app.status === 'REJECTED'
+                                ? 'bg-rose-500'
+                                : 'bg-amber-500'
+                          }`}
+                        />
+                        {app.status === 'APPROVED'
+                          ? 'อนุมัติแล้ว'
+                          : app.status === 'REJECTED'
+                            ? 'ปฏิเสธ'
+                            : 'รอตรวจสอบ'}
+                      </span>
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        onClick={() => setSelected(app)}
+                        className="btn btn-secondary text-xs py-1 px-2.5 flex items-center gap-1"
+                      >
+                        <Eye className="w-3.5 h-3.5" /> ตรวจสอบ
+                      </button>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Review Modal */}
-      {selected && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-xl">
-            <div className="flex items-center justify-between border-b pb-3">
-              <h3 className="font-bold text-base">ตรวจสอบใบสมัคร: {selected.applicationNo}</h3>
-              <button onClick={() => setSelected(null)} className="text-slate-400 hover:text-slate-600">✕</button>
-            </div>
-            <div className="space-y-2 text-xs">
-              <div><span className="text-slate-500">ชื่อร้าน:</span> <b>{selected.storeName}</b> ({selected.businessType})</div>
-              <div><span className="text-slate-500">เบอร์โทร:</span> <b>{selected.phone}</b></div>
-              <div><span className="text-slate-500">ระดับคาดการณ์:</span> <b>{selected.estimatedTier}</b> (คะแนน {selected.score}/100)</div>
-              {selected.signatureUrl && (
-                <div className="pt-2">
-                  <span className="text-slate-500 block mb-1">ลายเซ็นดิจิทัล:</span>
-                  <div className="border rounded-lg p-2 bg-slate-50 inline-block">
-                    <img src={selected.signatureUrl} alt="Signature" className="h-14 object-contain" />
-                  </div>
-                </div>
-              )}
-            </div>
+      <ApplicationReviewModal
+        application={selected}
+        busy={busy}
+        rejectReason={rejectReason}
+        onChangeRejectReason={setRejectReason}
+        onDecision={handleAction}
+        onClose={() => setSelected(null)}
+      />
 
-            {selected.status === 'PENDING_APPROVAL' && (
-              <div className="space-y-3 pt-3 border-t">
-                <input
-                  type="text"
-                  className="inp text-xs"
-                  placeholder="ระบุเหตุผล (กรณีปฏิเสธ)"
-                  value={rejectReason}
-                  onChange={e => setRejectReason(e.target.value)}
-                />
-                <div className="flex justify-end gap-2">
-                  <button
-                    disabled={busy}
-                    onClick={() => handleAction(selected.id, 'REJECT')}
-                    className="btn btn-secondary text-xs text-red-600 hover:bg-red-50"
-                  >
-                    ปฏิเสธใบสมัคร
-                  </button>
-                  <button
-                    disabled={busy}
-                    onClick={() => handleAction(selected.id, 'APPROVE')}
-                    className="btn btn-primary text-xs"
-                  >
-                    อนุมัติเข้าระบบ (Approve)
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
       {approved && <ApprovedCredentialsModal {...approved} onClose={() => setApproved(null)} />}
     </div>
   )

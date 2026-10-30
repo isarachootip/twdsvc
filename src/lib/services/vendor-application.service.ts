@@ -1,10 +1,10 @@
 import crypto from 'crypto'
 import { prisma } from '@/lib/db'
-import { HttpError } from '@/lib/api'
 import { Prisma, VendorApplicationStatus } from '@prisma/client'
 import { calculateVendorScoreAndTier } from './vendor-tier.service'
-import { createVendorUser } from './vendor-account.service'
-import type { FullVendorApplicationInput, BranchItem, RouteCoverageItem } from '../validations/vendor-setup.schema'
+import type { FullVendorApplicationInput } from '../validations/vendor-setup.schema'
+
+export { approveVendorApplication, rejectVendorApplication } from './vendor-approval.service'
 
 export async function createVendorApplication(input: FullVendorApplicationInput) {
   const branches = input.store.branches
@@ -34,24 +34,23 @@ export async function createVendorApplication(input: FullVendorApplicationInput)
     phone: input.store.phone.trim(),
     email: input.store.email,
     lineId: input.store.lineId?.trim() || null,
-    branches: input.store.branches as unknown as object,
-    appliances: input.expertise.appliances as unknown as object,
+    branches: input.store.branches as unknown as Prisma.InputJsonValue,
+    appliances: input.expertise.appliances as unknown as Prisma.InputJsonValue,
     isBrandAuthorized: input.expertise.isBrandAuthorized,
-    coverage: input.coverage.coverage as unknown as object,
-    documents: input.finance.documents as unknown as object,
+    coverage: input.coverage.coverage as unknown as Prisma.InputJsonValue,
+    documents: input.finance.documents as unknown as Prisma.InputJsonValue,
     bank: {
       bank: input.finance.bank,
       accNo: input.finance.accNo,
       accName: input.finance.accName,
     },
-    agreements: input.agreements.agreements as unknown as object,
+    agreements: input.agreements.agreements as unknown as Prisma.InputJsonValue,
     signatureUrl: input.agreements.signatureUrl,
     estimatedTier: tierResult.tier,
     estimatedCases: tierResult.estimatedCases,
     score: tierResult.score,
   }
 
-  // applicationNo is @unique — retry on the (rare) random collision instead of failing with a 500
   for (let attempt = 0; ; attempt++) {
     const applicationNo = `VDA-${new Date().getFullYear()}-${crypto.randomInt(100000, 1000000)}`
     try {
@@ -73,125 +72,5 @@ export async function listVendorApplications(status?: VendorApplicationStatus) {
 export async function getVendorApplication(id: string) {
   return prisma.vendorApplication.findUnique({
     where: { id },
-  })
-}
-
-/** Atomically moves a PENDING application to `status`; throws 409 if it was already decided. */
-async function claimPending(tx: Prisma.TransactionClient, id: string, status: VendorApplicationStatus, adminUserId: string) {
-  const { count } = await tx.vendorApplication.updateMany({
-    where: { id, status: VendorApplicationStatus.PENDING_APPROVAL },
-    data: { status, reviewedBy: adminUserId, reviewedAt: new Date() },
-  })
-  if (count === 0) {
-    const exists = await tx.vendorApplication.findUnique({ where: { id }, select: { status: true } })
-    if (!exists) throw new HttpError(404, 'ไม่พบใบสมัคร')
-    throw new HttpError(409, `ใบสมัครนี้ถูกพิจารณาไปแล้ว (${exists.status})`)
-  }
-}
-
-export async function approveVendorApplication(id: string, adminUserId: string) {
-  return prisma.$transaction(async tx => {
-    await claimPending(tx, id, VendorApplicationStatus.APPROVED, adminUserId)
-    const app = await tx.vendorApplication.findUniqueOrThrow({ where: { id } })
-    const branches = (app.branches as unknown as BranchItem[]) || []
-    const coverage = (app.coverage as unknown as Record<string, RouteCoverageItem>) || {}
-
-    // Derive vendor parent code: VD-XXXX
-    const parentCode = `VD-${app.applicationNo.replace('VDA-', '')}`
-    const parent = await tx.vendorParent.upsert({
-      where: { code: parentCode },
-      update: {
-        name: app.storeName,
-        isBrandAuthorized: app.isBrandAuthorized,
-        active: true,
-      },
-      create: {
-        code: parentCode,
-        name: app.storeName,
-        defaultGpPct: 18.0,
-        defaultRepairSlaDays: 7,
-        repairWarrantyDays: 90,
-        inspectionFeeCovered: 0,
-        inspectionFeeNotCovered: 300,
-        isBrandAuthorized: app.isBrandAuthorized,
-        active: true,
-      },
-    })
-
-    const createdCenters: Array<{ id: string; code: string }> = []
-    for (let i = 0; i < branches.length; i++) {
-      const b = branches[i] as Record<string, any>
-      const centerCode = `${parentCode}-${i + 1}`
-      const fullAddress = b.line1
-        ? `${b.line1} ${b.subdistrict || ''} ${b.district || ''} ${b.province || ''} ${b.zip || ''}`.trim()
-        : `${b.address || ''} ${b.amphoe || ''} ${b.province || ''}`.trim()
-
-      const center = await tx.vendorCenter.upsert({
-        where: { code: centerCode },
-        update: {
-          address: fullAddress,
-          phone: b.phone,
-          active: true,
-        },
-        create: {
-          code: centerCode,
-          vendorParentId: parent.id,
-          address: fullAddress,
-          phone: b.phone,
-          deliveryMethod: 'DC',
-          active: true,
-        },
-      })
-      createdCenters.push(center)
-    }
-
-    // Connect routes for selected SVC sites
-    const primaryCenterId = createdCenters[0]?.id
-    if (primaryCenterId) {
-      const rawCov = app.coverage as Record<string, any>
-      const covMap = (rawCov?.routes || rawCov || {}) as Record<string, any>
-      const siteCodes = Object.keys(covMap)
-      const sites = await tx.site.findMany({
-        where: {
-          OR: [{ code: { in: siteCodes } }, { nickname: { in: siteCodes } }],
-        },
-      })
-
-      for (const site of sites) {
-        const routeConfig = covMap[site.code] || covMap[site.nickname]
-        const channel = routeConfig?.transport === 'tpl' ? 'TPL' : routeConfig?.transport === 'pickup' ? 'DSD' : 'DC'
-        const centerIdx = typeof routeConfig?.respBranchIdx === 'number' ? routeConfig.respBranchIdx : 0
-        const assignedCenterId = createdCenters[centerIdx]?.id || primaryCenterId
-
-        // Policy: never displace incumbent vendors — append as next backup; admin can re-order on the Routes page
-        const { _max } = await tx.branchVendorRoute.aggregate({ where: { branchId: site.id }, _max: { priority: true } })
-        await tx.branchVendorRoute.create({
-          data: {
-            branchId: site.id,
-            primaryCenterId: assignedCenterId,
-            standardChannel: channel,
-            priority: (_max.priority ?? 0) + 1,
-          },
-        })
-      }
-    }
-
-    const credentials = await createVendorUser(tx, {
-      parentCode,
-      storeName: app.storeName,
-      centerId: primaryCenterId ?? null,
-    })
-    const application = await tx.vendorApplication.update({
-      where: { id },
-      data: { approvedParentId: parent.id },
-    })
-    return { application, credentials }
-  })
-}
-
-export async function rejectVendorApplication(id: string, reason: string, adminUserId: string) {
-  return prisma.$transaction(async tx => {
-    await claimPending(tx, id, VendorApplicationStatus.REJECTED, adminUserId)
-    return tx.vendorApplication.update({ where: { id }, data: { adminNotes: reason } })
   })
 }
