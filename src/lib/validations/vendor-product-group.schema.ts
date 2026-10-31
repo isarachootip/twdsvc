@@ -29,6 +29,7 @@ export const vendorServiceGroupInputSchema = z
     recommendedFee: z.number().int().min(0, 'ค่าเปิดเครื่องแนะนำต้องไม่ติดลบ').default(300),
     minGpPct: z.number().min(0).max(100).default(0),
     defaultGpPct: z.number().min(0).max(100).default(18),
+    skuKeywords: z.string().trim().max(500).nullable().optional(),
     sortOrder: z.number().int().default(0),
     active: z.boolean().default(true),
   })

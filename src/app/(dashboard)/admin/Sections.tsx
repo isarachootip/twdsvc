@@ -6,6 +6,7 @@
  */
 export {
   VendorSection,
+  ProductTypesSection,
   FeeSection,
   BranchSection,
   ZoneSection,

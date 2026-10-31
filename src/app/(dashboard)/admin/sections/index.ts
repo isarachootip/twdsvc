@@ -1,4 +1,5 @@
 export { VendorSection } from './VendorSection'
+export { ProductTypesSection } from './ProductTypesSection'
 export { FeeSection } from './FeeSection'
 export { BranchSection } from './BranchSection'
 export { ZoneSection } from './ZoneSection'

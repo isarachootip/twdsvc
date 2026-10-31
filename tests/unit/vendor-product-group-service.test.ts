@@ -4,7 +4,10 @@ import {
   listVendorServiceGroups,
   upsertVendorServiceGroup,
   promoteCustomGroupToMaster,
+  deleteVendorServiceGroup,
 } from '../../src/lib/services/vendor-product-group.service'
+import { getProductTypeMasterOverview } from '../../src/lib/services/product-type-master.service'
+import { resolveRouting } from '../../src/lib/routing'
 import { createVendorApplicationV6 } from '../../src/lib/services/vendor-application-v6.service'
 import { approveVendorApplication } from '../../src/lib/services/vendor-application.service'
 import { INITIAL_FORM_V6 } from '../../src/components/vendor-setup/initial-form-v6'
@@ -168,6 +171,59 @@ describe('Unit: Vendor Product Group Master & V6 Approval Rate Persistence', () 
     const onsiteRate = parent!.productRates.find(r => r.serviceType === 'ON_SITE' && r.groupName === 'เครื่องปรับอากาศ')
     expect(Boolean(onsiteRate)).toBe(true)
     expect(onsiteRate!.canInstall).toBe(true)
+
+    // Verify Master Overview discovers custom group "เครื่องขัดพื้นอุตสาหกรรม" before promotion
+    await prisma.vendorServiceGroup.deleteMany({ where: { name: 'เครื่องขัดพื้นอุตสาหกรรม' } })
+    const overview = await getProductTypeMasterOverview()
+    const discovered = overview.customGroups.find(c => c.name === 'เครื่องขัดพื้นอุตสาหกรรม')
+    expect(Boolean(discovered)).toBe(true)
+    expect(discovered!.suggestedFee).toBe(450)
+    expect(discovered!.suggestedGpPct).toBe(22)
+
+    // Verify Soft-Disable guard blocks Hard Delete when a vendor is linked
+    const smallApplianceMaster = overview.groups.find(
+      g => g.serviceType === 'CARRY_IN' && g.name === 'เครื่องใช้ไฟฟ้าขนาดเล็ก'
+    )
+    expect(Boolean(smallApplianceMaster)).toBe(true)
+    let deleteBlocked = false
+    try {
+      await deleteVendorServiceGroup(smallApplianceMaster!.id)
+    } catch {
+      deleteBlocked = true
+    }
+    expect(deleteBlocked).toBe(true)
+
+    // Verify Auto-Routing skips vendor when job productGroupName is not supported by vendor's productRates
+    const anyBranch = await prisma.site.findFirst({ where: { type: 'BRANCH' } })
+    if (anyBranch) {
+      const tempRoute = await prisma.branchVendorRoute.create({
+        data: {
+          branchId: anyBranch.id,
+          primaryCenterId: parent!.centers[0].id,
+          standardChannel: 'DC',
+          priority: 0,
+        },
+      })
+      try {
+        const matchedRoute = await resolveRouting({
+          branchId: anyBranch.id,
+          productGroupName: 'เครื่องขัดพื้นอุตสาหกรรม',
+          shippingMethod: 'STANDARD',
+          allowNonAuth: true,
+        })
+        expect(matchedRoute?.vendorCenterId).toBe(parent!.centers[0].id)
+
+        const skippedRoute = await resolveRouting({
+          branchId: anyBranch.id,
+          productGroupName: '__UNSUPPORTED_PRODUCT_TYPE__',
+          shippingMethod: 'STANDARD',
+          allowNonAuth: true,
+        })
+        expect(skippedRoute?.vendorCenterId !== parent!.centers[0].id).toBe(true)
+      } finally {
+        await prisma.branchVendorRoute.delete({ where: { id: tempRoute.id } })
+      }
+    }
 
     // Cleanup
     await prisma.user.deleteMany({ where: { vendorCenterId: { in: parent!.centers.map(c => c.id) } } })

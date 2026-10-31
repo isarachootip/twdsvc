@@ -1,6 +1,7 @@
 'use client'
 
 import { statusFilterOptions } from '@/lib/job-status-filter'
+import { JobsActiveFilterChips } from './JobsActiveFilterChips'
 
 interface JobsFilterBarProps {
   branch: string
@@ -8,6 +9,9 @@ interface JobsFilterBarProps {
   branches: Array<[string, string]>
   channel: string
   setChannel: (c: string) => void
+  productGroup?: string
+  setProductGroup?: (g: string) => void
+  productGroups?: string[]
   status: string
   setStatus: (s: string) => void
   search: string
@@ -27,6 +31,9 @@ export default function JobsFilterBar({
   branches,
   channel,
   setChannel,
+  productGroup = '',
+  setProductGroup,
+  productGroups = [],
   status,
   setStatus,
   search,
@@ -38,24 +45,23 @@ export default function JobsFilterBar({
   role,
   onNewJob,
 }: JobsFilterBarProps) {
-  const hasActiveFilters = Boolean(branch || channel || status || search || flag || stageGroup.length > 0)
+  const hasActiveFilters = Boolean(
+    branch || channel || productGroup || status || search || flag || stageGroup.length > 0
+  )
 
   const clearAllFilters = () => {
     setBranch('')
     setChannel('')
+    if (setProductGroup) setProductGroup('')
     setStatus('')
     setSearch('')
     setFlag(null)
     setStageGroup([])
   }
 
-  const getStatusLabel = (stg: string) =>
-    statusFilterOptions(true).find(o => o.value === stg)?.label ?? stg
-
   return (
     <div className="bg-white p-3.5 rounded-xl border border-slate-200/90 shadow-2xs mb-4 space-y-2.5">
       <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2.5">
-        {/* Search Input */}
         <div className="relative flex-1">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -66,7 +72,7 @@ export default function JobsFilterBar({
             className="w-full pl-9 pr-8 py-2 text-xs md:text-sm bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-colors"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="ค้นหา: เลขที่ใบแจ้งซ่อม, ชื่อลูกค้า, เบอร์โทร..."
+            placeholder="ค้นหา: เลขที่ใบแจ้งซ่อม, ชื่อลูกค้า, เบอร์โทร, สินค้า, ประเภทสินค้า..."
           />
           {search && (
             <button
@@ -81,7 +87,6 @@ export default function JobsFilterBar({
           )}
         </div>
 
-        {/* Dropdowns */}
         <div className="flex flex-wrap items-center gap-2">
           <select
             className="px-2.5 py-2 text-xs bg-white border border-slate-200 rounded-lg text-slate-700 font-medium hover:border-slate-300 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-colors cursor-pointer"
@@ -93,6 +98,19 @@ export default function JobsFilterBar({
               <option key={id} value={id}>{name}</option>
             ))}
           </select>
+
+          {setProductGroup && (
+            <select
+              className="px-2.5 py-2 text-xs bg-white border border-slate-200 rounded-lg text-slate-700 font-medium hover:border-slate-300 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-colors cursor-pointer"
+              value={productGroup}
+              onChange={e => setProductGroup(e.target.value)}
+            >
+              <option value="">ทุกประเภทสินค้า</option>
+              {productGroups.map(name => (
+                <option key={name} value={name}>{name}</option>
+              ))}
+            </select>
+          )}
 
           <select
             className="px-2.5 py-2 text-xs bg-white border border-slate-200 rounded-lg text-slate-700 font-medium hover:border-slate-300 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-colors cursor-pointer"
@@ -130,53 +148,23 @@ export default function JobsFilterBar({
         </div>
       </div>
 
-      {/* Active Filter Chips & Clear All */}
       {hasActiveFilters && (
-        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 text-xs">
-          <span className="text-slate-400 font-medium">ตัวกรองที่ใช้งาน:</span>
-          {flag && (
-            <span className="inline-flex items-center gap-1 font-semibold text-rose-700 text-[11px]">
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
-              เร่งด่วน: {flag}
-              <button type="button" onClick={() => setFlag(null)} className="hover:text-rose-900 cursor-pointer ml-0.5 text-xs">×</button>
-            </span>
-          )}
-          {status && (
-            <span className="inline-flex items-center gap-1 font-medium text-slate-700 text-[11px]">
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
-              สถานะ: {getStatusLabel(status)}
-              <button type="button" onClick={() => setStatus('')} className="hover:text-slate-900 cursor-pointer ml-0.5 text-xs">×</button>
-            </span>
-          )}
-          {stageGroup.length > 0 && (
-            <span className="inline-flex items-center gap-1 font-medium text-slate-700 text-[11px]">
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
-              กลุ่มสถานะ ({stageGroup.length})
-              <button type="button" onClick={() => setStageGroup([])} className="hover:text-slate-900 cursor-pointer ml-0.5 text-xs">×</button>
-            </span>
-          )}
-          {branch && (
-            <span className="inline-flex items-center gap-1 font-medium text-slate-700 text-[11px]">
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
-              สาขา: {branches.find(b => b[0] === branch)?.[1] ?? branch}
-              <button type="button" onClick={() => setBranch('')} className="hover:text-slate-900 cursor-pointer ml-0.5 text-xs">×</button>
-            </span>
-          )}
-          {channel && (
-            <span className="inline-flex items-center gap-1 font-medium text-slate-700 text-[11px]">
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
-              ช่องทาง: {channel}
-              <button type="button" onClick={() => setChannel('')} className="hover:text-slate-900 cursor-pointer ml-0.5 text-xs">×</button>
-            </span>
-          )}
-          <button
-            type="button"
-            onClick={clearAllFilters}
-            className="text-[11px] text-red-600 hover:text-red-800 font-medium ml-auto cursor-pointer underline"
-          >
-            ล้างตัวกรองทั้งหมด
-          </button>
-        </div>
+        <JobsActiveFilterChips
+          branch={branch}
+          setBranch={setBranch}
+          branches={branches}
+          channel={channel}
+          setChannel={setChannel}
+          productGroup={productGroup}
+          setProductGroup={setProductGroup ?? (() => {})}
+          status={status}
+          setStatus={setStatus}
+          flag={flag}
+          setFlag={setFlag}
+          stageGroup={stageGroup}
+          setStageGroup={setStageGroup}
+          onClearAll={clearAllFilters}
+        />
       )}
     </div>
   )

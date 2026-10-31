@@ -7,6 +7,7 @@ import {
   promoteCustomGroupToMaster,
   deleteVendorServiceGroup,
 } from '@/lib/services/vendor-product-group.service'
+import { getProductTypeMasterOverview } from '@/lib/services/product-type-master.service'
 import {
   vendorServiceTypeSchema,
   vendorServiceGroupInputSchema,
@@ -20,11 +21,16 @@ const promoteSchema = z.object({
   name: z.string().trim().min(1, 'กรุณาระบุชื่อกลุ่มสินค้า').max(120),
   recommendedFee: z.number().int().min(0).optional(),
   defaultGpPct: z.number().min(0).max(100).optional(),
+  skuKeywords: z.string().trim().max(500).nullable().optional(),
 })
 
 export async function GET(req: NextRequest) {
   try {
     await requireUser(['ADMIN'], req)
+    const { searchParams } = new URL(req.url)
+    if (searchParams.get('overview') === '1') {
+      return NextResponse.json(await getProductTypeMasterOverview())
+    }
     const groups = await listVendorServiceGroups({ activeOnly: false })
     return NextResponse.json(groups)
   } catch (error) {

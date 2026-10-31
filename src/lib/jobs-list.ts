@@ -30,6 +30,7 @@ function searchWhere(search: string): Prisma.JobWhereInput {
       { jobNo: contains },
       { customerName: contains },
       { productName: contains },
+      { productGroupName: contains },
       { sku: contains },
       { receiverName: contains },
       { items: { some: { sku: contains } } },
@@ -58,6 +59,8 @@ export async function listJobs(user: UserSession, sp: URLSearchParams): Promise<
   if (type === 'CUSTOMER' || type === 'STOCK') and.push({ type })
   if (branchId) and.push({ branchId })
   if (channel) and.push({ channel })
+  const productGroup = (sp.get('productGroup') ?? '').trim()
+  if (productGroup) and.push({ productGroupName: productGroup })
   if (sp.get('open') === '1') and.push({ stage: { notIn: CLOSED } })
   const search = (sp.get('search') ?? '').trim()
   if (search) and.push(searchWhere(search))

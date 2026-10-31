@@ -152,6 +152,7 @@ export default function JobDetailModal({
                 </>
               )}
               <Row l="SKU" v={d.sku ?? '-'} />
+              <Row l="ประเภทสินค้า" v={d.productGroupName ?? '-'} />
               <Row l="สินค้า" v={d.productName} />
               <Row l="แบรนด์" v={d.brandName} />
               <Row l="อาการเสีย" v={d.symptom ?? '-'} />

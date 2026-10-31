@@ -105,11 +105,14 @@ export default function JobsTable({ jobs, sort, toggle, loading, onOpenJob }: Jo
                       {j.type === 'STOCK' ? '' : maskPhoneMiddle(j.customerPhone)}
                     </div>
                   </td>
-                  <td className="py-3 px-4 align-middle max-w-[220px]">
+                  <td className="py-3 px-4 align-middle max-w-[230px]">
                     <div className="font-medium text-slate-800 truncate" title={j.productName}>
                       {j.productName}
                     </div>
-                    <div className="text-[11px] text-slate-400 mt-0.5">{j.brandName}</div>
+                    <div className="text-[11px] text-slate-400 mt-0.5 truncate">
+                      {j.brandName}
+                      {j.productGroupName ? <span className="text-slate-600"> · {j.productGroupName}</span> : null}
+                    </div>
                   </td>
                   <td className="py-3 px-4 align-middle text-slate-700">{j.branch.name}</td>
                   <td className="py-3 px-4 align-middle">

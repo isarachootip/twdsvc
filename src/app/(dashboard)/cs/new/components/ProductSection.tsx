@@ -3,12 +3,14 @@
 import { useState } from 'react'
 import { SkuSearchInput } from './SkuSearchInput'
 import { ProductPickerModal } from './ProductPickerModal'
+import { ProductTypeSelect } from './ProductTypeSelect'
 import type { ProductSectionProps, Brand, Size, Commodity } from './product-types'
 
 export type { Brand, Size, Commodity, ProductSectionProps }
 
 export function ProductSection({
   sku, onSkuChange, skuResults, onPickSku, onClearSkuResults,
+  productGroupName, setProductGroupName, productTypes,
   product, setProduct, brandName = '', setBrandName, brandId = '', setBrandId,
   brands, symptom, setSymptom, serialNo, setSerialNo,
   onExtractSerial, extractingSerial, warranty, setWarranty,
@@ -37,10 +39,18 @@ export function ProductSection({
           onClearSkuResults={onClearSkuResults}
           onOpenPicker={() => setPickerOpen(true)}
         />
+        <ProductTypeSelect
+          value={productGroupName}
+          onChange={setProductGroupName}
+          options={productTypes}
+        />
         <div className="field">
           <label>ชื่อสินค้า <span style={{ color: 'var(--red)' }}>*</span></label>
           <input className="inp" placeholder="เช่น สว่านไฟฟ้า" value={product} onChange={e => setProduct(e.target.value)} />
         </div>
+      </div>
+
+      <div className="grid3" style={{ marginTop: 12 }}>
         <div className="field">
           <label>แบรนด์ <span style={{ color: 'var(--red)' }}>*</span></label>
           <input
@@ -56,8 +66,6 @@ export function ProductSection({
             ))}
           </datalist>
         </div>
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
         <div className="field">
           <label>อาการเสีย <span style={{ color: 'var(--red)' }}>*</span></label>
           <input className="inp" placeholder="อธิบายอาการเสีย" value={symptom} onChange={e => setSymptom(e.target.value)} />
@@ -71,13 +79,8 @@ export function ProductSection({
                 onClick={onExtractSerial}
                 disabled={extractingSerial}
                 style={{
-                  fontSize: 11.5,
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--brand, #b91c1c)',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  padding: 0,
+                  fontSize: 11.5, background: 'none', border: 'none',
+                  color: 'var(--brand, #b91c1c)', cursor: 'pointer', fontWeight: 600, padding: 0,
                 }}
               >
                 {extractingSerial ? 'กำลังอ่าน…' : '📷 ดึงค่าจากรูปที่ 5'}
@@ -92,6 +95,7 @@ export function ProductSection({
           />
         </div>
       </div>
+
       <div className="divider" />
       <p className="hint" style={{ marginBottom: 6 }}>สถานะการรับประกัน</p>
       <div className="radio-row">
@@ -131,11 +135,7 @@ export function ProductSection({
         </button>
       </div>
 
-      <ProductPickerModal
-        open={pickerOpen}
-        onClose={() => setPickerOpen(false)}
-        onSelect={onPickSku}
-      />
+      <ProductPickerModal open={pickerOpen} onClose={() => setPickerOpen(false)} onSelect={onPickSku} />
     </div>
   )
 }

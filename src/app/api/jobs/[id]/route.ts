@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth'
 import { calcBalance, getHoursInStep } from '@/lib/fees'
 import { calcMoney, maskPhone } from '@/lib/job-view'
+import { resolveVendorGroupRate } from '@/lib/services/vendor-rate-resolver'
 import { resolveOwner } from '@/lib/sla-engine'
 import { executeAction } from '@/lib/state-machine'
 import { buildJobStageTimeline, enrichJobEvents } from '@/lib/job-timeline'
@@ -19,7 +20,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       where: { id },
       include: {
         branch: true,
-        vendorCenter: { include: { vendorParent: true } },
+        vendorCenter: { include: { vendorParent: { include: { productRates: true } } } },
         events: {
           orderBy: { createdAt: 'asc' },
           include: { attachments: true },
@@ -99,9 +100,28 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     })
 
     const enrichedEvents = enrichJobEvents(job.events, actorNames)
+    const resolvedVendorRate = job.vendorCenter
+      ? resolveVendorGroupRate({
+          vendorParent: job.vendorCenter.vendorParent,
+          gpPctOverride: job.vendorCenter.gpPctOverride,
+          hasWarranty: job.hasWarranty,
+          productGroupName: job.productGroupName,
+        })
+      : null
 
     return NextResponse.json({
       ...job,
+      vendor: job.vendorCenter
+        ? {
+            centerId: job.vendorCenter.id,
+            centerCode: job.vendorCenter.code,
+            code: job.vendorCenter.vendorParent.code,
+            name: job.vendorCenter.vendorParent.name,
+            inspectionFee: resolvedVendorRate?.inspectionFee ?? 0,
+            gpPct: resolvedVendorRate?.gpPct ?? job.vendorCenter.vendorParent.defaultGpPct,
+            repairWarrantyDays: job.vendorCenter.vendorParent.repairWarrantyDays,
+          }
+        : null,
       events: enrichedEvents,
       timeline,
       customerPhone: maskPhone(job.customerPhone, user.role),

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import Link from 'next/link'
 import { VendorSetupWizard } from '@/components/vendor-setup/VendorSetupWizard'
 import { VendorDirectoryList } from './VendorDirectoryList'
 import { CopyRegisterLinkButton } from '@/components/vendor-setup/CopyRegisterLinkButton'
@@ -48,6 +49,9 @@ export function VendorSection() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <Link href="/admin/product-types" className="btn btn-secondary text-xs inline-flex items-center gap-1.5">
+            <Layers className="w-3.5 h-3.5" /> หน้าจอ Master ประเภทสินค้า
+          </Link>
           <CopyRegisterLinkButton />
           <VendorPendingBadgeButton />
         </div>

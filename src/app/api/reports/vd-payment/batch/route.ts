@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireUser, handleError, HttpError } from '@/lib/api'
 import { getJsonSetting, setSetting } from '@/lib/settings'
+import { resolveVendorGroupRate } from '@/lib/services/vendor-rate-resolver'
 
 interface Deduction {
   id: string
@@ -33,7 +34,12 @@ export async function POST(req: NextRequest) {
           select: {
             id: true,
             gpPctOverride: true,
-            vendorParent: { select: { id: true, defaultGpPct: true } },
+            vendorParent: {
+              select: {
+                id: true, defaultGpPct: true, inspectionFeeCovered: true, inspectionFeeNotCovered: true,
+                productRates: { select: { serviceType: true, groupName: true, minInspectionFee: true, gpPct: true } },
+              },
+            },
           },
         },
         quotes: {
@@ -68,7 +74,11 @@ export async function POST(req: NextRequest) {
     const lines = jobs.map(j => {
       const amountSatang = j.quotes[0]?.subtotal ?? 0
       const gpPct = j.vendorCenter
-        ? (j.vendorCenter.gpPctOverride ?? j.vendorCenter.vendorParent.defaultGpPct)
+        ? resolveVendorGroupRate({
+            vendorParent: j.vendorCenter.vendorParent,
+            gpPctOverride: j.vendorCenter.gpPctOverride,
+            productGroupName: j.productGroupName,
+          }).gpPct
         : 0
       const gpAmountSatang = Math.floor((amountSatang * gpPct) / 100 + 0.5)
       const netAmountSatang = amountSatang - gpAmountSatang

@@ -5,9 +5,10 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import JobDetailModal from '@/components/jobs/JobDetail'
 import { useSort } from '@/components/ui/Sortable'
 import { DateRange } from '@/components/ui/Queue'
-import { monthStartBkk, todayBkk } from '@/lib/client'
+import { api } from '@/lib/client'
 import { STAGE_ORDER, fmtDateTime, type Stage } from '@/lib/constants'
 import type { JobView } from '@/lib/job-view'
+import type { ProductTypeOption } from '@/lib/services/product-type-matcher'
 import { matchesStatusFilter } from '@/lib/job-status-filter'
 import JobsTable, { ownerOf } from './components/JobsTable'
 import JobsFilterBar from './components/JobsFilterBar'
@@ -33,6 +34,8 @@ export default function JobsClient({ role: initialRole, user, initialJobs }: Job
   const [flag, setFlag] = useState<string | null>(initialFlag)
   const [branch, setBranch] = useState('')
   const [channel, setChannel] = useState('')
+  const [productGroup, setProductGroup] = useState('')
+  const [masterGroups, setMasterGroups] = useState<string[]>([])
   const [status, setStatus] = useState(sp.get('stage') ?? '')
   const [stageGroup, setStageGroup] = useState<string[]>((sp.get('stages') ?? '').split(',').filter(Boolean))
   const [search, setSearch] = useState(sp.get('search') ?? '')
@@ -41,6 +44,9 @@ export default function JobsClient({ role: initialRole, user, initialJobs }: Job
   const { jobs, loading, kpis, reloadAll } = useJobsData({ from, to, flag, branch, channel, status, stageGroup, search, initialJobs })
 
   useEffect(() => {
+    api<ProductTypeOption[]>('/api/product-types')
+      .then(list => { if (Array.isArray(list)) setMasterGroups(list.map(x => x.name)) })
+      .catch(() => {})
     const update = () => setSysTime(fmtDateTime(new Date()))
     update()
     const timer = setInterval(update, 10000)
@@ -64,6 +70,11 @@ export default function JobsClient({ role: initialRole, user, initialJobs }: Job
   }, [sp])
 
   const branches = useMemo(() => [...new Map(jobs.map(j => [j.branch.id, j.branch.name])).entries()], [jobs])
+  const productGroups = useMemo(() => {
+    const set = new Set<string>(masterGroups)
+    for (const j of jobs) if (j.productGroupName) set.add(j.productGroupName)
+    return Array.from(set)
+  }, [masterGroups, jobs])
 
   const base = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -71,16 +82,18 @@ export default function JobsClient({ role: initialRole, user, initialJobs }: Job
     return jobs.filter(j => {
       if (branch && j.branch.id !== branch) return false
       if (channel && j.channel !== channel) return false
+      if (productGroup && j.productGroupName !== productGroup) return false
       if (!matchesStatusFilter(j, status)) return false
       if (stageGroup.length && !stageGroup.includes(j.stage)) return false
       if (q) {
         const hit = j.jobNo.toLowerCase().includes(q) || (j.customerName ?? '').toLowerCase().includes(q) || j.productName.toLowerCase().includes(q) ||
+          (j.productGroupName ?? '').toLowerCase().includes(q) ||
           (digits.length >= 3 && (j.customerPhone ?? '').replace(/\D/g, '').includes(digits))
         if (!hit) return false
       }
       return true
     })
-  }, [jobs, branch, channel, status, search, stageGroup])
+  }, [jobs, branch, channel, productGroup, status, search, stageGroup])
 
   // เมื่อเลือกการ์ด เซิร์ฟเวอร์คัดรายการตามการ์ดนั้นมาให้แล้ว (flag) จึงไม่กรองซ้ำฝั่ง client
   const filtered = base
@@ -149,6 +162,9 @@ export default function JobsClient({ role: initialRole, user, initialJobs }: Job
         branches={branches}
         channel={channel}
         setChannel={setChannel}
+        productGroup={productGroup}
+        setProductGroup={setProductGroup}
+        productGroups={productGroups}
         status={status}
         setStatus={setStatus}
         search={search}

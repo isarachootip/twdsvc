@@ -12,6 +12,7 @@ export function exportJobsXlsx(jobs: JobView[]) {
       'วันที่เปิด': new Date(j.openedAt).toLocaleDateString('th-TH'),
       'ลูกค้า': j.customerName ?? '',
       'เบอร์โทร': j.customerPhone ?? '',
+      'ประเภทสินค้า': j.productGroupName ?? '',
       'สินค้า': j.productName,
       'แบรนด์': j.brandName,
       'สาขา': j.branch.name,

@@ -8,9 +8,9 @@ import { calcIntakeFees } from '@/lib/fees'
 import { resolveRouting } from '@/lib/routing'
 import { slaOnEvent, refreshBreaches } from '@/lib/sla-engine'
 import { listJobs } from '@/lib/jobs-list'
+import { jobIntakeSchema } from '@/lib/validations/job-intake.schema'
 
-// GET /api/jobs?from&to&stage&type&branchId&channel&search&flag&limit
-// kpis = การ์ด SLA (งานที่ยังไม่ปิดทั้งหมด ไม่ขึ้นกับ from/to); jobs = ตารางรายการที่กรองตามเงื่อนไข
+// GET /api/jobs?from&to&stage&type&branchId&channel&productGroup&search&flag&limit
 export async function GET(req: NextRequest) {
   try {
     const user = await requireUser(undefined, req)
@@ -21,84 +21,78 @@ export async function GET(req: NextRequest) {
   }
 }
 
+async function resolveIntakeBranchId(role: string, userSiteId: string | null, requestedBranchId?: string): Promise<string> {
+  let branchId = role === 'ADMIN' ? (requestedBranchId || userSiteId || undefined) : (userSiteId ?? undefined)
+  if (!branchId && role === 'ADMIN') {
+    const existing =
+      (await prisma.site.findFirst({ where: { type: 'BRANCH', active: true }, orderBy: { code: 'asc' }, select: { id: true } })) ??
+      (await prisma.site.findFirst({ where: { type: 'BRANCH' }, orderBy: { code: 'asc' }, select: { id: true } })) ??
+      (await prisma.site.findFirst({ orderBy: { code: 'asc' }, select: { id: true } }))
+    const created = existing ?? (await prisma.site.create({
+      data: { code: 'HQ-001', name: 'สาขาสำนักงานใหญ่ (ระบบสร้างอัตโนมัติ)', nickname: 'HQ', type: 'BRANCH', active: true, province: 'กรุงเทพมหานคร' },
+      select: { id: true },
+    }))
+    branchId = created.id
+  }
+  if (!branchId) throw new HttpError(400, 'ผู้ใช้ไม่ได้ผูกกับสาขา และไม่พบสาขาในระบบ')
+  return branchId
+}
+
 // POST /api/jobs — เปิดใบแจ้งซ่อม (action `open`, 04 §3)
 export async function POST(req: NextRequest) {
   try {
     const user = await requireUser(['CS', 'ADMIN'], req)
-    const body = (await req.json()) as Record<string, unknown>
-    const {
-      productName, brandName, brandId, symptom, customerName, customerPhone,
-      customerAddress, customerZip, hasWarranty = false, shippingMethod: rawMethod = 'STANDARD',
-      sizeCategoryId, sku, serialNo, allowNonAuth = false,
-      taxInvoiceName, taxInvoiceId, taxInvoiceAddr,
-      defectNote, photos, paymentMethod, posReceiptNo,
-    } = body
+    const rawBody = (await req.json()) as Record<string, unknown>
 
-    const phone = String(customerPhone ?? '').replace(/\D/g, '')
-    if (!String(customerName ?? '').trim()) throw new HttpError(400, 'กรุณากรอกชื่อลูกค้า')
-    if (!/^0\d{8,9}$/.test(phone)) throw new HttpError(400, 'เบอร์โทรไม่ถูกต้อง (เช่น 0812345678)')
-    if (!String(productName ?? '').trim()) throw new HttpError(400, 'กรุณากรอกชื่อสินค้า')
-    if (!String(brandName ?? '').trim()) throw new HttpError(400, 'กรุณาเลือกแบรนด์')
-    if (!String(symptom ?? '').trim()) throw new HttpError(400, 'กรุณากรอกอาการเสีย')
-    if (!sizeCategoryId) throw new HttpError(400, 'กรุณาเลือกขนาดสินค้า')
-    if (taxInvoiceId && !/^\d{13}$/.test(String(taxInvoiceId))) throw new HttpError(400, 'เลขผู้เสียภาษีต้องมี 13 หลัก')
+    const parsed = jobIntakeSchema.safeParse({
+      ...rawBody,
+      customerName: String(rawBody.customerName ?? ''),
+      customerPhone: String(rawBody.customerPhone ?? ''),
+      productName: String(rawBody.productName ?? ''),
+      brandName: String(rawBody.brandName ?? ''),
+      symptom: String(rawBody.symptom ?? ''),
+      shippingMethod: rawBody.shippingMethod === 'EXPRESS' ? 'EXPRESS' : 'STANDARD',
+      hasWarranty: Boolean(rawBody.hasWarranty),
+      allowNonAuth: Boolean(rawBody.allowNonAuth),
+    })
+    if (!parsed.success) {
+      throw new HttpError(400, parsed.error.issues[0]?.message ?? 'ข้อมูลเปิดใบแจ้งซ่อมไม่ถูกต้อง')
+    }
+    const d = parsed.data
 
-    const validPhotos = Array.isArray(photos)
-      ? photos.filter((p: unknown): p is { fileUrl: string; fileName?: string; mimeType?: string; fileSize?: number } =>
+    const validPhotos = Array.isArray(rawBody.photos)
+      ? rawBody.photos.filter((p: unknown): p is { fileUrl: string; fileName?: string; mimeType?: string; fileSize?: number } =>
           typeof p === 'object' && p !== null && 'fileUrl' in p && Boolean((p as { fileUrl?: unknown }).fileUrl)
         )
       : []
     if (validPhotos.length === 0) throw new HttpError(400, 'กรุณาแนบภาพถ่ายสินค้าอย่างน้อย 1 รูป')
 
-    const shippingMethod: 'STANDARD' | 'EXPRESS' = rawMethod === 'EXPRESS' ? 'EXPRESS' : 'STANDARD'
-
-    let branchId: string | undefined = user.role === 'ADMIN' ? (((body.branchId as string) || user.siteId) ?? undefined) : user.siteId ?? undefined
-    if (!branchId && user.role === 'ADMIN') {
-      let defaultBranch = await prisma.site.findFirst({
-        where: { type: 'BRANCH', active: true },
-        orderBy: { code: 'asc' },
-        select: { id: true },
-      }) ?? await prisma.site.findFirst({
-        where: { type: 'BRANCH' },
-        orderBy: { code: 'asc' },
-        select: { id: true },
-      }) ?? await prisma.site.findFirst({
-        orderBy: { code: 'asc' },
-        select: { id: true },
-      })
-      if (!defaultBranch) {
-        defaultBranch = await prisma.site.create({
-          data: {
-            code: 'HQ-001',
-            name: 'สาขาสำนักงานใหญ่ (ระบบสร้างอัตโนมัติ)',
-            nickname: 'HQ',
-            type: 'BRANCH',
-            active: true,
-            province: 'กรุงเทพมหานคร',
-          },
-          select: { id: true },
-        })
-      }
-      branchId = defaultBranch.id
-    }
-    if (!branchId) throw new HttpError(400, 'ผู้ใช้ไม่ได้ผูกกับสาขา และไม่พบสาขาในระบบ')
+    const branchId = await resolveIntakeBranchId(user.role, user.siteId ?? null, d.branchId)
+    const brandIdNum = d.brandId ? Number(d.brandId) : null
 
     const routing = await resolveRouting({
-      branchId, brandId: brandId ? Number(brandId) : null, sizeCategoryId: Number(sizeCategoryId),
-      shippingMethod, allowNonAuth: !!allowNonAuth, jobType: 'CUSTOMER',
+      branchId,
+      brandId: brandIdNum,
+      sizeCategoryId: d.sizeCategoryId,
+      productGroupName: d.productGroupName,
+      shippingMethod: d.shippingMethod,
+      allowNonAuth: d.allowNonAuth,
+      jobType: 'CUSTOMER',
     })
     const stage: JobStage = routing ? 'CS_OPENED' : 'PENDING_VENDOR_ASSIGNMENT'
-    const channel: Channel | null = routing ? routing.channel : (shippingMethod === 'EXPRESS' ? 'TPL' : null)
+    const channel: Channel | null = routing ? routing.channel : (d.shippingMethod === 'EXPRESS' ? 'TPL' : null)
 
     const feeRate = await prisma.feeRate.findFirst({
-      where: { sizeCategoryId: Number(sizeCategoryId), effectiveFrom: { lte: new Date() } },
+      where: { sizeCategoryId: d.sizeCategoryId, effectiveFrom: { lte: new Date() } },
       orderBy: [{ effectiveFrom: 'desc' }, { id: 'desc' }],
     })
     const fees = calcIntakeFees({
-      jobType: 'CUSTOMER', hasWarranty: !!hasWarranty, shippingMethod,
+      jobType: 'CUSTOMER',
+      hasWarranty: d.hasWarranty,
+      shippingMethod: d.shippingMethod,
       feeRate: { operationFee: feeRate?.operationFee ?? 0, shippingFee3pl: feeRate?.shippingFee3pl ?? 0 },
     })
-    if (fees.total > 0 && paymentMethod === 'POS_RECEIPT' && !String(posReceiptNo ?? '').trim()) {
+    if (fees.total > 0 && d.paymentMethod === 'POS_RECEIPT' && !(d.posReceiptNo ?? '').trim()) {
       throw new HttpError(400, 'กรุณากรอกเลขที่ใบเสร็จ POS')
     }
 
@@ -110,13 +104,13 @@ export async function POST(req: NextRequest) {
         data: {
           jobNo, type: 'CUSTOMER', stage, channel, branchId,
           vendorCenterId: routing?.vendorCenterId ?? null,
-          customerName: String(customerName).trim(), customerPhone: phone,
-          customerAddress: (customerAddress as string) || null, customerZip: (customerZip as string) || null,
-          taxInvoiceName: (taxInvoiceName as string) || null, taxInvoiceId: (taxInvoiceId as string) || null, taxInvoiceAddr: (taxInvoiceAddr as string) || null,
-          sku: (sku as string) || null, productName: String(productName).trim(), brandName: String(brandName).trim(),
-          brandId: brandId ? Number(brandId) : null, sizeCategoryId: Number(sizeCategoryId),
-          symptom: String(symptom).trim(), serialNo: (serialNo as string) || null, hasWarranty: !!hasWarranty,
-          shippingMethod, allowNonAuth: !!allowNonAuth, createdBy: user.username,
+          customerName: d.customerName, customerPhone: d.customerPhone,
+          customerAddress: d.customerAddress || null, customerZip: d.customerZip || null,
+          taxInvoiceName: d.taxInvoiceName || null, taxInvoiceId: d.taxInvoiceId || null, taxInvoiceAddr: d.taxInvoiceAddr || null,
+          sku: d.sku || null, productName: d.productName, productGroupName: d.productGroupName,
+          brandName: d.brandName, brandId: brandIdNum, sizeCategoryId: d.sizeCategoryId,
+          symptom: d.symptom, serialNo: d.serialNo || null, hasWarranty: d.hasWarranty,
+          shippingMethod: d.shippingMethod, allowNonAuth: d.allowNonAuth, createdBy: user.username,
           openedAt: now, stageEnteredAt: now,
         },
       })
@@ -125,14 +119,14 @@ export async function POST(req: NextRequest) {
 
       const extra: Record<string, string> = {}
       if (fees.total > 0) {
-        const method: PaymentMethod = paymentMethod === 'CARD_LINK' || paymentMethod === 'POS_RECEIPT' ? paymentMethod : 'PROMPTPAY_QR'
+        const method: PaymentMethod = d.paymentMethod === 'CARD_LINK' || d.paymentMethod === 'POS_RECEIPT' ? d.paymentMethod : 'PROMPTPAY_QR'
         const paid = method === 'POS_RECEIPT'
         for (const [type, amount] of [['OPERATION_FEE', fees.operationFee], ['SHIPPING_FEE', fees.shippingFee]] as const) {
           if (amount > 0) {
             await tx.payment.create({
               data: {
                 jobId: job.id, chargeType: type, amount, method, status: paid ? 'PAID' : 'PENDING',
-                posReceiptNo: paid ? String(posReceiptNo).trim() : null, receivedAt: paid ? now : null, receivedBy: paid ? user.id : null,
+                posReceiptNo: paid ? String(d.posReceiptNo).trim() : null, receivedAt: paid ? now : null, receivedBy: paid ? user.id : null,
               },
             })
           }
@@ -147,8 +141,8 @@ export async function POST(req: NextRequest) {
       const event = await tx.jobEvent.create({
         data: {
           jobId: job.id, type: 'JOB_OPENED', toStage: stage, actorUserId: user.id, actorRole: user.role,
-          note: defectNote ? `ตำหนิ: ${defectNote}` : null,
-          payload: { defectNote: defectNote || null, paymentMethod: paymentMethod || null, routing: routing ? { centerCode: routing.centerCode, channel: routing.channel } : null },
+          note: d.defectNote ? `ตำหนิ: ${d.defectNote}` : null,
+          payload: { defectNote: d.defectNote || null, productGroupName: d.productGroupName, paymentMethod: d.paymentMethod || null, routing: routing ? { centerCode: routing.centerCode, channel: routing.channel } : null },
         },
       })
       if (validPhotos.length) {
@@ -166,14 +160,7 @@ export async function POST(req: NextRequest) {
       return { job, extra }
     }, { timeout: 20000 })
 
-    return NextResponse.json({
-      id: result.job.id,
-      jobNo: result.job.jobNo,
-      stage: result.job.stage,
-      fees,
-      routing,
-      ...result.extra,
-    }, { status: 201 })
+    return NextResponse.json({ id: result.job.id, jobNo: result.job.jobNo, stage: result.job.stage, fees, routing, ...result.extra }, { status: 201 })
   } catch (e) {
     return handleError(e)
   }

@@ -4,6 +4,7 @@ import { prisma } from './db'
 import { getJsonSetting, getNumberSetting } from './settings'
 import { STAGE_PIPELINE, type Stage } from './constants'
 import { resolveOwner } from './sla-engine'
+import { resolveVendorGroupRate } from './services/vendor-rate-resolver'
 
 const TZ_MS = 7 * 3600 * 1000
 const TH_MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.']
@@ -145,7 +146,13 @@ export const CLOSED_INCLUDE = {
       id: true,
       code: true,
       gpPctOverride: true,
-      vendorParent: { select: { id: true, code: true, name: true, defaultGpPct: true } },
+      vendorParent: {
+        select: {
+          id: true, code: true, name: true, defaultGpPct: true,
+          inspectionFeeCovered: true, inspectionFeeNotCovered: true,
+          productRates: { select: { serviceType: true, groupName: true, minInspectionFee: true, gpPct: true } },
+        },
+      },
     },
   },
   shipments: { select: { cost: true } },
@@ -174,7 +181,11 @@ export function jobFinance(j: ClosedJob, vat: number) {
   const revenue = intakeExVat + repairSubtotal
 
   const gpPct = j.vendorCenter
-    ? (j.vendorCenter.gpPctOverride ?? j.vendorCenter.vendorParent.defaultGpPct)
+    ? resolveVendorGroupRate({
+        vendorParent: j.vendorCenter.vendorParent,
+        gpPctOverride: j.vendorCenter.gpPctOverride,
+        productGroupName: j.productGroupName,
+      }).gpPct
     : 0
   const gpAmount = Math.floor((repairSubtotal * gpPct) / 100 + 0.5)
   const vdNet = repairSubtotal - gpAmount

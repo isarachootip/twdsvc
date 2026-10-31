@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireUser, handleError } from '@/lib/api'
 import { canViewCost, getJsonSetting } from '@/lib/settings'
+import { resolveVendorGroupRate } from '@/lib/services/vendor-rate-resolver'
 
 interface Deduction {
   id: string
@@ -100,7 +101,13 @@ export async function GET(req: NextRequest) {
             id: true,
             code: true,
             gpPctOverride: true,
-            vendorParent: { select: { id: true, code: true, name: true, defaultGpPct: true } },
+            vendorParent: {
+              select: {
+                id: true, code: true, name: true, defaultGpPct: true,
+                inspectionFeeCovered: true, inspectionFeeNotCovered: true,
+                productRates: { select: { serviceType: true, groupName: true, minInspectionFee: true, gpPct: true } },
+              },
+            },
           },
         },
         quotes: {
@@ -125,7 +132,11 @@ export async function GET(req: NextRequest) {
       .map(j => {
         const vp = j.vendorCenter!.vendorParent
         const amountSatang = j.quotes[0]?.subtotal ?? 0
-        const gpPct = j.vendorCenter!.gpPctOverride ?? vp.defaultGpPct
+        const gpPct = resolveVendorGroupRate({
+          vendorParent: vp,
+          gpPctOverride: j.vendorCenter!.gpPctOverride,
+          productGroupName: j.productGroupName,
+        }).gpPct
         const gpAmountSatang = Math.floor((amountSatang * gpPct) / 100 + 0.5)
         const netAmountSatang = amountSatang - gpAmountSatang
         const line = j.payoutLines.find(l => l.status !== 'PENDING') ?? j.payoutLines[0]

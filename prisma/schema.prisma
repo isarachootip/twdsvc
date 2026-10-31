@@ -269,6 +269,7 @@ model Job {
   taxInvoiceAddr  String?
   sku             String?
   productName     String
+  productGroupName String?
   brandId         Int?
   brandName       String
   sizeCategoryId  Int?
@@ -299,6 +300,7 @@ model Job {
   tradeIns        TradeIn[]
 
   @@index([isTest])
+  @@index([productGroupName])
   @@map("jobs")
 }
 
@@ -821,6 +823,7 @@ model VendorServiceGroup {
   recommendedFee   Int               @default(300)
   minGpPct         Float             @default(0)
   defaultGpPct     Float             @default(18.0)
+  skuKeywords      String?
   sortOrder        Int               @default(0)
   active           Boolean           @default(true)
   createdAt        DateTime          @default(now())

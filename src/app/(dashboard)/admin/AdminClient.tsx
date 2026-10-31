@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import {
-  VendorSection, FeeSection, BranchSection, ZoneSection, SlaSection, RoleSection, SkuSection,
+  VendorSection, ProductTypesSection, FeeSection, BranchSection, ZoneSection, SlaSection, RoleSection, SkuSection,
   PayoutSection, TradeinSection, DashboardSection, GeneralSection, PendingVendorSection,
   ProductsSection, IntegrationsSection,
 } from './Sections'
@@ -12,6 +12,7 @@ export { SECTION_ALIAS }
 
 const SECTION_COMPONENTS: Record<string, React.ComponentType> = {
   vendor: VendorSection,
+  'product-types': ProductTypesSection,
   fee: FeeSection,
   branch: BranchSection,
   zone: ZoneSection,

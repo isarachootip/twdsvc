@@ -2,11 +2,13 @@
 import type { Channel } from '@prisma/client'
 import { prisma } from './db'
 import { getJsonSetting } from './settings'
+import { isVendorEligibleForProductGroup } from './services/vendor-rate-resolver'
 
 export interface RoutingInput {
   branchId: string
   brandId?: number | null
   sizeCategoryId?: number | null
+  productGroupName?: string | null
   shippingMethod: 'STANDARD' | 'EXPRESS'
   allowNonAuth?: boolean
   jobType?: 'CUSTOMER' | 'STOCK'
@@ -28,12 +30,13 @@ function compatible(method: string, channel: Channel) {
 
 export async function resolveRouting(input: RoutingInput): Promise<RoutingResult | null> {
   const vendorSizes = await getJsonSetting<Record<string, number[]>>('VENDOR_SIZES')
+  const parentInclude = { vendorParent: { include: { brands: true, productRates: true } } } as const
   const routes = await prisma.branchVendorRoute.findMany({
     where: { branchId: input.branchId },
     orderBy: { priority: 'asc' },
     include: {
-      primaryCenter: { include: { vendorParent: { include: { brands: true } } } },
-      backupCenter: { include: { vendorParent: { include: { brands: true } } } },
+      primaryCenter: { include: parentInclude },
+      backupCenter: { include: parentInclude },
     },
   })
 
@@ -41,6 +44,7 @@ export async function resolveRouting(input: RoutingInput): Promise<RoutingResult
   const eligible = (c: Center | null | undefined): c is Center => {
     if (!c || !c.active || !c.vendorParent.active) return false
     if (input.brandId && c.vendorParent.brands.length > 0 && !c.vendorParent.brands.some(b => b.brandId === input.brandId)) return false
+    if (!isVendorEligibleForProductGroup(c.vendorParent.productRates, input.productGroupName)) return false
     const sizes = vendorSizes[c.vendorParent.id]
     if (input.sizeCategoryId && sizes && sizes.length > 0 && !sizes.includes(input.sizeCategoryId)) return false
     if (input.jobType !== 'STOCK' && !c.vendorParent.isBrandAuthorized && !input.allowNonAuth) return false
@@ -58,7 +62,7 @@ export async function resolveRouting(input: RoutingInput): Promise<RoutingResult
   }
   const zone = await prisma.vendorCenter.findMany({
     where: { zoneSiteId: input.branchId, active: true },
-    include: { vendorParent: { include: { brands: true } } },
+    include: parentInclude,
   })
   const z = zone.find(c => eligible(c))
   if (z) return build(z, z.deliveryMethod === 'DSD' ? 'DSD' : 'DC')
@@ -71,7 +75,7 @@ export async function resolveRouting(input: RoutingInput): Promise<RoutingResult
   if (branch?.postalCode && branch.postalCode.length === 5) {
     const candidates = await prisma.vendorCenter.findMany({
       where: { active: true, postalCode: { not: null } },
-      include: { vendorParent: { include: { brands: true } } },
+      include: parentInclude,
     })
     const eligibleCandidates = candidates.filter(c => eligible(c))
     const exact = eligibleCandidates.find(c => c.postalCode === branch.postalCode)

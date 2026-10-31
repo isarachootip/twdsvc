@@ -3,10 +3,16 @@ import type { Prisma } from '@prisma/client'
 import { STAGE_LABELS, STAGE_BADGE, type Stage } from './constants'
 import { resolveOwner } from './sla-engine'
 import { extractPickupSlipMeta } from './pickup-slip'
+import { resolveVendorGroupRate } from './services/vendor-rate-resolver'
 
 export const JOB_LIST_INCLUDE = {
   branch: { select: { id: true, name: true, nickname: true, address: true } },
-  vendorCenter: { select: { id: true, code: true, deliveryMethod: true, address: true, phone: true, vendorParent: { select: { id: true, code: true, name: true, defaultGpPct: true, inspectionFeeCovered: true, inspectionFeeNotCovered: true, repairWarrantyDays: true } } } },
+  vendorCenter: {
+    select: {
+      id: true, code: true, deliveryMethod: true, address: true, phone: true, gpPctOverride: true,
+      vendorParent: { select: { id: true, code: true, name: true, defaultGpPct: true, inspectionFeeCovered: true, inspectionFeeNotCovered: true, repairWarrantyDays: true, productRates: { select: { serviceType: true, groupName: true, minInspectionFee: true, gpPct: true } } } },
+    },
+  },
   slaClocks: { include: { slaStep: { select: { id: true, seq: true, code: true, name: true, ownerDept: true, hours: true } } } },
   charges: { select: { amount: true, type: true } },
   payments: { select: { amount: true, status: true, chargeType: true, method: true } },
@@ -139,23 +145,19 @@ export function serializeJob(job: JobWithList, role: string, opts?: { preferSla?
   const quote = job.quotes[0] ?? null
   const stage = job.stage as Stage
   const hideMoney = ['GR', 'DC', 'S2'].includes(role)
+  const resolvedRate = job.vendorCenter
+    ? resolveVendorGroupRate({ vendorParent: job.vendorCenter.vendorParent, gpPctOverride: job.vendorCenter.gpPctOverride, hasWarranty: job.hasWarranty, productGroupName: job.productGroupName })
+    : null
   return {
-    id: job.id,
-    jobNo: job.jobNo,
-    type: job.type,
-    stage,
-    stageLabel: STAGE_LABELS[stage],
-    stageBadge: STAGE_BADGE[stage],
-    channel: job.channel,
-    version: job.version,
-    openedAt: job.openedAt,
-    stageEnteredAt: job.stageEnteredAt,
-    closedAt: job.closedAt,
-    decision: job.decision,
+    id: job.id, jobNo: job.jobNo, type: job.type, stage,
+    stageLabel: STAGE_LABELS[stage], stageBadge: STAGE_BADGE[stage],
+    channel: job.channel, version: job.version,
+    openedAt: job.openedAt, stageEnteredAt: job.stageEnteredAt, closedAt: job.closedAt, decision: job.decision,
     customerName: role === 'S2' ? null : job.customerName,
     customerPhone: maskPhone(job.customerPhone, role),
     customerAddress: role === 'S2' ? null : (job.customerAddress ?? null),
     productName: job.productName,
+    productGroupName: job.productGroupName ?? null,
     brandName: job.brandName,
     sku: job.sku,
     serialNo: job.serialNo ?? null,
@@ -169,7 +171,8 @@ export function serializeJob(job: JobWithList, role: string, opts?: { preferSla?
       deliveryMethod: job.vendorCenter.deliveryMethod,
       address: job.vendorCenter.address ?? null,
       phone: job.vendorCenter.phone ?? null,
-      inspectionFee: job.hasWarranty ? job.vendorCenter.vendorParent.inspectionFeeCovered : job.vendorCenter.vendorParent.inspectionFeeNotCovered,
+      inspectionFee: resolvedRate?.inspectionFee ?? 0,
+      gpPct: resolvedRate?.gpPct ?? job.vendorCenter.vendorParent.defaultGpPct,
       repairWarrantyDays: job.vendorCenter.vendorParent.repairWarrantyDays,
     } : null,
     sla: sla.primary,

@@ -1,5 +1,6 @@
 export const ADMIN_SECTION_IDS = [
   'vendor',
+  'product-types',
   'fee',
   'branch',
   'zone',
@@ -24,6 +25,7 @@ export interface AdminNavItem {
 
 export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { id: 'vendor', name: 'Vendor Portal', title: 'Vendor Portal', sub: 'VD หลัก, ศูนย์บริการย่อย, แบรนด์/ขนาดที่รับผิดชอบ, โซน' },
+  { id: 'product-types', name: 'ประเภทสินค้า', title: 'Master ประเภทสินค้า', sub: 'จัดการประเภทสินค้าจากระบบสมัครคู่ค้า (Vendor Register), คำจับคู่ SKU และเปิดให้เลือกในหน้าเปิดใบแจ้งซ่อม CS' },
   { id: 'fee', name: 'ค่าดำเนินการ / ค่าขนส่ง', title: 'ตั้งค่าค่าดำเนินการและค่าขนส่ง 3PL', sub: 'กำหนดค่าธรรมเนียมแยกตามประเภทสินค้า' },
   { id: 'branch', name: 'สาขาไทวัสดุ', title: 'Maintain รายชื่อสาขา', sub: 'ผูกชื่อสาขากับผู้จัดการเขต (District Manager)' },
   { id: 'zone', name: 'จับคู่สาขา - VD', title: 'จับคู่สาขากับศูนย์บริการ VD', sub: 'ใช้กำหนดว่า Book 3PL / ส่งซ่อมให้ไปศูนย์ VD ใด' },
@@ -104,6 +106,9 @@ export const SECTION_ALIAS: Record<string, string> = {
   'PendingVendorQueue': 'pending',
   'pending-vendor-queue': 'pending',
   'pending-vendor': 'pending',
+  'producttypes': 'product-types',
+  'product-type': 'product-types',
+  'ProductTypes': 'product-types',
 }
 
 export const VALID_SECTIONS = new Set<string>([

@@ -1,3 +1,5 @@
+import type { ProductTypeOption } from '@/lib/services/product-type-matcher'
+
 export interface Brand {
   id: number
   name: string
@@ -15,7 +17,11 @@ export interface Commodity {
   name: string
   brand: string
   barcode?: string | null
+  productType?: string | null
   deptName?: string | null
+  sdeptName?: string | null
+  className?: string | null
+  sclassName?: string | null
   model?: string | null
 }
 
@@ -25,6 +31,9 @@ export interface ProductSectionProps {
   skuResults: Commodity[]
   onPickSku: (item: Commodity) => void
   onClearSkuResults: () => void
+  productGroupName: string
+  setProductGroupName: (val: string) => void
+  productTypes: ProductTypeOption[]
   product: string
   setProduct: (val: string) => void
   brandName?: string

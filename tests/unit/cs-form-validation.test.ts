@@ -71,4 +71,13 @@ describe('Unit: CS Form Photo & Field Validation', () => {
     expect(src.includes('disabled onClick={onReset}')).toBe(true)
     expect(src.includes('disabled onClick={onBackToCs}')).toBe(true)
   })
+
+  it('VAL-07: Rejects form when productGroupName is empty and accepts valid productGroupName', () => {
+    const validPhotos = [{ fileUrl: 'https://storage.googleapis.com/test-bucket/photo1.jpg' }]
+    const missingTypeErr = validateCsForm({ ...baseInput, productGroupName: '   ', photos: validPhotos })
+    expect(missingTypeErr).toBe('กรุณาเลือกประเภทสินค้า')
+
+    const okErr = validateCsForm({ ...baseInput, productGroupName: 'เครื่องมือช่าง', photos: validPhotos })
+    expect(okErr).toBe(null)
+  })
 })

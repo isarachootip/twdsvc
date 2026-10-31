@@ -13,6 +13,7 @@ import type {
 import { validateCsForm } from './formValidation'
 import { useSerialExtractor } from './useSerialExtractor'
 import { useCustomerLookup } from './useCustomerLookup'
+import { useProductTypes } from './useProductTypes'
 
 export interface SavedJob {
   id: string
@@ -43,11 +44,13 @@ export function useCsNewForm({
   const { toast } = useToast()
   const [brands, setBrands] = useState<Brand[]>([])
   const [sizes, setSizes] = useState<Size[]>([])
+  const { productTypes, autoMatchProductType } = useProductTypes()
 
   const [firstName, setFirstName] = useState(''), [lastName, setLastName] = useState('')
   const [addr, setAddr] = useState<Address>(emptyAddress), [taxSame, setTaxSame] = useState(true), [tax, setTax] = useState<TaxInfo | null>(null)
   const [taxModal, setTaxModal] = useState(false), [taxDraft, setTaxDraft] = useState<TaxInfo>({ name: '', id: '', addr: emptyAddress })
   const [sku, setSku] = useState(''), [skuResults, setSkuResults] = useState<Commodity[]>([]), [product, setProduct] = useState(initialProduct)
+  const [productGroupName, setProductGroupName] = useState('')
   const [brandId, setBrandId] = useState(''), [brandName, setBrandName] = useState(''), [symptom, setSymptom] = useState('')
   const [serialNo, setSerialNo] = useState(initialSerialNo || ''), [warranty, setWarranty] = useState<'yes' | 'no'>('yes'), [allowOutside, setAllowOutside] = useState(false)
   const [sizeId, setSizeId] = useState<number | null>(null), [method, setMethod] = useState<'STANDARD' | 'EXPRESS'>('STANDARD')
@@ -56,15 +59,13 @@ export function useCsNewForm({
 
   const handleApplyCustomer = useCallback((cust: CustomerLookupResult) => {
     const { firstName: fName, lastName: lName } = splitCustomerFullName(cust.customerName)
-    setFirstName(fName)
-    setLastName(lName)
+    setFirstName(fName); setLastName(lName)
     setAddr(parseFormattedAddress(cust.customerAddress, cust.customerZip))
     if (cust.taxInvoiceId && cust.taxInvoiceName) {
       setTaxSame(false)
       setTax({ name: cust.taxInvoiceName, id: cust.taxInvoiceId, addr: parseFormattedAddress(cust.taxInvoiceAddr, null) })
     } else {
-      setTaxSame(true)
-      setTax(null)
+      setTaxSame(true); setTax(null)
     }
   }, [])
 
@@ -76,12 +77,9 @@ export function useCsNewForm({
   const [fees, setFees] = useState<FeesState>({ operationFee: 0, shippingFee: 0, total: 0 })
   const [pay, setPay] = useState<'PROMPTPAY_QR' | 'CARD_LINK' | 'POS_RECEIPT'>('PROMPTPAY_QR')
   const [pos, setPos] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState<SavedJob | null>(null)
-  const [payOpen, setPayOpen] = useState(false)
-  const [paid, setPaid] = useState(false)
-  const [lon, setLon] = useState(false)
-  const [printDoc, setPrintDoc] = useState(false)
+  const [saving, setSaving] = useState(false), [saved, setSaved] = useState<SavedJob | null>(null)
+  const [payOpen, setPayOpen] = useState(false), [paid, setPaid] = useState(false)
+  const [lon, setLon] = useState(false), [printDoc, setPrintDoc] = useState(false)
   const skuTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   useEffect(() => {
@@ -126,7 +124,10 @@ export function useCsNewForm({
   const pickSku = (c: Commodity) => {
     setSku(c.sku); setProduct(c.name); setBrandName(c.brand)
     const b = brands.find(x => x.name.trim().toLowerCase() === c.brand.trim().toLowerCase())
-    setBrandId(b ? String(b.id) : ''); setSkuResults([])
+    setBrandId(b ? String(b.id) : '')
+    const matchedGroup = autoMatchProductType(c)
+    if (matchedGroup) setProductGroupName(matchedGroup)
+    setSkuResults([])
   }
 
   const onTaxCheckbox = (checked: boolean) => {
@@ -147,7 +148,7 @@ export function useCsNewForm({
 
   const save = useCallback(async (): Promise<SavedJob | null> => {
     if (saved) return saved
-    const err = validateCsForm({ role, selectedBranchId, firstName, lastName, phone, product, brandName, symptom, sizeId, feesTotal: fees.total, pay, pos, photos })
+    const err = validateCsForm({ role, selectedBranchId, firstName, lastName, phone, productGroupName, product, brandName, symptom, sizeId, feesTotal: fees.total, pay, pos, photos })
     if (err) {
       toast(err, 'error')
       if (err.includes('ภาพถ่าย')) document.getElementById('defect-photos-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -161,7 +162,8 @@ export function useCsNewForm({
           ...(role === 'ADMIN' ? { branchId: selectedBranchId } : {}),
           customerName: fullName, customerPhone: phone, customerAddress: formatAddress(addr) || null, customerZip: addr.zip || null,
           ...(tax && !taxSame ? { taxInvoiceName: tax.name, taxInvoiceId: tax.id, taxInvoiceAddr: formatAddress(tax.addr) } : {}),
-          sku: sku.trim() || null, productName: product.trim(), brandId: brandId ? Number(brandId) : null, brandName: brandName.trim(),
+          sku: sku.trim() || null, productName: product.trim(), productGroupName: productGroupName.trim(),
+          brandId: brandId ? Number(brandId) : null, brandName: brandName.trim(),
           symptom: symptom.trim(), serialNo: serialNo.trim() || null, hasWarranty: warranty === 'yes', allowNonAuth: allowOutside,
           sizeCategoryId: sizeId, shippingMethod: method,
           photos: photos.filter((p): p is Photo => Boolean(p && p.fileUrl)),
@@ -176,14 +178,14 @@ export function useCsNewForm({
       toast(e instanceof Error ? e.message : 'บันทึกไม่สำเร็จ', 'error')
       return null
     } finally { setSaving(false) }
-  }, [saved, firstName, lastName, phone, addr, tax, taxSame, sku, product, brandName, brandId, symptom, serialNo, warranty, allowOutside, sizeId, method, photos, defect, fees.total, pay, pos, selectedBranchId, role, toast])
+  }, [saved, firstName, lastName, phone, addr, tax, taxSame, sku, product, productGroupName, brandName, brandId, symptom, serialNo, warranty, allowOutside, sizeId, method, photos, defect, fees.total, pay, pos, selectedBranchId, role, toast])
 
   return {
-    branchList, selectedBranchId, setSelectedBranchId, brands, sizes,
+    branchList, selectedBranchId, setSelectedBranchId, brands, sizes, productTypes,
     firstName, setFirstName, lastName, setLastName, phone, setPhone,
     phoneCandidates, searchingPhone, isNewCustomer, pickCustomer, closePhoneDropdown,
     addr, setAddr, taxSame, tax, setTax, taxModal, setTaxModal, taxDraft, setTaxDraft, found, setFound,
-    sku, skuResults, setSkuResults, product, setProduct, brandId, setBrandId, brandName, setBrandName: onBrandChange,
+    sku, skuResults, setSkuResults, productGroupName, setProductGroupName, product, setProduct, brandId, setBrandId, brandName, setBrandName: onBrandChange,
     symptom, setSymptom, serialNo, setSerialNo, extractSerialFromPhoto, extractingSerial,
     warranty, setWarranty, allowOutside, setAllowOutside, sizeId, setSizeId, method, setMethod,
     photos, setPhotos, defect, setDefect, fees, pay, setPay, pos, setPos, saving, saved,
