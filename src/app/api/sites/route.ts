@@ -13,7 +13,10 @@ export async function GET(req: Request) {
     sites.map(s => ({
       id: s.id,
       code: s.code,
+      stCode: s.stCode,
+      nickname: s.nickname,
       name: s.name,
+      nameEn: s.nameEn,
       type: s.type,
       postalCode: s.postalCode,
       province: s.province,

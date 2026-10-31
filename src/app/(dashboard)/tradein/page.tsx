@@ -6,6 +6,8 @@ import {
   RefreshCcw, ChevronRight, Camera, Search, X, AlertCircle
 } from 'lucide-react'
 import { useMe } from '@/components/ui/useMe'
+import { BranchSearchSelect } from '@/components/ui/BranchSearchSelect'
+import type { SearchableBranchOption } from '@/lib/branch-search'
 import PhoneInput from '@/components/ui/PhoneInput'
 import { formatPhone } from '@/lib/phone-utils'
 
@@ -64,7 +66,7 @@ export default function TradeInPage() {
   const me = useMe()
   const isAdmin = me?.user?.role === 'ADMIN'
   const [branchFilter, setBranchFilter] = useState('')
-  const [siteOptions, setSiteOptions] = useState<Array<{ id: string; name: string }>>([])
+  const [siteOptions, setSiteOptions] = useState<SearchableBranchOption[]>([])
   const [kpis, setKpis] = useState<KPIs>({ total: 0, used: 0, conversion: 0 })
   const [selectedType, setSelectedType] = useState<1 | 2>(1)
   const [sizes, setSizes] = useState<SizeCategory[]>([])
@@ -79,7 +81,7 @@ export default function TradeInPage() {
         .then((r) => r.json())
         .then((d) => {
           if (Array.isArray(d)) {
-            setSiteOptions(d.filter((s) => s.type === 'BRANCH').map((s) => ({ id: s.id, name: s.name })))
+            setSiteOptions(d.filter((s: SearchableBranchOption & { type?: string }) => s.type === 'BRANCH'))
           }
         })
         .catch(() => {})
@@ -392,20 +394,15 @@ export default function TradeInPage() {
         </div>
 
         {isAdmin && siteOptions.length > 0 && (
-          <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-[#D2C9B8]">
+          <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-[#6B6459]">สาขา:</span>
-            <select
-              className="text-xs outline-none bg-transparent font-medium text-[#2B2723]"
+            <BranchSearchSelect
+              size="sm"
+              options={siteOptions}
               value={branchFilter}
-              onChange={(e) => setBranchFilter(e.target.value)}
-            >
-              <option value="">ทุกสาขา ({siteOptions.length} สาขา)</option>
-              {siteOptions.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
+              onChange={setBranchFilter}
+              allOptionLabel={`ทุกสาขา (${siteOptions.length} สาขา)`}
+            />
           </div>
         )}
       </div>

@@ -1,12 +1,14 @@
 'use client'
 
+import { BranchSearchSelect } from '@/components/ui/BranchSearchSelect'
+import type { SearchableBranchOption } from '@/lib/branch-search'
 import { statusFilterOptions } from '@/lib/job-status-filter'
 import { JobsActiveFilterChips } from './JobsActiveFilterChips'
 
 interface JobsFilterBarProps {
   branch: string
   setBranch: (b: string) => void
-  branches: Array<[string, string]>
+  branches: readonly SearchableBranchOption[]
   channel: string
   setChannel: (c: string) => void
   productGroup?: string
@@ -88,16 +90,14 @@ export default function JobsFilterBar({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <select
-            className="px-2.5 py-2 text-xs bg-white border border-slate-200 rounded-lg text-slate-700 font-medium hover:border-slate-300 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-colors cursor-pointer"
+          <BranchSearchSelect
+            size="sm"
+            options={branches}
             value={branch}
-            onChange={e => setBranch(e.target.value)}
-          >
-            <option value="">ทุกสาขา</option>
-            {branches.map(([id, name]) => (
-              <option key={id} value={id}>{name}</option>
-            ))}
-          </select>
+            onChange={setBranch}
+            allOptionLabel="ทุกสาขา"
+            className="min-w-[180px] px-2.5 py-2 text-xs bg-white border border-slate-200 rounded-lg text-slate-700 font-medium hover:border-slate-300"
+          />
 
           {setProductGroup && (
             <select

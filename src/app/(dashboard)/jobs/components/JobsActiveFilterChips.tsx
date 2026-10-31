@@ -1,11 +1,12 @@
 'use client'
 
+import type { SearchableBranchOption } from '@/lib/branch-search'
 import { statusFilterOptions } from '@/lib/job-status-filter'
 
 interface JobsActiveFilterChipsProps {
   branch: string
   setBranch: (b: string) => void
-  branches: Array<[string, string]>
+  branches: readonly SearchableBranchOption[]
   channel: string
   setChannel: (c: string) => void
   productGroup: string
@@ -72,7 +73,7 @@ export function JobsActiveFilterChips({
       {branch && (
         <span className="inline-flex items-center gap-1 font-medium text-slate-700 text-[11px]">
           <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
-          สาขา: {branches.find(b => b[0] === branch)?.[1] ?? branch}
+          สาขา: {branches.find(b => b.id === branch)?.name ?? branch}
           <button type="button" onClick={() => setBranch('')} className="hover:text-slate-900 cursor-pointer ml-0.5 text-xs">×</button>
         </span>
       )}

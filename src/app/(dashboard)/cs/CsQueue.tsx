@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { TabBar, EmptyCard } from '@/components/ui/Queue'
+import { BranchSearchSelect } from '@/components/ui/BranchSearchSelect'
+import type { SearchableBranchOption } from '@/lib/branch-search'
 import { useQueue, useRowInputs } from '@/components/ui/useQueue'
 import { useToast } from '@/components/ui/Toast'
 import { findJobsByScan } from '@/lib/job-locator'
@@ -27,7 +29,7 @@ export default function CsQueue({ role }: { role: string }) {
   const router = useRouter()
   const [tab, setTab] = useState('managerSign')
   const [branchFilter, setBranchFilter] = useState('')
-  const [siteOptions, setSiteOptions] = useState<Array<{ id: string; name: string }>>([])
+  const [siteOptions, setSiteOptions] = useState<SearchableBranchOption[]>([])
   const inp = useRowInputs()
   const scanRef = useRef<HTMLInputElement>(null)
   const { data, loading, reload, run, busy } = useQueue('CS', undefined, branchFilter ? { branchId: branchFilter } : undefined, id => {
@@ -49,14 +51,14 @@ export default function CsQueue({ role }: { role: string }) {
     if (role === 'ADMIN') {
       fetch('/api/sites')
         .then(r => r.json())
-        .then(d => Array.isArray(d) && setSiteOptions(d.filter(s => s.type === 'BRANCH').map(s => ({ id: s.id, name: s.name }))))
+        .then(d => Array.isArray(d) && setSiteOptions(d.filter((s: SearchableBranchOption & { type?: string }) => s.type === 'BRANCH')))
         .catch(() => {})
     }
   }, [role])
 
-  const branches = useMemo(() => {
-    if (siteOptions.length > 0) return siteOptions.map(s => [s.id, s.name] as [string, string])
-    return [...new Map(Object.values(data.tabs).flat().map(j => [j.branch.id, j.branch.name])).entries()]
+  const branches = useMemo<SearchableBranchOption[]>(() => {
+    if (siteOptions.length > 0) return siteOptions
+    return [...new Map(Object.values(data.tabs).flat().map(j => [j.branch.id, j.branch])).values()]
   }, [siteOptions, data])
 
   const list = (k: string) => data.tabs[k] ?? []
@@ -93,10 +95,13 @@ export default function CsQueue({ role }: { role: string }) {
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           {role === 'ADMIN' && branches.length > 0 && (
-            <select className="sel" value={branchFilter} onChange={e => { setBranchFilter(e.target.value); setSel(null) }}>
-              <option value="">ทุกสาขา ({branches.length} สาขา)</option>
-              {branches.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
-            </select>
+            <BranchSearchSelect
+              size="sm"
+              options={branches}
+              value={branchFilter}
+              onChange={v => { setBranchFilter(v); setSel(null) }}
+              allOptionLabel={`ทุกสาขา (${branches.length} สาขา)`}
+            />
           )}
           <button className="btn" onClick={() => reload()}>↻ รีเฟรช</button>
           {!readOnly && <Link href="/cs/new" className="btn btn-primary">+ เปิดใบแจ้งซ่อม</Link>}

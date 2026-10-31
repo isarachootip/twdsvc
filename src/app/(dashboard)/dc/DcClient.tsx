@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { OverdueSummary, KpiGrid, TabBar, QueueHeader, EmptyCard, DateRange } from '@/components/ui/Queue'
+import { BranchSearchSelect } from '@/components/ui/BranchSearchSelect'
+import type { SearchableBranchOption } from '@/lib/branch-search'
 import PrintLabel, { type LabelData } from '@/components/ui/PrintLabel'
 import DriverDoc from '@/components/ui/DriverDoc'
 import { buildLogisticsBoxLabel } from '@/lib/shipping-labels'
@@ -32,7 +34,7 @@ export default function DcClient({ role }: { role: string }) {
   const [tab, setTab] = useState('pickup')
   const [range, setRange] = useState({ from: '', to: '' })
   const [branchFilter, setBranchFilter] = useState('')
-  const [siteOptions, setSiteOptions] = useState<Array<{ id: string; name: string }>>([])
+  const [siteOptions, setSiteOptions] = useState<SearchableBranchOption[]>([])
   const inp = useRowInputs()
   const { data, loading, reload, run, done, busy } = useQueue('DC', range, branchFilter ? { branchId: branchFilter } : undefined, inp.clear)
   const [openId, setOpenId] = useState<string | null>(null)
@@ -47,7 +49,7 @@ export default function DcClient({ role }: { role: string }) {
         .then(r => r.json())
         .then(d => {
           if (Array.isArray(d)) {
-            setSiteOptions(d.filter(s => s.type === 'BRANCH').map(s => ({ id: s.id, name: s.name })))
+            setSiteOptions(d.filter((s: SearchableBranchOption & { type?: string }) => s.type === 'BRANCH'))
           }
         })
         .catch(() => {})
@@ -59,9 +61,9 @@ export default function DcClient({ role }: { role: string }) {
   const overCount = (k: string) => list(k).filter(j => !done[j.id] && j.sla?.overdue).length
   const rowCls = (j: JobView) => (done[j.id] ? 'done-row' : '')
 
-  const branches = useMemo(() => {
-    if (siteOptions.length > 0) return siteOptions.map(s => [s.id, s.name] as [string, string])
-    return [...new Map(Object.values(data.tabs).flat().map(j => [j.branch.id, j.branch.name])).entries()]
+  const branches = useMemo<SearchableBranchOption[]>(() => {
+    if (siteOptions.length > 0) return siteOptions
+    return [...new Map(Object.values(data.tabs).flat().map(j => [j.branch.id, j.branch])).values()]
   }, [siteOptions, data])
 
   const s1 = useSort(list('pickup'), SORT)
@@ -107,10 +109,13 @@ export default function DcClient({ role }: { role: string }) {
       <TabBar tabs={TABS.map(t => ({ key: t.key, label: t.label, count: pending(t.key) }))} active={tab} onPick={setTab} loading={loading} />
       {branches.length > 0 && (
         <div className="filter-bar" style={{ marginTop: 12, marginBottom: 12 }}>
-          <select className="sel" value={branchFilter} onChange={e => setBranchFilter(e.target.value)}>
-            <option value="">ทุกสาขา ({branches.length} สาขา)</option>
-            {branches.map(([id, n]) => <option key={id} value={id}>{n}</option>)}
-          </select>
+          <BranchSearchSelect
+            size="sm"
+            options={branches}
+            value={branchFilter}
+            onChange={setBranchFilter}
+            allOptionLabel={`ทุกสาขา (${branches.length} สาขา)`}
+          />
         </div>
       )}
       {readOnly && <p className="hint"><span className="text-amber-700 font-semibold text-xs">• โหมดดูอย่างเดียว</span></p>}

@@ -1,5 +1,6 @@
 import { guardPage } from '@/lib/page-guard'
 import { prisma } from '@/lib/db'
+import { dedupeAndFilterSites } from '@/lib/sites-query'
 import CsNewForm from './CsNewForm'
 
 export const dynamic = 'force-dynamic'
@@ -11,14 +12,16 @@ export default async function CsNewPage({
 }) {
   const user = await guardPage('cs')
   const resolvedParams = await searchParams
-  const branches = await prisma.site.findMany({
+  const rawBranches = await prisma.site.findMany({
     where: { type: 'BRANCH', active: true },
     orderBy: { code: 'asc' },
     select: {
       id: true,
       code: true,
       stCode: true,
+      nickname: true,
       name: true,
+      nameEn: true,
       legalName: true,
       address: true,
       subdistrict: true,
@@ -28,6 +31,7 @@ export default async function CsNewPage({
       phone: true,
     },
   })
+  const branches = dedupeAndFilterSites(rawBranches)
   return (
     <CsNewForm
       role={user.role}

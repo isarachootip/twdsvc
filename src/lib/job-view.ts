@@ -6,7 +6,7 @@ import { extractPickupSlipMeta } from './pickup-slip'
 import { resolveVendorGroupRate } from './services/vendor-rate-resolver'
 
 export const JOB_LIST_INCLUDE = {
-  branch: { select: { id: true, name: true, nickname: true, address: true } },
+  branch: { select: { id: true, code: true, name: true, nickname: true, address: true } },
   vendorCenter: {
     select: {
       id: true, code: true, deliveryMethod: true, address: true, phone: true, gpPctOverride: true,

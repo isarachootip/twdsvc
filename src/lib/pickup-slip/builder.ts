@@ -10,12 +10,13 @@ import {
 export function extractBranchCode(job?: Pick<JobView, 'jobNo' | 'branch'>): string {
   if (!job) return 'BNA'
   const b = job.branch as { code?: string; nickname?: string }
-  if (b.code && /^[A-Z0-9]{2,6}$/i.test(b.code)) return b.code.toUpperCase()
-  if (b.nickname && /^[A-Z0-9]{2,6}$/i.test(b.nickname)) return b.nickname.toUpperCase()
+  if (b.nickname && /^[A-Z][A-Z0-9]{1,5}$/i.test(b.nickname)) return b.nickname.toUpperCase()
+  if (b.code && /^[A-Z][A-Z0-9]{1,5}$/i.test(b.code)) return b.code.toUpperCase()
   const prefix = job.jobNo.split('-')[0] ?? ''
   if (/^[A-Z]{2,5}$/i.test(prefix) && prefix.toUpperCase() !== 'RP' && prefix.toUpperCase() !== 'JB') {
     return prefix.toUpperCase()
   }
+  if (b.code && /^[A-Z0-9]{2,6}$/i.test(b.code)) return b.code.toUpperCase()
   return 'BNA'
 }
 

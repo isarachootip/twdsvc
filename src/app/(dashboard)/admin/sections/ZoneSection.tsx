@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { BranchSearchSelect } from '@/components/ui/BranchSearchSelect'
 import { api } from '@/lib/client'
 import { useSave, SaveButton, Row, Loading, type SiteLite } from './admin-helpers'
 
@@ -85,16 +86,13 @@ export function ZoneSection() {
             {rows.map((r, i) => (
               <tr key={i}>
                 <td>
-                  <select
-                    className="sel"
+                  <BranchSearchSelect
+                    size="sm"
+                    options={branches}
                     value={r.branchId}
-                    onChange={e => upd(i, { branchId: e.target.value })}
-                  >
-                    <option value="">เลือกสาขา</option>
-                    {branches.map(s => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
+                    onChange={branchId => upd(i, { branchId })}
+                    placeholder="เลือกสาขา"
+                  />
                 </td>
                 <td>
                   <input

@@ -68,7 +68,10 @@ export function Loading() {
 export interface SiteLite {
   id: string
   code: string
+  stCode?: string | null
+  nickname?: string | null
   name: string
+  nameEn?: string | null
   type: string
   postalCode?: string
   province?: string

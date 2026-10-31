@@ -53,6 +53,7 @@ import './unit/product-type-domain.test'
 import './unit/customer-lookup-autofill.test'
 import './unit/customer-tracking-milestones.test'
 import './unit/job-timeline-detail.test'
+import './unit/branch-search.test'
 
 // Tier 2: Boundary & Corner Cases
 import './e2e/tier2-boundaries/boundary_financial_satang.test'

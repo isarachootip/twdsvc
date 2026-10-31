@@ -1,6 +1,7 @@
 'use client'
 
 import Modal from '@/components/ui/Modal'
+import { BranchSearchSelect } from '@/components/ui/BranchSearchSelect'
 import { type SiteLite } from './admin-helpers'
 
 const ROLES = ['ADMIN', 'EXECUTIVE', 'CS', 'GR', 'DC', 'VD', 'S2']
@@ -96,20 +97,13 @@ export function UserEditModal({
         {['CS', 'GR', 'S2', 'DC'].includes(edit.role) && (
           <div className="field">
             <label>สาขา / คลัง</label>
-            <select
-              className="sel"
+            <BranchSearchSelect
+              options={sites.filter(s => (edit.role === 'DC' ? s.type === 'DC' : s.type === 'BRANCH'))}
               value={edit.siteId}
-              onChange={e => onChange({ ...edit, siteId: e.target.value })}
-            >
-              <option value="">เลือก</option>
-              {sites
-                .filter(s => (edit.role === 'DC' ? s.type === 'DC' : s.type === 'BRANCH'))
-                .map(s => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-            </select>
+              onChange={siteId => onChange({ ...edit, siteId })}
+              placeholder="เลือกสาขา / คลัง..."
+              searchPlaceholder="ค้นหาชื่อสาขา/คลัง, รหัส, ชื่อย่อ..."
+            />
           </div>
         )}
         {edit.role === 'VD' && (

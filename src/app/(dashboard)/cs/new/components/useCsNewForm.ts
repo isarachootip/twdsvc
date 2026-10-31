@@ -88,7 +88,7 @@ export function useCsNewForm({
     if (branches.length > 0) {
       setBranchList(branches)
     } else if (role === 'ADMIN') {
-      api<Array<{ id: string; code: string; name: string; type: string }>>('/api/sites').then(sites => {
+      api<Array<BranchOption & { type: string }>>('/api/sites').then(sites => {
         const b = sites?.filter(s => s.type === 'BRANCH')
         if (b?.length) {
           setBranchList(b)

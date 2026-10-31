@@ -69,7 +69,7 @@ export default function JobsClient({ role: initialRole, user, initialJobs }: Job
     else if (flg !== null) setFlag(flg)
   }, [sp])
 
-  const branches = useMemo(() => [...new Map(jobs.map(j => [j.branch.id, j.branch.name])).entries()], [jobs])
+  const branches = useMemo(() => [...new Map(jobs.map(j => [j.branch.id, j.branch])).values()], [jobs])
   const productGroups = useMemo(() => {
     const set = new Set<string>(masterGroups)
     for (const j of jobs) if (j.productGroupName) set.add(j.productGroupName)

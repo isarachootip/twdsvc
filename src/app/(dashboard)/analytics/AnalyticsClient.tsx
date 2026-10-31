@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { BranchSearchSelect } from '@/components/ui/BranchSearchSelect'
+import type { SearchableBranchOption } from '@/lib/branch-search'
 import {
   ResponsiveContainer, ComposedChart, Bar, Line, LineChart, AreaChart, Area,
   PieChart, Pie, Cell, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
@@ -62,7 +64,7 @@ export default function AnalyticsClient() {
   const router = useRouter()
   const [period, setPeriod] = useState<'weekly' | 'monthly' | 'yearly'>('weekly')
   const [selectedBranch, setSelectedBranch] = useState('ALL')
-  const [branches, setBranches] = useState<Array<{ id: string; name: string; nickname?: string }>>([])
+  const [branches, setBranches] = useState<SearchableBranchOption[]>([])
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
@@ -126,16 +128,15 @@ export default function AnalyticsClient() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <select
+          <BranchSearchSelect
+            size="sm"
+            options={branches}
             value={selectedBranch}
-            onChange={e => setSelectedBranch(e.target.value)}
-            className="border rounded-lg px-3 py-1.5 text-xs bg-white text-gray-700"
-          >
-            <option value="ALL">ทุกสาขา (All Branches)</option>
-            {branches.map(b => (
-              <option key={b.id} value={b.id}>{b.name}</option>
-            ))}
-          </select>
+            onChange={setSelectedBranch}
+            allOptionLabel="ทุกสาขา (All Branches)"
+            allOptionValue="ALL"
+            className="min-w-[210px] border rounded-lg px-3 py-1.5 text-xs bg-white text-gray-700"
+          />
           <div className="flex border rounded-lg overflow-hidden bg-white text-xs">
             <button
               onClick={() => setPeriod('weekly')}

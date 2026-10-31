@@ -71,8 +71,10 @@ export async function queryActiveSitesForDropdown() {
     select: {
       id: true,
       code: true,
+      stCode: true,
       nickname: true,
       name: true,
+      nameEn: true,
       type: true,
       province: true,
       region: true,

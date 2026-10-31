@@ -7,6 +7,8 @@ import {
 } from 'lucide-react'
 import StageBadge from '@/components/ui/StageBadge'
 import RadioCardGroup from '@/components/ui/RadioCardGroup'
+import { BranchSearchSelect } from '@/components/ui/BranchSearchSelect'
+import type { SearchableBranchOption } from '@/lib/branch-search'
 import { useMe } from '@/components/ui/useMe'
 import { JobStage, Channel } from '@prisma/client'
 
@@ -250,7 +252,7 @@ export default function S2Page() {
   const me = useMe()
   const isAdmin = me?.user?.role === 'ADMIN'
   const [branchId, setBranchId] = useState('')
-  const [sites, setSites] = useState<Array<{ id: string; code: string; name: string; type: string }>>([])
+  const [sites, setSites] = useState<Array<SearchableBranchOption & { type: string }>>([])
   const [vendorCenter, setVendorCenter] = useState<VendorCenter | null>(null)
   const [receiverName, setReceiverName] = useState('')
   const [channel, setChannel] = useState<'DC' | 'DSD'>('DC')
@@ -444,18 +446,12 @@ export default function S2Page() {
               <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text)' }}>
                 สาขาต้นทาง (ผู้ดูแลระบบเลือกสาขาที่เปิดงาน)
               </label>
-              <select
+              <BranchSearchSelect
+                options={sites}
                 value={branchId}
-                onChange={(e) => setBranchId(e.target.value)}
-                className="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-[#C8102E] bg-white"
-                style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
-              >
-                {sites.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.code} - {s.name}
-                  </option>
-                ))}
-              </select>
+                onChange={setBranchId}
+                placeholder="เลือกสาขาต้นทาง..."
+              />
             </div>
           )}
 

@@ -1,6 +1,7 @@
 'use client'
 
 import AddressFields, { formatAddress, type Address } from '@/components/ui/AddressFields'
+import { BranchSearchSelect } from '@/components/ui/BranchSearchSelect'
 import { type TaxInfo } from './TaxInvoiceModal'
 import { PhoneSearchInput } from './PhoneSearchInput'
 
@@ -8,7 +9,9 @@ export interface BranchOption {
   id: string
   code: string
   stCode?: string | null
+  nickname?: string | null
   name: string
+  nameEn?: string | null
   legalName?: string | null
   address?: string | null
   subdistrict?: string | null
@@ -90,17 +93,13 @@ export function CustomerSection({
           <label>
             สาขาที่เปิดงาน <span style={{ color: 'var(--red)' }}>*</span>
           </label>
-          <select
-            className="sel"
+          <BranchSearchSelect
+            options={branchList}
             value={selectedBranchId}
-            onChange={e => setSelectedBranchId(e.target.value)}
-          >
-            {branchList.map(b => (
-              <option key={b.id} value={b.id}>
-                {b.name} ({b.code})
-              </option>
-            ))}
-          </select>
+            onChange={setSelectedBranchId}
+            placeholder="เลือกสาขาที่เปิดงาน..."
+            disabled={saved}
+          />
         </div>
       )}
 

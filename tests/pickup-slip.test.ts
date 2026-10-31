@@ -37,6 +37,7 @@ function mockJob(overrides: Partial<JobView> = {}): JobView {
     receiverName: 'พนักงาน GR บางนา',
     branch: {
       id: 'b-bna',
+      code: '60920',
       name: 'สาขาบางนา',
       nickname: 'BNA',
       address: 'บางนา กรุงเทพฯ',

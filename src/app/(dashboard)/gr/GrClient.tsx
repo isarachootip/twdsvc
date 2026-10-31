@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { OverdueSummary, KpiGrid, TabBar, QueueHeader, EmptyCard } from '@/components/ui/Queue'
+import { BranchSearchSelect } from '@/components/ui/BranchSearchSelect'
+import type { SearchableBranchOption } from '@/lib/branch-search'
 import { ShippingLabelModal } from '@/components/ui/shipping-labels'
 import { buildThaiwasaduLabel, buildKexLabel, type UnifiedShippingLabelData } from '@/lib/shipping-labels'
 import JobDetailModal from '@/components/jobs/JobDetail'
@@ -24,7 +26,7 @@ export default function GrClient({ role }: { role: string }) {
   const initialTab = searchParams.get('tab')
   const [tab, setTab] = useState(initialTab && TAB_KEYS.includes(initialTab) ? initialTab : 'receive')
   const [branchFilter, setBranchFilter] = useState('')
-  const [siteOptions, setSiteOptions] = useState<Array<{ id: string; name: string }>>([])
+  const [siteOptions, setSiteOptions] = useState<SearchableBranchOption[]>([])
   const inp = useRowInputs()
   const scanRef = useRef<HTMLInputElement>(null)
   const { data, loading, reload, run, done, busy } = useQueue('GR', undefined, branchFilter ? { branchId: branchFilter } : undefined, id => {
@@ -44,16 +46,16 @@ export default function GrClient({ role }: { role: string }) {
         .then(r => r.json())
         .then(d => {
           if (Array.isArray(d)) {
-            setSiteOptions(d.filter(s => s.type === 'BRANCH').map(s => ({ id: s.id, name: s.name })))
+            setSiteOptions(d.filter((s: SearchableBranchOption & { type?: string }) => s.type === 'BRANCH'))
           }
         })
         .catch(() => {})
     }
   }, [role])
 
-  const branches = useMemo(() => {
-    if (siteOptions.length > 0) return siteOptions.map(s => [s.id, s.name] as [string, string])
-    return [...new Map(Object.values(data.tabs).flat().map(j => [j.branch.id, j.branch.name])).entries()]
+  const branches = useMemo<SearchableBranchOption[]>(() => {
+    if (siteOptions.length > 0) return siteOptions
+    return [...new Map(Object.values(data.tabs).flat().map(j => [j.branch.id, j.branch])).values()]
   }, [siteOptions, data])
   const list = (k: string) => data.tabs[k] ?? []
   const pending = (k: string) => list(k).filter(j => !done[j.id]).length
@@ -102,10 +104,13 @@ export default function GrClient({ role }: { role: string }) {
         right={
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             {role === 'ADMIN' && branches.length > 0 && (
-              <select className="sel" value={branchFilter} onChange={e => setBranchFilter(e.target.value)}>
-                <option value="">ทุกสาขา ({branches.length} สาขา)</option>
-                {branches.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
-              </select>
+              <BranchSearchSelect
+                size="sm"
+                options={branches}
+                value={branchFilter}
+                onChange={setBranchFilter}
+                allOptionLabel={`ทุกสาขา (${branches.length} สาขา)`}
+              />
             )}
             <button className="btn" onClick={() => reload()}>↻ รีเฟรช</button>
           </div>
