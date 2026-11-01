@@ -16,6 +16,7 @@ import { buildCaseA3PlLabel } from '@/lib/threepl-label'
 import { printElement } from '@/lib/print-element'
 import { JobNextActionCard } from './JobNextActionCard'
 import { JobTimelineColumn } from './JobTimelineColumn'
+import { LonNotificationPanel } from './LonNotificationPanel'
 import { api, absUrl } from '@/lib/client'
 import { CHANNEL_LABELS, OWNER_LABELS, fmtBaht, fmtDate, fmtPhone } from '@/lib/constants'
 
@@ -227,6 +228,10 @@ export default function JobDetailModal({
                     </div>
                   ))}
                 </div>
+              )}
+
+              {d.type === 'CUSTOMER' && (
+                <LonNotificationPanel jobId={d.id} stage={d.stage} decision={d.decision} role={role} />
               )}
 
               {role === 'ADMIN' && !closed && (

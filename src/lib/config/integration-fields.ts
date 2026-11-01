@@ -3,6 +3,8 @@ import { z } from 'zod'
 export const INTEGRATION_PREFIX = 'INTEGRATION_'
 
 export const INTEGRATION_KEYS = [
+  'LON_API_BASE_URL',
+  'LON_API_TOKEN',
   'LINE_OA_ID',
   'LINE_CHANNEL_ID',
   'LINE_CHANNEL_SECRET',
@@ -19,7 +21,7 @@ export const INTEGRATION_KEYS = [
 ] as const
 
 export type IntegrationKey = (typeof INTEGRATION_KEYS)[number]
-export type IntegrationGroup = 'line' | 'smtp' | 'eordering' | 'general'
+export type IntegrationGroup = 'lon' | 'line' | 'smtp' | 'eordering' | 'general'
 
 export interface IntegrationFieldDef {
   key: IntegrationKey
@@ -33,6 +35,25 @@ export interface IntegrationFieldDef {
 const noSpaces = z.string().trim().min(8, 'สั้นเกินไป').max(512).regex(/^\S+$/, 'ห้ามมีช่องว่าง')
 
 export const INTEGRATION_FIELDS: IntegrationFieldDef[] = [
+  {
+    key: 'LON_API_BASE_URL',
+    label: 'LON API Base URL (เช่น https://lon.thaiwatsadu.com)',
+    group: 'lon',
+    secret: false,
+    schema: z
+      .string()
+      .trim()
+      .url('ต้องเป็น URL เช่น https://lon.thaiwatsadu.com')
+      .refine(v => /^https?:\/\//.test(v), 'ต้องขึ้นต้นด้วย http:// หรือ https://')
+      .transform(v => v.replace(/\/+$/, '')),
+  },
+  {
+    key: 'LON_API_TOKEN',
+    label: 'LON API Token / Key',
+    group: 'lon',
+    secret: true,
+    schema: noSpaces,
+  },
   {
     key: 'LINE_OA_ID',
     label: 'LINE Official Account ID (เช่น @twdservice)',

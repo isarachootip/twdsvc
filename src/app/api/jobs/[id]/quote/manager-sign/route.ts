@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireUser, handleError, HttpError } from '@/lib/api'
 import { z } from 'zod'
+import { resolveLonManagerSignTrigger } from '@/lib/services/lon-trigger-rules'
+import { dispatchLonNotification } from '@/lib/services/lon-notify.service'
 
 export const dynamic = 'force-dynamic'
 
@@ -182,6 +184,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
       return q
     })
+
+    if (data.action === 'sign') {
+      const lonTrigger = resolveLonManagerSignTrigger({ type: job.type, isTest: job.isTest, customerPhone: job.customerPhone, quoteTotal: updatedQuote.total })
+      if (lonTrigger) void dispatchLonNotification({ jobId: job.id, type: lonTrigger.type, statusLabel: lonTrigger.statusLabel, req })
+    }
 
     return NextResponse.json({ success: true, quote: updatedQuote, action: data.action })
   } catch (e) {

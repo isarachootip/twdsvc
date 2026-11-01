@@ -1,7 +1,9 @@
 'use client'
 
 import { use, useEffect, useState } from 'react'
-import { Star, CheckCircle2, AlertCircle, Heart, ThumbsUp } from 'lucide-react'
+import { AlertCircle, Heart, Phone } from 'lucide-react'
+import QuickSatisfactionCard, { type QuickRateLevel } from './QuickSatisfactionCard'
+import CsatAspectChecklist from './CsatAspectChecklist'
 
 interface CsatData {
   jobNo: string
@@ -12,57 +14,10 @@ interface CsatData {
   expired: boolean
 }
 
-const SATISFACTION_ASPECTS = [
-  { id: 'quality', label: 'คุณภาพงานซ่อมได้มาตรฐาน' },
-  { id: 'speed', label: 'ความรวดเร็วในการดำเนินการ' },
-  { id: 'service', label: 'ความสุภาพและการบริการของเจ้าหน้าที่' },
-  { id: 'value', label: 'ความคุ้มค่าของค่าบริการ' },
-  { id: 'tracking', label: 'ระบบติดตามสถานะสะดวกรวดเร็ว' },
-]
-
-function StarRating({
-  value,
-  onChange,
-  label,
-}: {
-  value: number
-  onChange: (v: number) => void
-  label: string
-}) {
-  const [hover, setHover] = useState<number | null>(null)
-
-  return (
-    <div className="space-y-1 text-center py-2">
-      <div className="text-xs font-semibold text-[#2B2723]">{label}</div>
-      <div className="flex justify-center gap-1.5">
-        {[1, 2, 3, 4, 5].map((star) => {
-          const active = star <= (hover ?? value)
-          return (
-            <button
-              key={star}
-              type="button"
-              onMouseEnter={() => setHover(star)}
-              onMouseLeave={() => setHover(null)}
-              onClick={() => onChange(star)}
-              className="p-1 text-2xl transition-transform hover:scale-110 focus:outline-none"
-              style={{ color: active ? '#F59E0B' : '#D2C9B8' }}
-              aria-label={`${star} ดาว`}
-            >
-              ★
-            </button>
-          )
-        })}
-      </div>
-      <div className="text-[11px] text-[#6B6459]">
-        {value === 5 && 'ยอดเยี่ยมมาก'}
-        {value === 4 && 'ดีมาก'}
-        {value === 3 && 'ปานกลาง'}
-        {value === 2 && 'พอใช้'}
-        {value === 1 && 'ควรปรับปรุง'}
-        {value === 0 && 'กรุณาแตะเพื่อให้คะแนน'}
-      </div>
-    </div>
-  )
+const SCORE_BY_LEVEL: Record<QuickRateLevel, number> = {
+  satisfied: 5,
+  neutral: 3,
+  unsatisfied: 1,
 }
 
 export default function CustomerCsatPage({ params }: { params: Promise<{ token: string }> }) {
@@ -70,15 +25,18 @@ export default function CustomerCsatPage({ params }: { params: Promise<{ token: 
   const [data, setData] = useState<CsatData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-
-  // Form ratings
-  const [qualityScore, setQualityScore] = useState(5)
-  const [speedScore, setSpeedScore] = useState(5)
+  const [level, setLevel] = useState<QuickRateLevel>('satisfied')
   const [selectedAspects, setSelectedAspects] = useState<string[]>([])
   const [comment, setComment] = useState('')
-
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+
+  useEffect(() => {
+    const rate = new URLSearchParams(window.location.search).get('rate')
+    if (rate === 'unsatisfied' || rate === 'neutral' || rate === 'satisfied') {
+      setLevel(rate)
+    }
+  }, [])
 
   useEffect(() => {
     fetch(`/api/public/s/${token}`)
@@ -87,40 +45,40 @@ export default function CustomerCsatPage({ params }: { params: Promise<{ token: 
         if (!r.ok) throw new Error(j.error ?? 'ลิงก์ไม่ถูกต้องหรือหมดอายุ')
         return j
       })
-      .then((d) => {
+      .then((d: CsatData) => {
         setData(d)
         if (d.submitted) setSubmitted(true)
       })
-      .catch((e) => setError(e.message))
+      .catch((e) => setError(e instanceof Error ? e.message : 'เกิดข้อผิดพลาด'))
       .finally(() => setLoading(false))
   }, [token])
 
   const toggleAspect = (id: string) => {
-    setSelectedAspects((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    )
+    setSelectedAspects((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (level === 'unsatisfied' && !comment.trim()) {
+      alert('กรุณากรอกความคิดเห็นของท่านเพื่อการปรับปรุงบริการ')
+      return
+    }
     setSubmitting(true)
     try {
-      const overall = Math.round((qualityScore + speedScore) / 2)
+      const score = SCORE_BY_LEVEL[level]
       const res = await fetch(`/api/public/s/${token}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          score: overall,
-          qualityScore,
-          speedScore,
+          score,
+          qualityScore: score,
+          speedScore: score,
           aspects: selectedAspects,
-          comment,
+          comment: comment.trim(),
         }),
       })
-
       const j = await res.json()
       if (!res.ok) throw new Error(j.error ?? 'เกิดข้อผิดพลาด')
-
       setSubmitted(true)
     } catch (err) {
       alert(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด')
@@ -134,31 +92,26 @@ export default function CustomerCsatPage({ params }: { params: Promise<{ token: 
       <div className="min-h-screen flex items-center justify-center bg-[#FAF7F2] font-sans p-4">
         <div className="text-center space-y-2">
           <div className="w-8 h-8 border-3 border-[#C8102E] border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-xs text-[#6B6459]">กำลังโหลดแบบประเมินความพึงพอใจ...</p>
+          <p className="text-xs text-[#6B6459]">กำลังโหลดแบบสำรวจความพึงพอใจ...</p>
         </div>
       </div>
     )
   }
 
-  if (error || !data) {
+  if (error || !data || (data.expired && !submitted)) {
+    const isExpired = Boolean(data?.expired && !error)
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FAF7F2] font-sans p-4">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#E4DED2] max-w-sm w-full text-center space-y-3">
-          <AlertCircle size={44} className="text-[#C8102E] mx-auto" />
-          <h2 className="font-bold text-[#2B2723] text-base">ลิงก์ไม่ถูกต้องหรือหมดอายุ</h2>
-          <p className="text-xs text-[#6B6459]">{error || 'กรุณาติดต่อศูนย์บริการไทวัสดุ'}</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (data.expired && !submitted) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FAF7F2] font-sans p-4">
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#E4DED2] max-w-sm w-full text-center space-y-3">
-          <AlertCircle size={44} className="text-[#BA7517] mx-auto" />
-          <h2 className="font-bold text-[#2B2723] text-base">แบบประเมินหมดอายุแล้ว</h2>
-          <p className="text-xs text-[#6B6459]">ลิงก์ประเมินความพึงพอใจมีอายุ 14 วันหลังปิดงานซ่อม ขอบคุณที่ใช้บริการค่ะ</p>
+          <AlertCircle size={44} className={`${isExpired ? 'text-[#BA7517]' : 'text-[#C8102E]'} mx-auto`} />
+          <h2 className="font-bold text-[#2B2723] text-base">
+            {isExpired ? 'แบบประเมินหมดอายุแล้ว' : 'ลิงก์ไม่ถูกต้องหรือหมดอายุ'}
+          </h2>
+          <p className="text-xs text-[#6B6459]">
+            {isExpired
+              ? 'ลิงก์ประเมินความพึงพอใจมีอายุ 14 วันหลังปิดงานซ่อม ขอบคุณที่ใช้บริการค่ะ'
+              : error || 'กรุณาติดต่อศูนย์บริการไทวัสดุ 1308'}
+          </p>
         </div>
       </div>
     )
@@ -168,17 +121,17 @@ export default function CustomerCsatPage({ params }: { params: Promise<{ token: 
     return (
       <div className="min-h-screen bg-[#F3EEE6] font-sans p-4 flex items-center justify-center">
         <div className="bg-white rounded-3xl p-6 shadow-md border border-[#E4DED2] max-w-sm w-full text-center space-y-4">
-          <div className="w-16 h-16 bg-[#E1F5EE] text-[#1D9E75] rounded-full flex items-center justify-center mx-auto shadow-inner">
+          <div className="w-16 h-16 bg-[#E1F5EE] text-[#1D9E75] rounded-full flex items-center justify-center mx-auto">
             <Heart size={36} fill="currentColor" />
           </div>
           <div>
-            <h2 className="font-bold text-[#2B2723] text-lg">ขอบคุณสำหรับการประเมิน</h2>
+            <h2 className="font-bold text-[#2B2723] text-lg">ประเมินความพึงพอใจเรียบร้อย</h2>
             <p className="text-xs text-[#6B6459] mt-1 leading-relaxed">
-              ความคิดเห็นอันมีค่าของท่านช่วยให้ศูนย์บริการไทวัสดุพัฒนาคุณภาพงานซ่อมและบริการให้ดียิ่งขึ้นค่ะ
+              ขอขอบคุณสำหรับความคิดเห็นของลูกค้าค่ะ ข้อมูลของท่านช่วยให้ไทวัสดุพัฒนาบริการให้ดียิ่งขึ้น
             </p>
           </div>
-          <div className="bg-[#FAF7F2] p-3.5 rounded-2xl border border-[#E4DED2] text-xs text-[#6B6459]">
-            ใบแจ้งซ่อมเลขที่ <span className="font-mono font-bold text-[#2B2723]">{data.jobNo}</span>
+          <div className="text-xs text-[#6B6459] pt-1">
+            เลขที่ใบส่งซ่อม <span className="font-mono font-bold text-[#2B2723]">{data.jobNo}</span>
           </div>
         </div>
       </div>
@@ -189,17 +142,15 @@ export default function CustomerCsatPage({ params }: { params: Promise<{ token: 
     <div className="min-h-screen bg-[#F3EEE6] font-sans pb-12">
       <div className="max-w-[440px] mx-auto min-h-screen bg-[#FAF7F2] shadow-sm flex flex-col justify-between">
         <div>
-          {/* Header */}
           <div className="bg-[#C8102E] text-white py-5 px-6 text-center shadow-md">
             <h1 className="text-base font-semibold tracking-wide">ศูนย์บริการซ่อมไทวัสดุ</h1>
-            <p className="text-xs opacity-90 mt-0.5 font-light">แบบประเมินความพึงพอใจการให้บริการ (CSAT)</p>
+            <p className="text-xs opacity-90 mt-0.5 font-light">สำรวจความพึงพอใจหลังการซ่อมสินค้า</p>
           </div>
 
           <form onSubmit={handleSubmit} className="p-4 space-y-4">
-            {/* Job details card */}
             <div className="bg-white rounded-2xl p-4 border border-[#E4DED2] shadow-sm text-xs space-y-1.5">
               <div className="flex justify-between">
-                <span className="text-[#6B6459]">เลขที่งาน:</span>
+                <span className="text-[#6B6459]">เลขที่ใบส่งซ่อม:</span>
                 <span className="font-mono font-bold text-[#2B2723]">{data.jobNo}</span>
               </div>
               <div className="flex justify-between">
@@ -214,81 +165,33 @@ export default function CustomerCsatPage({ params }: { params: Promise<{ token: 
               )}
             </div>
 
-            {/* 5-Star Ratings */}
-            <div className="bg-white rounded-2xl p-4 border border-[#E4DED2] shadow-sm space-y-3">
-              <h3 className="font-bold text-xs text-[#2B2723] border-b border-[#E4DED2] pb-2">
-                ให้คะแนนความพึงพอใจ (1 ถึง 5 ดาว)
-              </h3>
+            <QuickSatisfactionCard
+              level={level}
+              onSelectLevel={setLevel}
+              comment={comment}
+              onChangeComment={setComment}
+              submitting={submitting}
+            />
 
-              {/* Quality Rating */}
-              <StarRating
-                label="1. คุณภาพและความเรียบร้อยของงานซ่อม"
-                value={qualityScore}
-                onChange={setQualityScore}
-              />
-
-              <div className="border-t border-[#F3EEE6]" />
-
-              {/* Speed Rating */}
-              <StarRating
-                label="2. ความรวดเร็วในการให้บริการและการส่งมอบ"
-                value={speedScore}
-                onChange={setSpeedScore}
-              />
-            </div>
-
-            {/* Satisfaction Aspects Checklist */}
-            <div className="bg-white rounded-2xl p-4 border border-[#E4DED2] shadow-sm space-y-2.5">
-              <h3 className="font-bold text-xs text-[#2B2723]">จุดที่ท่านพึงพอใจเป็นพิเศษ</h3>
-              <div className="space-y-2">
-                {SATISFACTION_ASPECTS.map((aspect) => {
-                  const checked = selectedAspects.includes(aspect.id)
-                  return (
-                    <button
-                      key={aspect.id}
-                      type="button"
-                      onClick={() => toggleAspect(aspect.id)}
-                      className={`w-full p-2.5 rounded-xl border text-left text-xs transition-all flex items-center justify-between ${
-                        checked
-                          ? 'border-[#1D9E75] bg-[#E1F5EE] text-[#1D9E75] font-semibold'
-                          : 'border-[#E4DED2] bg-white text-[#2B2723]'
-                      }`}
-                    >
-                      <span>{aspect.label}</span>
-                      {checked && <CheckCircle2 size={16} />}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* Free-text Feedback Textarea */}
-            <div className="bg-white rounded-2xl p-4 border border-[#E4DED2] shadow-sm space-y-2">
-              <label className="block text-xs font-bold text-[#2B2723]">
-                ข้อเสนอแนะเพิ่มเติม / ความคิดเห็นของท่าน
-              </label>
-              <textarea
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                placeholder="เขียนข้อคิดเห็นหรือข้อเสนอแนะเพื่อการปรับปรุงบริการ..."
-                rows={3}
-                className="w-full p-3 border border-[#D2C9B8] rounded-xl text-xs outline-none focus:border-[#C8102E] resize-none"
-              />
-            </div>
+            {level !== 'unsatisfied' && (
+              <CsatAspectChecklist selectedAspects={selectedAspects} onToggleAspect={toggleAspect} />
+            )}
 
             <button
               type="submit"
               disabled={submitting}
               className="w-full py-3.5 rounded-xl bg-[#C8102E] text-white font-bold text-sm shadow hover:bg-[#9C0C22] transition-colors disabled:opacity-60"
             >
-              {submitting ? 'กำลังส่งข้อมูล...' : 'ส่งแบบประเมินความพึงพอใจ'}
+              {submitting ? 'กำลังส่งข้อมูล...' : 'ยืนยันการประเมินความพึงพอใจ'}
             </button>
           </form>
         </div>
 
-        {/* Footer */}
-        <div className="text-center text-[11px] text-[#9A9384] py-4 border-t border-[#E4DED2] bg-[#FAF7F2]">
-          ศูนย์บริการซ่อมไทวัสดุ · ขอขอบพระคุณทุกความคิดเห็น
+        <div className="text-center text-[11px] text-[#9A9384] py-4 px-4 border-t border-[#E4DED2] bg-[#FAF7F2]">
+          <div className="flex items-center justify-center gap-1 text-[#2B2723] font-medium">
+            <Phone size={12} className="text-[#C8102E]" />
+            <a href="tel:1308">หากมีข้อเสนอแนะติดต่อได้ที่ 1308 (07:00 – 20:00 น.)</a>
+          </div>
         </div>
       </div>
     </div>

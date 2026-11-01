@@ -54,6 +54,9 @@ import './unit/customer-lookup-autofill.test'
 import './unit/customer-tracking-milestones.test'
 import './unit/job-timeline-detail.test'
 import './unit/branch-search.test'
+import './unit/lon-trigger-rules.test'
+import './unit/lon-mapper.test'
+import './unit/lon-notify-service.test'
 
 // Tier 2: Boundary & Corner Cases
 import './e2e/tier2-boundaries/boundary_financial_satang.test'

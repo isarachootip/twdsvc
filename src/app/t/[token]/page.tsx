@@ -4,13 +4,20 @@ import { useState, useEffect, use } from 'react'
 import { AlertCircle } from 'lucide-react'
 import { STAGE_LABELS, Stage } from '@/lib/constants'
 import { useBranding } from '@/lib/hooks/useBranding'
-import { getCustomerMilestoneId } from '@/lib/tracking-milestones'
+import { CUSTOMER_MILESTONES, getCustomerMilestoneId } from '@/lib/tracking-milestones'
 import TrackingActionBanners from './components/TrackingActionBanners'
 import TrackingSignCards from './components/TrackingSignCards'
+import TrackingPickupNoticeCard from './components/TrackingPickupNoticeCard'
 import TrackingJobDetailsCard from './components/TrackingJobDetailsCard'
 
 interface TrackingData {
   jobNo: string
+  sku?: string | null
+  serialNo?: string | null
+  quantity?: number
+  decision?: string
+  operationFee?: number
+  stageEnteredAt?: string
   productName: string
   brandName: string
   customerName: string | null
@@ -89,7 +96,6 @@ export default function PublicTrackingPage({ params }: { params: Promise<{ token
     <div className="min-h-screen bg-[#F3EEE6] font-sans pb-12">
       <div className="max-w-[440px] mx-auto min-h-screen bg-[#FAF7F2] shadow-sm flex flex-col justify-between">
         <div>
-          {/* Header */}
           <div className="bg-[#C8102E] text-white py-4 px-6 text-center shadow-md">
             <div className="flex items-center justify-center gap-3 mb-1.5">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -100,7 +106,7 @@ export default function PublicTrackingPage({ params }: { params: Promise<{ token
               />
               <h1 className="text-base font-semibold tracking-wide">ศูนย์บริการซ่อมไทวัสดุ</h1>
             </div>
-            <p className="text-xs opacity-90 font-light">ติดตามสถานะงานซ่อม — {data.jobNo}</p>
+            <p className="text-xs opacity-90 font-light">แจ้งสถานะการซ่อมสินค้า — {data.jobNo}</p>
           </div>
 
           <div className="p-4 space-y-3.5">
@@ -112,7 +118,16 @@ export default function PublicTrackingPage({ params }: { params: Promise<{ token
               csatUrl={data.csatUrl}
             />
 
-            {/* Customer Digital Signature Actions & Status */}
+            <TrackingPickupNoticeCard
+              stage={data.stage}
+              decision={data.decision}
+              customerName={data.customerName}
+              branchName={data.branchName}
+              stageEnteredAt={data.stageEnteredAt}
+              operationFee={data.operationFee}
+              balance={data.balance}
+            />
+
             <TrackingSignCards
               token={token}
               stage={data.stage}
@@ -123,33 +138,29 @@ export default function PublicTrackingPage({ params }: { params: Promise<{ token
               onSigned={loadData}
             />
 
-            {/* Current Stage Card */}
             <div className="bg-white rounded-2xl p-4 border border-[#E4DED2] shadow-sm space-y-3">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-full bg-[#E1F5EE] text-[#1D9E75] flex items-center justify-center font-bold">
                   ✓
                 </div>
                 <div>
-                  <div className="text-[11px] text-[#9A9384]">สถานะปัจจุบัน</div>
+                  <div className="text-[11px] text-[#9A9384]">สถานะการซ่อมปัจจุบัน</div>
                   <h2 className="text-sm font-bold text-[#2B2723]">{currentStageLabel}</h2>
                 </div>
               </div>
 
-              {/* 5 Customer Milestones Progress Bar */}
               <div className="pt-2">
-                <div className="flex justify-between text-[11px] font-medium text-[#6B6459] mb-1.5">
-                  <span>รับเรื่อง</span>
-                  <span>ส่งซ่อม</span>
-                  <span>ประเมิน</span>
-                  <span>ซ่อม</span>
-                  <span>รับสินค้า</span>
+                <div className="flex justify-between text-[10px] font-medium text-[#6B6459] mb-1.5">
+                  {CUSTOMER_MILESTONES.map((m) => (
+                    <span key={m.id}>{m.shortLabel}</span>
+                  ))}
                 </div>
                 <div className="w-full bg-[#E4DED2] h-2.5 rounded-full overflow-hidden flex">
-                  {[1, 2, 3, 4, 5].map((step) => (
+                  {CUSTOMER_MILESTONES.map((m) => (
                     <div
-                      key={step}
+                      key={m.id}
                       className={`h-full flex-1 border-r border-white last:border-0 ${
-                        currentMilestoneId >= step ? 'bg-[#C8102E]' : 'bg-[#E4DED2]'
+                        currentMilestoneId >= m.id ? 'bg-[#C8102E]' : 'bg-[#E4DED2]'
                       }`}
                     />
                   ))}
@@ -159,6 +170,10 @@ export default function PublicTrackingPage({ params }: { params: Promise<{ token
 
             <TrackingJobDetailsCard
               jobNo={data.jobNo}
+              sku={data.sku}
+              serialNo={data.serialNo}
+              quantity={data.quantity}
+              openedAt={data.openedAt}
               customerName={data.customerName}
               productName={data.productName}
               brandName={data.brandName}
@@ -172,9 +187,8 @@ export default function PublicTrackingPage({ params }: { params: Promise<{ token
           </div>
         </div>
 
-        {/* Footer */}
         <div className="text-center text-[11px] text-[#9A9384] py-4 border-t border-[#E4DED2] bg-[#FAF7F2]">
-          ศูนย์บริการซ่อมไทวัสดุ · สอบถามข้อมูลเพิ่มเติมโทร {data.branchPhone || '1308'}
+          ศูนย์บริการซ่อมไทวัสดุ · สอบถามเพิ่มเติมติดต่อ 1308 (07:00 – 20:00 น.)
         </div>
       </div>
     </div>

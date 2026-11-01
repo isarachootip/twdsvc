@@ -9,10 +9,10 @@ interface TestResponse {
   message: string
 }
 
-type Target = 'line' | 'smtp' | 'smtp-send'
+type Target = 'lon' | 'line' | 'smtp' | 'smtp-send'
 
 interface Props {
-  group: 'line' | 'smtp'
+  group: 'lon' | 'line' | 'smtp'
   /** Tests run against the SAVED configuration, so unsaved edits block testing. */
   disabled: boolean
 }
@@ -46,7 +46,11 @@ export function ConnectionTestButtons({ group, disabled }: Props) {
   return (
     <div style={{ marginTop: 8 }}>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {group === 'line' ? (
+        {group === 'lon' ? (
+          <button type="button" className="btn" disabled={disabled || busy !== null} onClick={() => run('lon')}>
+            {busy === 'lon' ? 'กำลังทดสอบ…' : 'ทดสอบการเชื่อมต่อ LON'}
+          </button>
+        ) : group === 'line' ? (
           <button type="button" className="btn" disabled={disabled || busy !== null} onClick={() => run('line')}>
             {busy === 'line' ? 'กำลังทดสอบ…' : 'ทดสอบ LINE'}
           </button>

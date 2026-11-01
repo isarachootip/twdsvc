@@ -8,6 +8,7 @@ import { useSave, SaveButton, Row, Loading } from './admin-helpers'
 import { IntegrationField } from './integrations/IntegrationField'
 import { ConnectionTestButtons } from './integrations/ConnectionTestButtons'
 import { WebhookUrlBox } from './integrations/WebhookUrlBox'
+import { LonEndpointTogglesCard } from './integrations/LonEndpointTogglesCard'
 
 interface IntegrationsResponse {
   fields: Record<IntegrationKey, MaskedField>
@@ -17,6 +18,7 @@ interface IntegrationsResponse {
 type Edits = Partial<Record<IntegrationKey, string | null>>
 
 const GROUP_TITLE: Record<IntegrationGroup, string> = {
+  lon: 'LON (LINE Official Notification — ไทวัสดุ)',
   line: 'LINE Official Account (Messaging API)',
   smtp: 'อีเมล (SMTP)',
   eordering: 'ระบบชำระเงิน E-ordering (QR Payment)',
@@ -68,7 +70,7 @@ export function IntegrationsSection() {
         </div>
       )}
 
-      {(['line', 'smtp', 'eordering', 'general'] as const).map(group => (
+      {(['lon', 'line', 'smtp', 'eordering', 'general'] as const).map(group => (
         <div key={group} style={{ marginTop: 16 }}>
           <h4>{GROUP_TITLE[group]}</h4>
           <div className="grid3" style={{ marginTop: 8 }}>
@@ -84,8 +86,9 @@ export function IntegrationsSection() {
               />
             ))}
           </div>
+          {group === 'lon' && <LonEndpointTogglesCard />}
           {group === 'line' && <WebhookUrlBox baseUrl={baseUrl} />}
-          {(group === 'line' || group === 'smtp') && <ConnectionTestButtons group={group} disabled={dirty} />}
+          {(group === 'lon' || group === 'line' || group === 'smtp') && <ConnectionTestButtons group={group} disabled={dirty} />}
         </div>
       ))}
 

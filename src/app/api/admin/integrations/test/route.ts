@@ -7,6 +7,7 @@ import { createSmtpTransport, readSmtpSettings } from '@/lib/services/smtp-trans
 export const dynamic = 'force-dynamic'
 
 const bodySchema = z.discriminatedUnion('target', [
+  z.object({ target: z.literal('lon') }),
   z.object({ target: z.literal('line') }),
   z.object({ target: z.literal('smtp') }),
   z.object({ target: z.literal('smtp-send'), to: z.string().trim().email('อีเมลผู้รับไม่ถูกต้อง') }),
@@ -33,6 +34,31 @@ async function testLine(token: string): Promise<TestResult> {
   return { ok: true, message: `เชื่อมต่อสำเร็จ: ${info.displayName ?? 'LINE OA'}${info.basicId ? ` (${info.basicId})` : ''}` }
 }
 
+async function testLon(baseUrl: string, token: string): Promise<TestResult> {
+  if (!baseUrl || !token) {
+    return {
+      ok: true,
+      message: 'ยังไม่ได้ตั้งค่า URL/Token จริง — ระบบพร้อมทำงานในโหมดจำลอง (SIMULATED) และบันทึก Payload ครบถ้วน',
+    }
+  }
+  const url = `${baseUrl.replace(/\/+$/, '')}/repair/get_repair_by_phone_repairno/HEALTHCHECK/0000000000`
+  const res = await fetch(url, {
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+      'X-API-Key': token,
+    },
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+  })
+  if (res.status === 401 || res.status === 403) {
+    return { ok: false, message: `LON ปฏิเสธสิทธิ์หรือติด Cloudflare (${res.status}) กรุณาตรวจสอบ Token / Whitelist` }
+  }
+  if (res.ok || res.status === 404 || res.status === 400) {
+    return { ok: true, message: `เชื่อมต่อเซิร์ฟเวอร์ LON สำเร็จ (HTTP ${res.status})` }
+  }
+  return { ok: false, message: `LON ตอบกลับสถานะ ${res.status}` }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const user = await requireUser(['ADMIN'], req)
@@ -46,6 +72,7 @@ export async function POST(req: NextRequest) {
     const cfg = await getIntegrationConfig()
     const body = parsed.data
 
+    if (body.target === 'lon') return NextResponse.json(await testLon(cfg.LON_API_BASE_URL, cfg.LON_API_TOKEN))
     if (body.target === 'line') return NextResponse.json(await testLine(cfg.LINE_CHANNEL_ACCESS_TOKEN))
 
     const smtp = readSmtpSettings(cfg)

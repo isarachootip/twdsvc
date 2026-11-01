@@ -1,72 +1,14 @@
 'use client'
 
 import { useState, useEffect, use } from 'react'
-import Link from 'next/link'
-import {
-  CheckCircle2, XCircle, AlertCircle, Clock,
-  ImageIcon, ChevronRight, X, Printer
-} from 'lucide-react'
-import { fmtBahtDecimal } from '@/lib/constants'
-import { computeQuotationFinancials } from '@/lib/quotation-format'
-
+import { XCircle } from 'lucide-react'
 import CustomerSignModal from './CustomerSignModal'
 import PublicQuoteA4Modal from './PublicQuoteA4Modal'
-
-interface QuoteLine {
-  type: string
-  description: string
-  unitPrice: number
-  quantity: number
-  partWaitDays?: number
-  partWarrantyDays?: number
-}
-
-interface QuoteData {
-  job: {
-    id: string
-    jobNo: string
-    productName: string
-    brandName: string
-    serialNo?: string | null
-    symptom?: string | null
-    shippingMethod?: string | null
-    openedAt?: string | null
-    operationFeePaid?: number | null
-    branchName: string
-    branchPhone?: string | null
-    storeManagerName?: string | null
-    vendorName?: string | null
-    customerName?: string | null
-    hasWarranty: boolean
-    version: number
-    stage: string
-  }
-  quote: {
-    quoteNo: string
-    version: number
-    subtotal: number
-    vatAmount: number
-    total: number
-    repairDays: number
-    repairWarrantyDays: number
-    vendorNote?: string | null
-    sentAt?: string | null
-    expiresAt?: string | null
-    managerSignatureUrl?: string | null
-    managerSignerName?: string | null
-    isManagerProxy?: boolean
-    managerSignedAt?: string | null
-    customerSignatureUrl?: string | null
-    customerSignedAt?: string | null
-    lines: QuoteLine[]
-  }
-  photos: string[]
-  payUrl?: string | null
-  token: string
-  expired: boolean
-  decided: boolean
-  decision?: string
-}
+import QuoteFinancialCard from './QuoteFinancialCard'
+import { QuoteDecisionActions, QuoteJobSummaryCard } from './QuoteJobAndActions'
+import { ManagerApprovalSignatureCard, QuoteStatusBanners } from './QuoteStatusBanners'
+import { QuotePhotoLightbox, QuoteRejectModal } from './QuoteOverlays'
+import type { QuoteActionDone, QuoteData } from './quote-types'
 
 export default function CustomerQuotePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = use(params)
@@ -79,11 +21,7 @@ export default function CustomerQuotePage({ params }: { params: Promise<{ token:
   const [rejectModalOpen, setRejectModalOpen] = useState(false)
   const [rejectReason, setRejectReason] = useState('')
   const [activePhoto, setActivePhoto] = useState<string | null>(null)
-  const [actionDone, setActionDone] = useState<{
-    type: 'APPROVED' | 'REJECTED'
-    message: string
-    payUrl?: string | null
-  } | null>(null)
+  const [actionDone, setActionDone] = useState<QuoteActionDone | null>(null)
 
   const loadQuote = () => {
     fetch(`/api/public/q/${token}`)
@@ -92,8 +30,8 @@ export default function CustomerQuotePage({ params }: { params: Promise<{ token:
         if (!r.ok) throw new Error(j.error ?? 'ไม่พบข้อมูลหรือลิงก์หมดอายุ')
         return j
       })
-      .then((d) => setData(d))
-      .catch((e) => setError(e.message))
+      .then((d: QuoteData) => setData(d))
+      .catch((e) => setError(e instanceof Error ? e.message : 'เกิดข้อผิดพลาด'))
       .finally(() => setLoading(false))
   }
 
@@ -112,7 +50,6 @@ export default function CustomerQuotePage({ params }: { params: Promise<{ token:
       })
       const result = await res.json()
       if (!res.ok) throw new Error(result.error ?? 'เกิดข้อผิดพลาดในการอนุมัติ')
-
       setSignModalOpen(false)
       setActionDone({
         type: 'APPROVED',
@@ -138,11 +75,10 @@ export default function CustomerQuotePage({ params }: { params: Promise<{ token:
       })
       const result = await res.json()
       if (!res.ok) throw new Error(result.error ?? 'เกิดข้อผิดพลาดในการปฏิเสธ')
-
       setRejectModalOpen(false)
       setActionDone({
         type: 'REJECTED',
-        message: 'บันทึกการไม่อนุมัติเรียบร้อย สินค้าจะถูกจัดส่งกลับไปที่สาขาต้นทาง',
+        message: 'บันทึกการปฏิเสธซ่อมเรียบร้อย สินค้าจะถูกจัดส่งกลับไปที่สาขาต้นทาง',
       })
       loadQuote()
     } catch (e) {
@@ -169,405 +105,52 @@ export default function CustomerQuotePage({ params }: { params: Promise<{ token:
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#E4DED2] max-w-sm w-full text-center space-y-3">
           <XCircle size={44} className="text-[#C8102E] mx-auto" />
           <h2 className="font-bold text-[#2B2723] text-base">ลิงก์ไม่ถูกต้องหรือหมดอายุ</h2>
-          <p className="text-xs text-[#6B6459] leading-relaxed">{error || 'กรุณาติดต่อสาขาไทวัสดุที่เปิดใบแจ้งซ่อม'}</p>
+          <p className="text-xs text-[#6B6459] leading-relaxed">{error || 'กรุณาติดต่อสาขาไทวัสดุ หรือโทร 1308'}</p>
         </div>
       </div>
     )
   }
 
   const { job, quote } = data
-  const isApproved = data.decided && data.decision === 'APPROVED'
-  const isRejected = data.decided && data.decision === 'REJECTED'
-  const isManagerSigned = Boolean(quote.managerSignedAt)
 
   return (
     <div className="min-h-screen bg-[#F3EEE6] font-sans pb-12">
       <div className="max-w-[440px] mx-auto min-h-screen bg-[#FAF7F2] shadow-sm flex flex-col justify-between">
         <div>
-          {/* Header */}
           <div className="bg-[#C8102E] text-white py-5 px-6 text-center shadow-md">
             <h1 className="text-base font-semibold tracking-wide">ศูนย์บริการซ่อมไทวัสดุ</h1>
-            <p className="text-xs opacity-90 mt-0.5 font-light">Thaiwatsadu Service Center — ใบเสนอราคาซ่อม</p>
+            <p className="text-xs opacity-90 mt-0.5 font-light">แจ้งค่าบริการซ่อมสินค้า — ใบเสนอราคา</p>
           </div>
 
           <div className="p-4 space-y-3.5">
-            {/* Status Feedback Banner if just actioned */}
-            {actionDone && (
-              <div
-                className={`p-4 rounded-2xl text-center space-y-2 shadow-sm border ${
-                  actionDone.type === 'APPROVED'
-                    ? 'bg-[#E1F5EE] border-[#1D9E75] text-[#1D9E75]'
-                    : 'bg-[#FBE7E9] border-[#C8102E] text-[#9C0C22]'
-                }`}
-              >
-                {actionDone.type === 'APPROVED' ? (
-                  <CheckCircle2 size={36} className="mx-auto" />
-                ) : (
-                  <XCircle size={36} className="mx-auto" />
-                )}
-                <h3 className="font-bold text-sm">
-                  {actionDone.type === 'APPROVED' ? 'อนุมัติการซ่อมสำเร็จ' : 'บันทึกไม่อนุมัติการซ่อมแล้ว'}
-                </h3>
-                <p className="text-xs leading-relaxed opacity-90">{actionDone.message}</p>
-                {actionDone.payUrl && (
-                  <Link
-                    href={actionDone.payUrl}
-                    className="inline-block mt-2 w-full py-2.5 rounded-xl bg-[#C8102E] text-white font-bold text-xs shadow hover:opacity-95"
-                  >
-                    ไปหน้าชำระเงินทันที ↗
-                  </Link>
-                )}
-              </div>
-            )}
-
-            {/* Existing decided status banners */}
-            {!actionDone && isApproved && (
-              <div className="bg-[#E1F5EE] border border-[#1D9E75] p-3.5 rounded-2xl flex items-center gap-3">
-                <CheckCircle2 size={24} className="text-[#1D9E75] shrink-0" />
-                <div className="text-xs text-[#2B2723]">
-                  <span className="font-bold text-[#1D9E75] block">ท่านได้อนุมัติการซ่อมแล้ว</span>
-                  งานซ่อมกำลังดำเนินการ หรืออยู่ระหว่างรอชำระค่าบริการ
-                </div>
-              </div>
-            )}
-            {!actionDone && isRejected && (
-              <div className="bg-[#FBE7E9] border border-[#C8102E] p-3.5 rounded-2xl flex items-center gap-3">
-                <XCircle size={24} className="text-[#C8102E] shrink-0" />
-                <div className="text-xs text-[#2B2723]">
-                  <span className="font-bold text-[#9C0C22] block">ท่านได้ปฏิเสธการซ่อมแล้ว</span>
-                  สินค้าอยู่ระหว่างเตรียมจัดส่งคืนสาขาต้นทาง
-                </div>
-              </div>
-            )}
-
-            {/* Gatekeeper banner: Awaiting Store Manager signature */}
-            {!actionDone && !data.decided && !isManagerSigned && (
-              <div className="bg-[#FFF8E6] border border-[#F5C253] p-3.5 rounded-2xl flex items-start gap-3">
-                <Clock size={22} className="text-[#B88700] shrink-0 mt-0.5" />
-                <div className="text-xs text-[#2B2723]">
-                  <span className="font-bold text-[#8A6500] block mb-0.5">อยู่ระหว่างการตรวจสอบโดยผู้จัดการสาขา</span>
-                  ใบเสนอราคานี้กำลังอยู่ระหว่างการตรวจสอบและลงนามโดยผู้จัดการสาขา {job.branchName} เมื่อผู้จัดการสาขาลงนามอนุมัติแล้ว ระบบจะเปิดให้ท่านลงนามยืนยันการซ่อม
-                </div>
-              </div>
-            )}
-
-            {/* Job Information Card */}
-            <div className="bg-white rounded-2xl p-4 border border-[#E4DED2] shadow-sm space-y-2 text-xs">
-              <div className="flex justify-between items-center border-b border-[#E4DED2] pb-2">
-                <span className="text-[#6B6459]">เลขที่ใบแจ้งซ่อม</span>
-                <span className="font-bold text-[#2B2723] font-mono text-sm">{job.jobNo}</span>
-              </div>
-              <div className="flex justify-between border-b border-[#E4DED2] pb-2">
-                <span className="text-[#6B6459]">สินค้า</span>
-                <span className="font-medium text-[#2B2723] text-right">{job.productName} ({job.brandName})</span>
-              </div>
-              <div className="flex justify-between border-b border-[#E4DED2] pb-2">
-                <span className="text-[#6B6459]">ศูนย์บริการ</span>
-                <span className="text-[#2B2723]">{job.vendorName || 'ศูนย์บริการมาตรฐานไทวัสดุ'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#6B6459]">สาขาที่ส่งเครื่อง</span>
-                <span className="text-[#2B2723]">{job.branchName}</span>
-              </div>
-            </div>
-
-            {/* Photo Gallery (Triage / Inspection photos) */}
-            {data.photos && data.photos.length > 0 && (
-              <div className="bg-white rounded-2xl p-4 border border-[#E4DED2] shadow-sm space-y-2.5">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-[#2B2723]">
-                  <ImageIcon size={15} className="text-[#C8102E]" />
-                  <span>ภาพถ่ายตรวจสภาพสินค้า ({data.photos.length} รูป)</span>
-                </div>
-                <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-thin">
-                  {data.photos.map((photoUrl, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => setActivePhoto(photoUrl)}
-                      className="relative shrink-0 w-20 h-20 rounded-xl overflow-hidden border border-[#D2C9B8] hover:opacity-90 transition-opacity"
-                    >
-                      <img
-                        src={photoUrl}
-                        alt={`ภาพตรวจสภาพ ${idx + 1}`}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                    </button>
-                  ))}
-                </div>
-                <p className="text-[10px] text-[#9A9384] text-center">แตะรูปเพื่อดูภาพขยายเต็มจอ</p>
-              </div>
-            )}
-
-            {/* Line Items Breakdown Card */}
-            {(() => {
-              const fin = computeQuotationFinancials({
-                lines: quote.lines.map(l => ({
-                  type: l.type,
-                  description: l.description,
-                  quantity: l.quantity,
-                  amount: l.unitPrice * l.quantity,
-                  partWaitDays: l.partWaitDays,
-                  partWarrantyDays: l.partWarrantyDays,
-                })),
-                subtotal: quote.subtotal,
-                vatAmount: quote.vatAmount,
-                total: quote.total,
-                operationFeePaid: job.operationFeePaid,
-                hasWarranty: job.hasWarranty,
-              })
-
-              return (
-                <div className="bg-white rounded-2xl p-4 border border-[#E4DED2] shadow-sm space-y-3">
-                  <div className="flex items-center justify-between border-b border-[#E4DED2] pb-2">
-                    <h3 className="font-bold text-xs text-[#2B2723]">
-                      รายการค่าใช้จ่าย ({quote.quoteNo})
-                    </h3>
-                    <button
-                      type="button"
-                      onClick={() => setA4ModalOpen(true)}
-                      className="text-[11px] font-semibold text-[#C8102E] hover:underline flex items-center gap-1"
-                    >
-                      <Printer size={13} />
-                      ดูใบเสนอราคา (A4)
-                    </button>
-                  </div>
-                  <div className="space-y-2.5 text-xs">
-                    {fin.displayLines.map(line => (
-                      <div key={line.index} className="flex justify-between items-start border-b border-[#F3EEE6] pb-2">
-                        <div className="pr-2">
-                          <div className="font-medium text-[#2B2723]">
-                            {line.index}. {line.description}
-                            {line.quantity > 1 && <span className="text-[#6B6459] ml-1">× {line.quantity}</span>}
-                          </div>
-                          {line.partWaitDays ? (
-                            <div className="text-[10px] text-[#BA7517] flex items-center gap-1 mt-0.5">
-                              <Clock size={11} /> รอสั่งอะไหล่ {line.partWaitDays} วัน
-                            </div>
-                          ) : null}
-                        </div>
-                        <div className="font-mono font-semibold text-[#2B2723] whitespace-nowrap">
-                          {fmtBahtDecimal(line.amountBaht)}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Totals Calculation */}
-                  <div className="space-y-1.5 pt-1 text-xs border-t border-[#E4DED2]">
-                    <div className="flex justify-between text-[#6B6459]">
-                      <span>รวมก่อน VAT</span>
-                      <span className="font-mono">{fmtBahtDecimal(fin.subtotalBaht)}</span>
-                    </div>
-                    <div className="flex justify-between text-[#6B6459]">
-                      <span>ภาษีมูลค่าเพิ่ม (VAT 7%)</span>
-                      <span className="font-mono">{fmtBahtDecimal(fin.vatAmountBaht)}</span>
-                    </div>
-                    <div className="flex justify-between font-semibold text-[#2B2723] pt-0.5">
-                      <span>ยอดซ่อมรวมทั้งสิ้น</span>
-                      <span className="font-mono">{fmtBahtDecimal(fin.totalBaht)}</span>
-                    </div>
-                    {fin.operationFeeDiscountBaht > 0 && (
-                      <div className="flex justify-between font-medium text-emerald-700">
-                        <span>หัก: ส่วนลดค่าดำเนินการที่ชำระไว้</span>
-                        <span className="font-mono">-{fmtBahtDecimal(fin.operationFeeDiscountBaht)}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Total Net Amount Box */}
-                  <div className="bg-[#C8102E] text-white rounded-xl p-3.5 text-center mt-2">
-                    <p className="text-xs opacity-90 mb-0.5 font-medium">ยอดที่ต้องชำระ (กรณีอนุมัติซ่อม)</p>
-                    <p className="text-2xl font-bold font-mono">{fmtBahtDecimal(fin.netPayableBaht)}</p>
-                    {fin.operationFeeDiscountBaht > 0 && (
-                      <p className="text-[10.5px] opacity-90 mt-0.5">
-                        ราคารวม VAT แล้ว · หักส่วนลด {fmtBahtDecimal(fin.operationFeeDiscountBaht)} แล้ว
-                      </p>
-                    )}
-                  </div>
-
-                </div>
-              )
-            })()}
-
-            {/* Repair Info Card */}
-            <div className="bg-white rounded-2xl p-4 border border-[#E4DED2] shadow-sm space-y-2 text-xs">
-              <div className="flex justify-between border-b border-[#E4DED2] pb-2">
-                <span className="text-[#6B6459]">ระยะเวลาซ่อมโดยประมาณ</span>
-                <span className="font-semibold text-[#2B2723]">{quote.repairDays} วันทำการ</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#6B6459]">รับประกันงานซ่อม</span>
-                <span className="font-semibold text-[#1D9E75]">{quote.repairWarrantyDays} วัน</span>
-              </div>
-              {quote.vendorNote && (
-                <div className="mt-2 pt-2 border-t border-[#E4DED2] text-[11px] text-[#6B6459]">
-                  <span className="font-medium text-[#2B2723]">ผลการตรวจ / หมายเหตุจากช่าง:</span> {quote.vendorNote}
-                </div>
-              )}
-            </div>
-
-            {/* Store Manager Approval Signature Card */}
-            <div className="bg-white rounded-2xl p-4 border border-[#E4DED2] shadow-sm space-y-2 text-xs">
-              <div className="flex justify-between items-center border-b border-[#E4DED2] pb-2">
-                <span className="font-bold text-[#2B2723]">การลงนามตรวจสอบโดยผู้จัดการสาขา</span>
-                {isManagerSigned ? (
-                  <span className="text-emerald-700 font-medium flex items-center gap-1">
-                    <CheckCircle2 size={14} /> อนุมัติแล้ว
-                  </span>
-                ) : (
-                  <span className="text-amber-700 font-medium flex items-center gap-1">
-                    <Clock size={14} /> รอลงนาม
-                  </span>
-                )}
-              </div>
-              {isManagerSigned ? (
-                <div className="pt-1 flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-[#2B2723]">{quote.managerSignerName || job.storeManagerName}</div>
-                    <div className="text-[11px] text-[#6B6459]">{quote.isManagerProxy ? 'Manager on duty' : 'ผู้จัดการสาขา'}</div>
-                  </div>
-                  {quote.managerSignatureUrl && (
-                    <div className="border border-slate-200 rounded-lg p-1 bg-slate-50">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={quote.managerSignatureUrl}
-                        alt="Manager Signature"
-                        className="h-9 max-w-[120px] object-contain"
-                      />
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <p className="text-[11px] text-[#6B6459] pt-0.5">
-                  สาขา: {job.branchName} · ผู้จัดการสาขา: {job.storeManagerName || 'ประจำสาขา'}
-                </p>
-              )}
-            </div>
-
-            {/* Action Buttons or Pay Link */}
-            {!data.decided && !data.expired && (
-              <div className="space-y-2.5 pt-1">
-                {isManagerSigned ? (
-                  <button
-                    type="button"
-                    onClick={() => setSignModalOpen(true)}
-                    disabled={submitting}
-                    className="w-full py-3.5 rounded-xl bg-[#C8102E] text-white font-bold text-sm shadow hover:bg-[#9C0C22] transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
-                  >
-                    <CheckCircle2 size={18} />
-                    {submitting ? 'กำลังบันทึก...' : 'ลงนามอนุมัติการซ่อม'}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    disabled
-                    className="w-full py-3.5 rounded-xl bg-slate-200 text-slate-400 font-medium text-xs cursor-not-allowed flex items-center justify-center gap-2"
-                  >
-                    <Clock size={16} />
-                    รอผู้จัดการสาขาลงนามอนุมัติก่อนเปิดรับการยืนยัน
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setRejectModalOpen(true)}
-                  disabled={submitting}
-                  className="w-full py-3 rounded-xl bg-white text-[#6B6459] border border-[#D2C9B8] font-medium text-sm hover:bg-[#F3EEE6] transition-colors disabled:opacity-60"
-                >
-                  ไม่อนุมัติซ่อม (ขอรับสินค้าคืน)
-                </button>
-              </div>
-            )}
-
-            {/* If already approved and payUrl is present */}
-            {data.decided && data.decision === 'APPROVED' && data.payUrl && (
-              <Link
-                href={data.payUrl}
-                className="w-full py-3.5 rounded-xl bg-[#C8102E] text-white font-bold text-sm shadow hover:bg-[#9C0C22] transition-colors flex items-center justify-center gap-2 text-center"
-              >
-                ชำระค่าซ่อมออนไลน์ <ChevronRight size={18} />
-              </Link>
-            )}
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="text-center text-[11px] text-[#9A9384] py-4 border-t border-[#E4DED2] bg-[#FAF7F2]">
-          หากมีข้อสงสัย ติดต่อศูนย์บริการสาขา {job.branchName}
-          {job.branchPhone && ` โทร. ${job.branchPhone}`}
-        </div>
-      </div>
-
-      {/* Reject Confirmation Modal */}
-      {rejectModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-xl border border-[#E4DED2]">
-            <div className="text-center space-y-1">
-              <div className="w-12 h-12 rounded-full bg-[#FBE7E9] text-[#C8102E] flex items-center justify-center mx-auto">
-                <AlertCircle size={28} />
-              </div>
-              <h3 className="font-bold text-base text-[#2B2723]">ยืนยันไม่อนุมัติการซ่อม?</h3>
-              <p className="text-xs text-[#6B6459] leading-relaxed">
-                ค่าดำเนินการตรวจเช็คที่ชำระไว้ตอนเปิดงานจะไม่สามารถขอคืนได้ และสินค้าจะถูกจัดส่งกลับไปยังสาขา {job.branchName} เพื่อให้ท่านมารับคืน
-              </p>
-            </div>
-
-            <div className="space-y-1">
-              <label className="block text-xs text-[#6B6459]">เหตุผลที่ไม่อนุมัติ (ไม่บังคับ)</label>
-              <textarea
-                value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
-                placeholder="เช่น ราคาซ่อมสูงเกินไป, เปลี่ยนใจซื้อใหม่..."
-                rows={2}
-                className="w-full p-2.5 border border-[#D2C9B8] rounded-xl text-xs outline-none focus:border-[#C8102E]"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <button
-                type="button"
-                onClick={handleReject}
-                disabled={submitting}
-                className="w-full py-3 rounded-xl bg-[#C8102E] text-white font-bold text-xs hover:bg-[#9C0C22] transition-colors disabled:opacity-60"
-              >
-                {submitting ? 'กำลังบันทึก...' : 'ยืนยันไม่อนุมัติซ่อม'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setRejectModalOpen(false)}
-                disabled={submitting}
-                className="w-full py-2.5 rounded-xl text-[#6B6459] text-xs hover:bg-gray-100 transition-colors"
-              >
-                ยกเลิก (กลับไปดูใบเสนอราคา)
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Lightbox Modal for Photo Gallery */}
-      {activePhoto && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
-          onClick={() => setActivePhoto(null)}
-        >
-          <div className="relative max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={() => setActivePhoto(null)}
-              className="absolute -top-10 right-0 text-white hover:opacity-80 p-1"
-            >
-              <X size={24} />
-            </button>
-            <img
-              src={activePhoto}
-              alt="ภาพขยาย"
-              className="w-full h-auto max-h-[80vh] object-contain rounded-xl shadow-2xl bg-black"
+            <QuoteStatusBanners data={data} actionDone={actionDone} />
+            <QuoteJobSummaryCard data={data} onSelectPhoto={setActivePhoto} />
+            <QuoteFinancialCard data={data} onOpenA4={() => setA4ModalOpen(true)} />
+            <ManagerApprovalSignatureCard data={data} />
+            <QuoteDecisionActions
+              data={data}
+              submitting={submitting}
+              onApproveClick={() => setSignModalOpen(true)}
+              onRejectClick={() => setRejectModalOpen(true)}
             />
           </div>
         </div>
-      )}
 
-      {/* Customer Signature Modal */}
+        <div className="text-center text-[11px] text-[#9A9384] py-4 border-t border-[#E4DED2] bg-[#FAF7F2]">
+          หากต้องการสอบถามเพิ่มเติม สามารถติดต่อได้ที่ 1308 ในเวลาทำการ (07:00 – 20:00 น.)
+        </div>
+      </div>
+
+      <QuoteRejectModal
+        open={rejectModalOpen}
+        branchName={job.branchName}
+        rejectReason={rejectReason}
+        onChangeReason={setRejectReason}
+        onConfirm={handleReject}
+        onClose={() => setRejectModalOpen(false)}
+        submitting={submitting}
+      />
+      <QuotePhotoLightbox photoUrl={activePhoto} onClose={() => setActivePhoto(null)} />
       <CustomerSignModal
         open={signModalOpen}
         onClose={() => setSignModalOpen(false)}
@@ -576,13 +159,11 @@ export default function CustomerQuotePage({ params }: { params: Promise<{ token:
         quoteNo={quote.quoteNo}
         totalBaht={quote.total}
       />
-
-      {/* A4 Standardized Quotation Modal */}
       <PublicQuoteA4Modal
         open={a4ModalOpen}
         onClose={() => setA4ModalOpen(false)}
         data={{
-          quoteNo: quote.quoteNo,
+          ...quote,
           jobNo: job.jobNo,
           customer: job.customerName ?? null,
           product: job.productName,
@@ -594,12 +175,10 @@ export default function CustomerQuotePage({ params }: { params: Promise<{ token:
           branchName: job.branchName,
           storeManagerName: job.storeManagerName,
           vendorLabel: job.vendorName,
-          sentAt: quote.sentAt,
-          expiresAt: quote.expiresAt,
           openedAt: job.openedAt,
           operationFeePaid: job.operationFeePaid,
           quoteUrl: `/q/${token}`,
-          lines: quote.lines.map(l => ({
+          lines: quote.lines.map((l) => ({
             type: l.type,
             description: l.description,
             quantity: l.quantity,
@@ -607,18 +186,6 @@ export default function CustomerQuotePage({ params }: { params: Promise<{ token:
             partWaitDays: l.partWaitDays,
             partWarrantyDays: l.partWarrantyDays,
           })),
-          subtotal: quote.subtotal,
-          vatAmount: quote.vatAmount,
-          total: quote.total,
-          repairDays: quote.repairDays,
-          repairWarrantyDays: quote.repairWarrantyDays,
-          vendorNote: quote.vendorNote,
-          managerSignatureUrl: quote.managerSignatureUrl,
-          managerSignerName: quote.managerSignerName,
-          isManagerProxy: quote.isManagerProxy,
-          managerSignedAt: quote.managerSignedAt,
-          customerSignatureUrl: quote.customerSignatureUrl,
-          customerSignedAt: quote.customerSignedAt,
         }}
       />
     </div>

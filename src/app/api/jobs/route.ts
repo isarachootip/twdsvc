@@ -9,6 +9,8 @@ import { resolveRouting } from '@/lib/routing'
 import { slaOnEvent, refreshBreaches } from '@/lib/sla-engine'
 import { listJobs } from '@/lib/jobs-list'
 import { jobIntakeSchema } from '@/lib/validations/job-intake.schema'
+import { resolveLonIntakeTrigger } from '@/lib/services/lon-trigger-rules'
+import { dispatchLonNotification } from '@/lib/services/lon-notify.service'
 
 // GET /api/jobs?from&to&stage&type&branchId&channel&productGroup&search&flag&limit
 export async function GET(req: NextRequest) {
@@ -159,6 +161,15 @@ export async function POST(req: NextRequest) {
       await slaOnEvent(tx, { id: job.id, type: job.type, channel: job.channel, vendorCenterId: job.vendorCenterId }, 'JOB_OPENED', now)
       return { job, extra }
     }, { timeout: 20000 })
+
+    const lonTrigger = resolveLonIntakeTrigger({
+      type: result.job.type,
+      isTest: result.job.isTest,
+      customerPhone: result.job.customerPhone,
+    })
+    if (lonTrigger) {
+      void dispatchLonNotification({ jobId: result.job.id, type: lonTrigger.type, statusLabel: lonTrigger.statusLabel, req })
+    }
 
     return NextResponse.json({ id: result.job.id, jobNo: result.job.jobNo, stage: result.job.stage, fees, routing, ...result.extra }, { status: 201 })
   } catch (e) {

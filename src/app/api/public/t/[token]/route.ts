@@ -11,6 +11,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
       job: {
         include: {
           branch: { select: { name: true, phone: true } },
+          items: { select: { quantity: true } },
           charges: true,
           payments: true,
           events: {
@@ -96,9 +97,19 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
 
   const intakeSignatureUrl = getSig(['INTAKE_SIGNED', 'JOB_OPENED'])
   const pickupSignatureUrl = getSig(['PICKUP_SIGNED', 'JOB_CLOSED'])
+  const quantity = job.items.length > 0 ? job.items.reduce((sum, i) => sum + i.quantity, 0) : 1
+  const operationFee = job.charges
+    .filter((c) => c.type === 'OPERATION_FEE')
+    .reduce((sum, c) => sum + c.amount, 0)
 
   return NextResponse.json({
     jobNo: job.jobNo,
+    sku: job.sku,
+    serialNo: job.serialNo,
+    quantity,
+    decision: job.decision,
+    operationFee,
+    stageEnteredAt: job.stageEnteredAt,
     productName: job.productName,
     brandName: job.brandName,
     customerName: job.customerName,

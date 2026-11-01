@@ -5,6 +5,8 @@ import { ActionType, ActionInput, Actor, ActionResult, Ctx } from './types'
 import { ActionError } from './errors'
 import { shouldNotifyVendor } from '../services/job-notify-message'
 import { notifyVendorOfJob } from '../services/job-notify.service'
+import { resolveLonStageTransitionTrigger } from '../services/lon-trigger-rules'
+import { dispatchLonNotification } from '../services/lon-notify.service'
 import { ACTIONS, normalizeAction } from './registry'
 import {
   validateRolePermission,
@@ -100,7 +102,18 @@ export async function executeAction(
           stageEnteredAt: nextStage !== job.stage ? now : undefined,
           version: { increment: 1 },
         },
-        select: { id: true, jobNo: true, stage: true, version: true, type: true, channel: true, vendorCenterId: true },
+        select: {
+          id: true,
+          jobNo: true,
+          stage: true,
+          version: true,
+          type: true,
+          isTest: true,
+          customerPhone: true,
+          decision: true,
+          channel: true,
+          vendorCenterId: true,
+        },
       })
 
       // SLA engine — OUTBOUND_HANDED_OFF (from tpl_delivered) must precede VD_RECEIVED (C3)
@@ -114,14 +127,32 @@ export async function executeAction(
       return {
         job: { id: updated.id, jobNo: updated.jobNo, stage: updated.stage, version: updated.version },
         extra: c.extra,
-        notify: { prevStage: job.stage, vendorCenterId: updated.vendorCenterId },
+        notify: {
+          prevStage: job.stage,
+          vendorCenterId: updated.vendorCenterId,
+          type: updated.type,
+          isTest: updated.isTest,
+          customerPhone: updated.customerPhone,
+          decision: updated.decision,
+        },
       }
     }, { timeout: 20000, maxWait: 10000 })
 
-    // After commit, best-effort: a LINE failure must never fail the action
+    // After commit, best-effort: external notifications must never fail the action
     const { notify, ...payload } = result
     if (shouldNotifyVendor(notify.prevStage, payload.job.stage, notify.vendorCenterId) && notify.vendorCenterId) {
       void notifyVendorOfJob({ jobNo: payload.job.jobNo, vendorCenterId: notify.vendorCenterId })
+    }
+    const lonTrigger = resolveLonStageTransitionTrigger({
+      type: notify.type,
+      isTest: notify.isTest,
+      customerPhone: notify.customerPhone,
+      prevStage: notify.prevStage,
+      nextStage: payload.job.stage,
+      decision: notify.decision,
+    })
+    if (lonTrigger) {
+      void dispatchLonNotification({ jobId: payload.job.id, type: lonTrigger.type, statusLabel: lonTrigger.statusLabel })
     }
 
     return { success: true, ...payload }

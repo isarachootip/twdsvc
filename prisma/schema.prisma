@@ -298,6 +298,7 @@ model Job {
   shipments       Shipment[]
   slaClocks       SlaClock[]
   tradeIns        TradeIn[]
+  lonNotifications LonNotificationLog[]
 
   @@index([isTest])
   @@index([productGroupName])
@@ -850,6 +851,41 @@ model VendorProductRate {
 
   @@unique([vendorParentId, serviceType, groupName])
   @@map("vendor_product_rates")
+}
+
+enum LonNotificationType {
+  SEND_TO_REPAIR
+  SEND_PRICE
+  STATUS_REPAIR
+  REJECT_REPAIR
+  RECEIVE_JOB
+  SATISFACTION
+}
+
+enum LonDeliveryStatus {
+  SENT
+  SIMULATED
+  SKIPPED
+  FAILED
+}
+
+model LonNotificationLog {
+  id             String              @id @default(cuid())
+  jobId          String
+  type           LonNotificationType
+  endpoint       String
+  recipientPhone String
+  status         LonDeliveryStatus
+  httpStatus     Int?
+  requestPayload Json
+  responseBody   String?
+  errorMessage   String?
+  triggeredBy    String?
+  createdAt      DateTime            @default(now())
+  job            Job                 @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId, createdAt])
+  @@map("lon_notification_logs")
 }
 
 
