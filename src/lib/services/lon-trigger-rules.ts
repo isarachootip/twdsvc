@@ -25,7 +25,7 @@ export function resolveLonIntakeTrigger(
   if (ctx.hasPendingIntakeFee) return null
   return {
     type: 'SEND_TO_REPAIR',
-    statusLabel: 'รับเรื่องส่งซ่อมสินค้า',
+    statusLabel: 'การส่งซ่อมสินค้า',
   }
 }
 
@@ -75,18 +75,18 @@ export function resolveLonStageTransitionTrigger(
       if (ctx.decision === 'REJECTED') {
         return {
           type: 'REJECT_REPAIR',
-          statusLabel: 'พร้อมรับสินค้าคืน (ปฏิเสธการซ่อม)',
+          statusLabel: 'ปฎิเสธงานซ่อม',
         }
       }
       return {
         type: 'RECEIVE_JOB',
-        statusLabel: 'พร้อมรับสินค้าคืน',
+        statusLabel: 'แจ้งสถานะการรับสินค้า',
       }
 
     case 'CLOSED_REPAIRED':
       return {
         type: 'SATISFACTION',
-        statusLabel: 'ส่งมอบสำเร็จ',
+        statusLabel: 'ประเมินความพึงพอใจซ่อมสินค้า',
       }
 
     default:

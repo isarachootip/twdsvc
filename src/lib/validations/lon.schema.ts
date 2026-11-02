@@ -74,89 +74,75 @@ export function normalizeThaiMobilePhone(raw: string | null | undefined): string
   return null
 }
 
-export interface LonRepairItemDto {
-  sku: string
-  product_name: string
-  serial_no: string
-  quantity: number
-}
-
-export interface LonBasePayload {
-  repair_no: string
-  customer_phone: string
+export interface LonSendToRepairPayload {
   customer_name: string
+  repair_no: string
   repair_date: string
-  store_name: string
-  branch_name: string
-  branch_phone: string
-  sku: string
-  product_name: string
-  brand_name: string
-  serial_no: string
-  quantity: number
-  repair_reason: string
-  symptom: string
-  items: LonRepairItemDto[]
-  contact_center: string
   button: string
-  tracking_url: string
-}
-
-export interface LonSendToRepairPayload extends LonBasePayload {
+  store_name: string
+  customer_phone: string
+  product_name: string
+  repair_reason: string
   status: string
 }
 
-export interface LonSendPricePayload extends LonBasePayload {
+export interface LonSendPricePayload {
+  customer_name: string
+  repair_no: string
+  repair_date: string
+  button: string
+  store_name: string
+  customer_phone: string
+  product_name: string
+  repair_reason: string
   repair_price: number
-  total_price: number
-  total_price_formatted: string
-  repair_days: number
-  warranty_days: number
-  findings: string[]
   status: string
-  quote_url: string
-  payment_url: string | null
 }
 
-export interface LonStatusRepairPayload extends LonBasePayload {
+export interface LonStatusRepairPayload {
+  customer_name: string
+  repair_no: string
+  repair_date: string
+  button: string
+  store_name: string
+  customer_phone: string
+  product_name: string
+  repair_reason: string
   status: string
-  stage_code: string
 }
 
-export interface LonRejectRepairPayload extends LonBasePayload {
+export interface LonRejectRepairPayload {
+  customer_name: string
+  repair_no: string
+  status: string
+  product_name: string
+  repair_reason: string
+  repair_date: string
   return_date: string
+  button: string
+  store_name: string
   recived_store_name: string
-  pickup_branch_name: string
-  pickup_within_days: number
-  status: string
+  customer_phone: string
 }
 
-export interface LonReceiveJobPayload extends LonBasePayload {
+export interface LonReceiveJobPayload {
+  customer_name: string
+  repair_no: string
+  repair_date: string
+  product_name: string
+  repair_reason: string
   received_date: string
-  receive_date: string
-  recived_store_name: string
-  pickup_branch_name: string
-  pickup_within_days: number
-  operation_fee: number
   status: string
+  button: string
+  recived_store_name: string
+  customer_phone: string
 }
 
 export interface LonSatisfactionPayload {
-  repair_no: string
-  customer_phone: string
   customer_name: string
+  repair_no: string
   status: string
-  repair_date: string
-  closed_date: string
-  store_name: string
-  branch_name: string
-  product_name: string
-  contact_center: string
-  button: string
-  satisfaction_url: string
-  rate_satisfied_url: string
-  rate_neutral_url: string
-  rate_unsatisfied_url: string
+  customer_phone: string
 }
 
 export type LonPayload =
@@ -166,3 +152,23 @@ export type LonPayload =
   | LonRejectRepairPayload
   | LonReceiveJobPayload
   | LonSatisfactionPayload
+
+export const LON_SWAGGER_KEY_ORDER: Record<LonType, readonly string[]> = {
+  SEND_TO_REPAIR: ['customer_name', 'repair_no', 'repair_date', 'button', 'store_name', 'customer_phone', 'product_name', 'repair_reason', 'status'],
+  SEND_PRICE: ['customer_name', 'repair_no', 'repair_date', 'button', 'store_name', 'customer_phone', 'product_name', 'repair_reason', 'repair_price', 'status'],
+  STATUS_REPAIR: ['customer_name', 'repair_no', 'repair_date', 'button', 'store_name', 'customer_phone', 'product_name', 'repair_reason', 'status'],
+  REJECT_REPAIR: ['customer_name', 'repair_no', 'status', 'product_name', 'repair_reason', 'repair_date', 'return_date', 'button', 'store_name', 'recived_store_name', 'customer_phone'],
+  RECEIVE_JOB: ['customer_name', 'repair_no', 'repair_date', 'product_name', 'repair_reason', 'received_date', 'status', 'button', 'recived_store_name', 'customer_phone'],
+  SATISFACTION: ['customer_name', 'repair_no', 'status', 'customer_phone'],
+}
+
+/** Reorders a payload object (e.g., returned from PostgreSQL jsonb) to match the exact LON Swagger field order. */
+export function orderLonPayloadBySwagger(payload: unknown, type: LonType): Record<string, unknown> {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return {}
+  const src = payload as Record<string, unknown>
+  const out: Record<string, unknown> = {}
+  for (const key of LON_SWAGGER_KEY_ORDER[type]) {
+    if (key in src) out[key] = src[key]
+  }
+  return Object.keys(out).length > 0 ? out : src
+}

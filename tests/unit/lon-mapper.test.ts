@@ -1,5 +1,5 @@
 import { describe, it, expect, setTier } from '../framework/core'
-import { normalizeThaiMobilePhone } from '../../src/lib/validations/lon.schema'
+import { normalizeThaiMobilePhone, orderLonPayloadBySwagger } from '../../src/lib/validations/lon.schema'
 import { buildLonNotificationRequest, type LonJobSource } from '../../src/lib/services/lon-mapper'
 
 setTier('Tier 1')
@@ -57,92 +57,175 @@ describe('Unit: LON Payload Mapper & Phone Normalizer', () => {
     expect(normalizeThaiMobilePhone(null)).toBeNull()
   })
 
-  it('LMP-02: buildLonNotificationRequest maps SEND_TO_REPAIR to /repair/send_to_repair_jobs with Swagger fields', () => {
+  it('LMP-02: buildLonNotificationRequest maps SEND_TO_REPAIR to exact 9 Swagger fields and order', () => {
     const req = buildLonNotificationRequest(SAMPLE_JOB, 'SEND_TO_REPAIR', {
       baseUrl: 'https://svc.thaiwatsadu.com/',
       now: new Date('2026-01-07T04:00:00.000Z'),
     })
     expect(req.endpoint).toBe('/repair/send_to_repair_jobs')
     expect(req.recipientPhone).toBe('0812345678')
-    expect(req.payload.repair_no).toBe('TWBN2601070001')
-    expect(req.payload.repair_date).toBe('2026-01-07')
-    if ('tracking_url' in req.payload) {
-      expect(req.payload.button).toBe('https://svc.thaiwatsadu.com/t/trk_123')
-      expect(req.payload.store_name).toBe('ไทวัสดุ สาขาบางนา')
-      expect(req.payload.repair_reason).toBe('เครื่องไม่เปิดติด')
-      expect(req.payload.tracking_url).toBe('https://svc.thaiwatsadu.com/t/trk_123')
-      expect(req.payload.sku).toBe('60000205')
-      expect(req.payload.serial_no).toBe('SR440')
-      expect(req.payload.quantity).toBe(1)
-    } else {
-      throw new Error('Expected tracking_url in SEND_TO_REPAIR payload')
-    }
+    expect(Object.keys(req.payload)).toEqual([
+      'customer_name',
+      'repair_no',
+      'repair_date',
+      'button',
+      'store_name',
+      'customer_phone',
+      'product_name',
+      'repair_reason',
+      'status',
+    ])
+    expect(req.payload).toEqual({
+      customer_name: 'คุณพฤหัส ศุกร์',
+      repair_no: 'TWBN2601070001',
+      repair_date: '2026-01-07',
+      button: 'https://svc.thaiwatsadu.com/t/trk_123',
+      store_name: 'ไทวัสดุ สาขาบางนา',
+      customer_phone: '0812345678',
+      product_name: 'สว่านกระแทกไร้สาย 18V',
+      repair_reason: 'เครื่องไม่เปิดติด',
+      status: 'การส่งซ่อมสินค้า',
+    })
   })
 
-  it('LMP-03: buildLonNotificationRequest maps SEND_PRICE to /repair/send_price_repair_jobs with repair_price & button', () => {
+  it('LMP-03: buildLonNotificationRequest maps SEND_PRICE to exact 10 Swagger fields and order', () => {
     const req = buildLonNotificationRequest(SAMPLE_JOB, 'SEND_PRICE', {
       baseUrl: 'https://svc.thaiwatsadu.com',
     })
     expect(req.endpoint).toBe('/repair/send_price_repair_jobs')
-    if ('quote_url' in req.payload) {
-      expect(req.payload.repair_price).toBe(1650)
-      expect(req.payload.total_price).toBe(1650)
-      expect(req.payload.total_price_formatted).toBe('1,650.00')
-      expect(req.payload.repair_days).toBe(5)
-      expect(req.payload.warranty_days).toBe(30)
-      expect(req.payload.findings.length).toBe(2)
-      expect(req.payload.button).toBe('https://svc.thaiwatsadu.com/q/qt_456')
-      expect(req.payload.quote_url).toBe('https://svc.thaiwatsadu.com/q/qt_456')
-      expect(req.payload.payment_url).toBe('https://svc.thaiwatsadu.com/pay/pay_789')
-    } else {
-      throw new Error('Expected quote_url in SEND_PRICE payload')
-    }
+    expect(Object.keys(req.payload)).toEqual([
+      'customer_name',
+      'repair_no',
+      'repair_date',
+      'button',
+      'store_name',
+      'customer_phone',
+      'product_name',
+      'repair_reason',
+      'repair_price',
+      'status',
+    ])
+    expect(req.payload).toEqual({
+      customer_name: 'คุณพฤหัส ศุกร์',
+      repair_no: 'TWBN2601070001',
+      repair_date: '2026-01-07',
+      button: 'https://svc.thaiwatsadu.com/q/qt_456',
+      store_name: 'ไทวัสดุ สาขาบางนา',
+      customer_phone: '0812345678',
+      product_name: 'สว่านกระแทกไร้สาย 18V',
+      repair_reason: 'เครื่องไม่เปิดติด',
+      repair_price: 1650,
+      status: 'แจ้งค่าบริการซ่อมสินค้า',
+    })
   })
 
-  it('LMP-04: buildLonNotificationRequest maps REJECT_REPAIR and RECEIVE_JOB with Swagger fields (recived_store_name & received_date)', () => {
+  it('LMP-04: buildLonNotificationRequest maps REJECT_REPAIR and RECEIVE_JOB to exact Swagger fields and order', () => {
     const rejectReq = buildLonNotificationRequest(SAMPLE_JOB, 'REJECT_REPAIR', {
       baseUrl: 'https://svc.thaiwatsadu.com',
       now: new Date('2026-01-09T04:00:00.000Z'),
     })
     expect(rejectReq.endpoint).toBe('/repair/reject_repair_jobs')
-    if ('return_date' in rejectReq.payload) {
-      expect(rejectReq.payload.return_date).toBe('2026-01-09')
-      expect(rejectReq.payload.recived_store_name).toBe('ไทวัสดุ สาขาบางนา')
-      expect(rejectReq.payload.pickup_within_days).toBe(7)
-      expect(rejectReq.payload.pickup_branch_name).toBe('ไทวัสดุ สาขาบางนา')
-    } else {
-      throw new Error('Expected return_date in REJECT_REPAIR payload')
-    }
+    expect(Object.keys(rejectReq.payload)).toEqual([
+      'customer_name',
+      'repair_no',
+      'status',
+      'product_name',
+      'repair_reason',
+      'repair_date',
+      'return_date',
+      'button',
+      'store_name',
+      'recived_store_name',
+      'customer_phone',
+    ])
+    expect(rejectReq.payload).toEqual({
+      customer_name: 'คุณพฤหัส ศุกร์',
+      repair_no: 'TWBN2601070001',
+      status: 'ปฎิเสธงานซ่อม',
+      product_name: 'สว่านกระแทกไร้สาย 18V',
+      repair_reason: 'เครื่องไม่เปิดติด',
+      repair_date: '2026-01-07',
+      return_date: '2026-01-09',
+      button: 'https://svc.thaiwatsadu.com/t/trk_123',
+      store_name: 'ไทวัสดุ สาขาบางนา',
+      recived_store_name: 'ไทวัสดุ สาขาบางนา',
+      customer_phone: '0812345678',
+    })
 
     const receiveReq = buildLonNotificationRequest(SAMPLE_JOB, 'RECEIVE_JOB', {
       baseUrl: 'https://svc.thaiwatsadu.com',
       now: new Date('2026-01-09T04:00:00.000Z'),
     })
     expect(receiveReq.endpoint).toBe('/repair/recive_jobs')
-    if ('operation_fee' in receiveReq.payload) {
-      expect(receiveReq.payload.received_date).toBe('2026-01-09')
-      expect(receiveReq.payload.receive_date).toBe('2026-01-09')
-      expect(receiveReq.payload.recived_store_name).toBe('ไทวัสดุ สาขาบางนา')
-      expect(receiveReq.payload.operation_fee).toBe(300)
-      expect(receiveReq.payload.pickup_within_days).toBe(7)
-    } else {
-      throw new Error('Expected operation_fee in RECEIVE_JOB payload')
-    }
+    expect(Object.keys(receiveReq.payload)).toEqual([
+      'customer_name',
+      'repair_no',
+      'repair_date',
+      'product_name',
+      'repair_reason',
+      'received_date',
+      'status',
+      'button',
+      'recived_store_name',
+      'customer_phone',
+    ])
+    expect(receiveReq.payload).toEqual({
+      customer_name: 'คุณพฤหัส ศุกร์',
+      repair_no: 'TWBN2601070001',
+      repair_date: '2026-01-07',
+      product_name: 'สว่านกระแทกไร้สาย 18V',
+      repair_reason: 'เครื่องไม่เปิดติด',
+      received_date: '2026-01-09',
+      status: 'แจ้งสถานะการรับสินค้า',
+      button: 'https://svc.thaiwatsadu.com/t/trk_123',
+      recived_store_name: 'ไทวัสดุ สาขาบางนา',
+      customer_phone: '0812345678',
+    })
   })
 
-  it('LMP-05: buildLonNotificationRequest maps SATISFACTION with status and 3 quick-rate URLs', () => {
+  it('LMP-05: buildLonNotificationRequest maps SATISFACTION to exact 4 Swagger fields and orderLonPayloadBySwagger reorders DB jsonb', () => {
     const req = buildLonNotificationRequest(SAMPLE_JOB, 'SATISFACTION', {
       baseUrl: 'https://svc.thaiwatsadu.com',
     })
     expect(req.endpoint).toBe('/repair/satisfaction_jobs')
-    if ('satisfaction_url' in req.payload) {
-      expect(req.payload.status).toBe('ประเมินความพึงพอใจซ่อมสินค้า')
-      expect(req.payload.satisfaction_url).toBe('https://svc.thaiwatsadu.com/s/csat_999')
-      expect(req.payload.rate_satisfied_url).toBe('https://svc.thaiwatsadu.com/s/csat_999?rate=satisfied')
-      expect(req.payload.rate_neutral_url).toBe('https://svc.thaiwatsadu.com/s/csat_999?rate=neutral')
-      expect(req.payload.rate_unsatisfied_url).toBe('https://svc.thaiwatsadu.com/s/csat_999?rate=unsatisfied')
-    } else {
-      throw new Error('Expected satisfaction_url in SATISFACTION payload')
+    expect(Object.keys(req.payload)).toEqual([
+      'customer_name',
+      'repair_no',
+      'status',
+      'customer_phone',
+    ])
+    expect(req.payload).toEqual({
+      customer_name: 'คุณพฤหัส ศุกร์',
+      repair_no: 'TWBN2601070001',
+      status: 'ประเมินความพึงพอใจซ่อมสินค้า',
+      customer_phone: '0812345678',
+    })
+
+    // Simulate PostgreSQL jsonb scrambled key order + legacy extra keys
+    const scrambledFromDb = {
+      sku: '60395492',
+      items: [{ sku: '60395492' }],
+      button: 'https://vhomesvc.online/t/abc',
+      status: 'การส่งซ่อมสินค้า',
+      repair_no: 'BNA-02112026-0001',
+      store_name: 'สาขาบางนา',
+      repair_date: '2026-11-02',
+      product_name: 'ตู้เย็น SBS',
+      customer_name: 'อิศระ ชูทิพย์',
+      repair_reason: 'ไฟไม่เข้า',
+      customer_phone: '0636395619',
     }
+    const ordered = orderLonPayloadBySwagger(scrambledFromDb, 'SEND_TO_REPAIR')
+    expect(Object.keys(ordered)).toEqual([
+      'customer_name',
+      'repair_no',
+      'repair_date',
+      'button',
+      'store_name',
+      'customer_phone',
+      'product_name',
+      'repair_reason',
+      'status',
+    ])
   })
 })

@@ -4,7 +4,7 @@ import { prisma } from '@/lib/db'
 import { ensureCsatToken, ensurePaymentToken, ensureTrackingToken } from '@/lib/public-token'
 import { publicBaseUrl } from '@/lib/settings'
 import { getIntegrationConfig } from '@/lib/services/integration-config.service'
-import { lonHttpRequest } from '@/lib/services/lon-http-client'
+import { formatLonHttpError, lonHttpRequest } from '@/lib/services/lon-http-client'
 import { buildLonNotificationRequest } from '@/lib/services/lon-mapper'
 import { getLonEndpointToggles, saveLonEndpointToggles } from '@/lib/services/lon-toggles.service'
 import {
@@ -179,7 +179,7 @@ export async function dispatchLonNotification(params: {
         httpStatus: res.status,
         requestPayload: payloadJson,
         responseBody: bodyText || null,
-        errorMessage: res.ok ? null : `LON HTTP ${res.status}: ${bodyText.slice(0, 200) || res.statusText}`,
+        errorMessage: res.ok ? null : formatLonHttpError(res.status, res.statusText, res.bodyText),
         triggeredBy: actor,
       },
     })

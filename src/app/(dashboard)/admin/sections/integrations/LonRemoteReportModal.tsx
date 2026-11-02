@@ -2,7 +2,7 @@
 
 import Modal from '@/components/ui/Modal'
 import { fmtDateTime } from '@/lib/constants'
-import { LON_TYPE_LABELS } from '@/lib/validations/lon.schema'
+import { LON_TYPE_LABELS, orderLonPayloadBySwagger } from '@/lib/validations/lon.schema'
 import type { LonMonitorLogItem, RemoteLonRecord } from '@/lib/services/lon-monitor.service'
 
 export function LonPayloadInspectModal({
@@ -64,7 +64,7 @@ export function LonPayloadInspectModal({
               whiteSpace: 'pre-wrap',
             }}
           >
-            {JSON.stringify(item.requestPayload, null, 2)}
+            {JSON.stringify(orderLonPayloadBySwagger(item.requestPayload, item.type), null, 2)}
           </pre>
         </div>
 

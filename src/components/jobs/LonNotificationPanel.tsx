@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/Toast'
 import {
   LON_NOTIFICATION_TYPES,
   LON_TYPE_LABELS,
+  orderLonPayloadBySwagger,
   type LonEndpointToggles,
   type LonStatus,
   type LonType,
@@ -167,7 +168,7 @@ export function LonNotificationPanel({
                 {log.errorMessage && <div className="text-amber-700" style={{ fontSize: 11, marginTop: 2 }}>{log.errorMessage}</div>}
                 {open && (
                   <pre className="font-mono" style={{ marginTop: 4, padding: 8, background: 'var(--surface)', borderRadius: 6, fontSize: 10.5, overflowX: 'auto', whiteSpace: 'pre-wrap' }}>
-                    {`POST ${log.endpoint}${log.httpStatus ? ` → HTTP ${log.httpStatus}` : ''}\nRequest:\n${JSON.stringify(log.requestPayload, null, 2)}${log.responseBody ? `\n\nResponse:\n${log.responseBody}` : ''}`}
+                    {`POST ${log.endpoint}${log.httpStatus ? ` → HTTP ${log.httpStatus}` : ''}\nRequest:\n${JSON.stringify(orderLonPayloadBySwagger(log.requestPayload, log.type), null, 2)}${log.responseBody ? `\n\nResponse:\n${log.responseBody}` : ''}`}
                   </pre>
                 )}
               </div>

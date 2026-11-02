@@ -7,6 +7,7 @@ import {
   LON_DEFAULT_BASE_URL,
   LON_DELIVERY_STATUSES,
   LON_NOTIFICATION_TYPES,
+  orderLonPayloadBySwagger,
   type LonStatus,
   type LonType,
 } from '@/lib/validations/lon.schema'
@@ -131,7 +132,7 @@ export async function getLonMonitorReport(rawQuery: Partial<LonMonitorQuery> = {
       recipientPhone: r.recipientPhone,
       status: r.status,
       httpStatus: r.httpStatus,
-      requestPayload: r.requestPayload,
+      requestPayload: orderLonPayloadBySwagger(r.requestPayload, r.type),
       responseBody: r.responseBody,
       errorMessage: r.errorMessage,
       triggeredBy: r.triggeredBy,

@@ -17,7 +17,7 @@ describe('Unit: LON Trigger Rules (Lifecycle Mapping)', () => {
     })
     expect(res).toEqual({
       type: 'SEND_TO_REPAIR',
-      statusLabel: 'รับเรื่องส่งซ่อมสินค้า',
+      statusLabel: 'การส่งซ่อมสินค้า',
     })
 
     const pendingFeeRes = resolveLonIntakeTrigger({
@@ -143,7 +143,7 @@ describe('Unit: LON Trigger Rules (Lifecycle Mapping)', () => {
         nextStage: 'READY_FOR_PICKUP',
         decision: 'REJECTED',
       })
-    ).toEqual({ type: 'REJECT_REPAIR', statusLabel: 'พร้อมรับสินค้าคืน (ปฏิเสธการซ่อม)' })
+    ).toEqual({ type: 'REJECT_REPAIR', statusLabel: 'ปฎิเสธงานซ่อม' })
 
     expect(
       resolveLonStageTransitionTrigger({
@@ -154,7 +154,7 @@ describe('Unit: LON Trigger Rules (Lifecycle Mapping)', () => {
         nextStage: 'READY_FOR_PICKUP',
         decision: 'APPROVED',
       })
-    ).toEqual({ type: 'RECEIVE_JOB', statusLabel: 'พร้อมรับสินค้าคืน' })
+    ).toEqual({ type: 'RECEIVE_JOB', statusLabel: 'แจ้งสถานะการรับสินค้า' })
   })
 
   it('LTR-06: CLOSED_REPAIRED triggers SATISFACTION while CLOSED_NOT_REPAIRED does not', () => {
@@ -167,7 +167,7 @@ describe('Unit: LON Trigger Rules (Lifecycle Mapping)', () => {
         nextStage: 'CLOSED_REPAIRED',
         decision: 'APPROVED',
       })
-    ).toEqual({ type: 'SATISFACTION', statusLabel: 'ส่งมอบสำเร็จ' })
+    ).toEqual({ type: 'SATISFACTION', statusLabel: 'ประเมินความพึงพอใจซ่อมสินค้า' })
 
     expect(
       resolveLonStageTransitionTrigger({

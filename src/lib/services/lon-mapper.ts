@@ -3,9 +3,7 @@ import { STAGE_LABELS } from '@/lib/constants'
 import {
   LON_ENDPOINTS,
   normalizeThaiMobilePhone,
-  type LonBasePayload,
   type LonPayload,
-  type LonRepairItemDto,
   type LonType,
 } from '@/lib/validations/lon.schema'
 
@@ -51,10 +49,6 @@ export function formatLonDate(date: Date): string {
   return `${get('year')}-${get('month')}-${get('day')}`
 }
 
-function formatBahtAmount(amount: number): string {
-  return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
-
 export function buildLonNotificationRequest(
   job: LonJobSource,
   type: LonType,
@@ -63,133 +57,116 @@ export function buildLonNotificationRequest(
   const cleanBase = options.baseUrl.replace(/\/+$/, '')
   const now = options.now ?? new Date()
   const recipientPhone = normalizeThaiMobilePhone(job.customerPhone) ?? (job.customerPhone ?? '').replace(/\D/g, '')
-
-  const items: LonRepairItemDto[] =
-    job.items.length > 0
-      ? job.items.map((item) => ({
-          sku: item.sku ?? job.sku ?? '-',
-          product_name: item.productName,
-          serial_no: job.serialNo ?? '-',
-          quantity: item.quantity,
-        }))
-      : [{ sku: job.sku ?? '-', product_name: job.productName, serial_no: job.serialNo ?? '-', quantity: 1 }]
-
-  const trackingUrl = `${cleanBase}/t/${job.tokens.tracking}`
-  const statusText = options.statusLabel || STAGE_LABELS[job.stage] || job.stage
-  const endpoint = LON_ENDPOINTS[type]
+  const customerName = job.customerName ?? 'ลูกค้าไทวัสดุ'
+  const repairDate = formatLonDate(job.openedAt)
+  const storeName = job.branch.name
   const reasonText = job.symptom ?? '-'
-
-  const base: LonBasePayload = {
-    repair_no: job.jobNo,
-    customer_phone: recipientPhone,
-    customer_name: job.customerName ?? 'ลูกค้าไทวัสดุ',
-    repair_date: formatLonDate(job.openedAt),
-    store_name: job.branch.name,
-    branch_name: job.branch.name,
-    branch_phone: job.branch.phone ?? '1308',
-    sku: job.sku ?? items[0]?.sku ?? '-',
-    product_name: job.productName,
-    brand_name: job.brandName,
-    serial_no: job.serialNo ?? '-',
-    quantity: items.reduce((sum, item) => sum + item.quantity, 0),
-    repair_reason: reasonText,
-    symptom: reasonText,
-    items,
-    contact_center: '1308',
-    button: trackingUrl,
-    tracking_url: trackingUrl,
-  }
+  const trackingUrl = `${cleanBase}/t/${job.tokens.tracking}`
+  const endpoint = LON_ENDPOINTS[type]
 
   switch (type) {
     case 'SEND_TO_REPAIR':
-      return { endpoint, recipientPhone, payload: { ...base, status: statusText } }
-
-    case 'SEND_PRICE': {
-      const q = job.activeQuote
-      const total = q?.total ?? 0
-      const quoteUrl = job.tokens.quote ? `${cleanBase}/q/${job.tokens.quote}` : trackingUrl
-      const findings =
-        q && q.lines.length > 0
-          ? q.lines.map((l) => (l.quantity > 1 ? `${l.description} x${l.quantity}` : l.description))
-          : [q?.vendorNote || job.symptom || 'ตรวจสอบอาการเสียตามใบเสนอราคา']
       return {
         endpoint,
         recipientPhone,
         payload: {
-          ...base,
+          customer_name: customerName,
+          repair_no: job.jobNo,
+          repair_date: repairDate,
+          button: trackingUrl,
+          store_name: storeName,
+          customer_phone: recipientPhone,
+          product_name: job.productName,
+          repair_reason: reasonText,
+          status: options.statusLabel || 'การส่งซ่อมสินค้า',
+        },
+      }
+
+    case 'SEND_PRICE': {
+      const total = job.activeQuote?.total ?? 0
+      const quoteUrl = job.tokens.quote ? `${cleanBase}/q/${job.tokens.quote}` : trackingUrl
+      return {
+        endpoint,
+        recipientPhone,
+        payload: {
+          customer_name: customerName,
+          repair_no: job.jobNo,
+          repair_date: repairDate,
           button: quoteUrl,
+          store_name: storeName,
+          customer_phone: recipientPhone,
+          product_name: job.productName,
+          repair_reason: reasonText,
           repair_price: Math.round(total),
-          total_price: total,
-          total_price_formatted: formatBahtAmount(total),
-          repair_days: q?.repairDays ?? 7,
-          warranty_days: q?.repairWarrantyDays ?? 30,
-          findings,
           status: options.statusLabel || 'แจ้งค่าบริการซ่อมสินค้า',
-          quote_url: quoteUrl,
-          payment_url: job.tokens.payment ? `${cleanBase}/pay/${job.tokens.payment}` : null,
         },
       }
     }
 
     case 'STATUS_REPAIR':
-      return { endpoint, recipientPhone, payload: { ...base, status: statusText, stage_code: job.stage } }
+      return {
+        endpoint,
+        recipientPhone,
+        payload: {
+          customer_name: customerName,
+          repair_no: job.jobNo,
+          repair_date: repairDate,
+          button: trackingUrl,
+          store_name: storeName,
+          customer_phone: recipientPhone,
+          product_name: job.productName,
+          repair_reason: reasonText,
+          status: options.statusLabel || STAGE_LABELS[job.stage] || job.stage,
+        },
+      }
 
     case 'REJECT_REPAIR':
       return {
         endpoint,
         recipientPhone,
         payload: {
-          ...base,
-          return_date: formatLonDate(now),
-          recived_store_name: job.branch.name,
-          pickup_branch_name: job.branch.name,
-          pickup_within_days: 7,
-          status: statusText,
-        },
-      }
-
-    case 'RECEIVE_JOB': {
-      const receivedDate = formatLonDate(now)
-      return {
-        endpoint,
-        recipientPhone,
-        payload: {
-          ...base,
-          received_date: receivedDate,
-          receive_date: receivedDate,
-          recived_store_name: job.branch.name,
-          pickup_branch_name: job.branch.name,
-          pickup_within_days: 7,
-          operation_fee: job.operationFeeAmount,
-          status: statusText,
-        },
-      }
-    }
-
-    case 'SATISFACTION': {
-      const csatUrl = job.tokens.csat ? `${cleanBase}/s/${job.tokens.csat}` : trackingUrl
-      const joinCh = csatUrl.includes('?') ? '&' : '?'
-      return {
-        endpoint,
-        recipientPhone,
-        payload: {
+          customer_name: customerName,
           repair_no: job.jobNo,
-          customer_phone: recipientPhone,
-          customer_name: job.customerName ?? 'ลูกค้าไทวัสดุ',
-          status: options.statusLabel || 'ประเมินความพึงพอใจซ่อมสินค้า',
-          repair_date: formatLonDate(job.openedAt),
-          closed_date: formatLonDate(job.closedAt ?? now),
-          store_name: job.branch.name,
-          branch_name: job.branch.name,
+          status: options.statusLabel || 'ปฎิเสธงานซ่อม',
           product_name: job.productName,
-          contact_center: '1308',
-          button: csatUrl,
-          satisfaction_url: csatUrl,
-          rate_satisfied_url: `${csatUrl}${joinCh}rate=satisfied`,
-          rate_neutral_url: `${csatUrl}${joinCh}rate=neutral`,
-          rate_unsatisfied_url: `${csatUrl}${joinCh}rate=unsatisfied`,
+          repair_reason: reasonText,
+          repair_date: repairDate,
+          return_date: formatLonDate(now),
+          button: trackingUrl,
+          store_name: storeName,
+          recived_store_name: storeName,
+          customer_phone: recipientPhone,
         },
       }
-    }
+
+    case 'RECEIVE_JOB':
+      return {
+        endpoint,
+        recipientPhone,
+        payload: {
+          customer_name: customerName,
+          repair_no: job.jobNo,
+          repair_date: repairDate,
+          product_name: job.productName,
+          repair_reason: reasonText,
+          received_date: formatLonDate(now),
+          status: options.statusLabel || 'แจ้งสถานะการรับสินค้า',
+          button: trackingUrl,
+          recived_store_name: storeName,
+          customer_phone: recipientPhone,
+        },
+      }
+
+    case 'SATISFACTION':
+      return {
+        endpoint,
+        recipientPhone,
+        payload: {
+          customer_name: customerName,
+          repair_no: job.jobNo,
+          status: options.statusLabel || 'ประเมินความพึงพอใจซ่อมสินค้า',
+          customer_phone: recipientPhone,
+        },
+      }
   }
 }
