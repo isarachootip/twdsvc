@@ -23,16 +23,12 @@ export interface SavedJob {
   routing: { centerCode: string; vendorCode: string; vendorName: string; channel: string } | null
   trackingUrl?: string
   payUrl?: string
+  lonResult?: { ok: boolean; status: 'SENT' | 'SIMULATED' | 'SKIPPED' | 'FAILED'; endpoint: string; error?: string } | null
 }
 
 export interface UseCsNewFormProps {
-  role: string
-  branchName: string
-  userBranchId?: string
-  branches?: BranchOption[]
-  initialPhone?: string
-  initialProduct?: string
-  initialSerialNo?: string
+  role: string; branchName: string; userBranchId?: string
+  branches?: BranchOption[]; initialPhone?: string; initialProduct?: string; initialSerialNo?: string
 }
 
 export function useCsNewForm({
@@ -42,8 +38,7 @@ export function useCsNewForm({
   const defaultBranchId = userBranchId || branches.find(b => b.code === 'BN' || b.name.includes('บางนา'))?.id || branches[0]?.id || ''
   const [selectedBranchId, setSelectedBranchId] = useState(defaultBranchId)
   const { toast } = useToast()
-  const [brands, setBrands] = useState<Brand[]>([])
-  const [sizes, setSizes] = useState<Size[]>([])
+  const [brands, setBrands] = useState<Brand[]>([]), [sizes, setSizes] = useState<Size[]>([])
   const { productTypes, autoMatchProductType } = useProductTypes()
 
   const [firstName, setFirstName] = useState(''), [lastName, setLastName] = useState('')
@@ -172,7 +167,9 @@ export function useCsNewForm({
         },
       })
       setSaved(r); setPaid(fees.total === 0 || pay === 'POS_RECEIPT')
-      toast(`บันทึกใบแจ้งซ่อม ${r.jobNo} แล้ว`, 'success')
+      if (r.lonResult?.status === 'SENT') toast(`บันทึกใบแจ้งซ่อม ${r.jobNo} และส่งแจ้งเตือนลูกค้าทาง LON แล้ว`, 'success')
+      else if (r.lonResult?.status === 'FAILED') toast(`บันทึกใบแจ้งซ่อม ${r.jobNo} แล้ว (ส่ง LON ไม่สำเร็จ: ${r.lonResult.error ?? 'ตรวจสอบการเชื่อมต่อ'})`, 'error')
+      else toast(`บันทึกใบแจ้งซ่อม ${r.jobNo} แล้ว`, 'success')
       return r
     } catch (e) {
       toast(e instanceof Error ? e.message : 'บันทึกไม่สำเร็จ', 'error')

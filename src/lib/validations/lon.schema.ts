@@ -14,9 +14,11 @@ export type LonType = (typeof LON_NOTIFICATION_TYPES)[number]
 export const LON_DELIVERY_STATUSES = ['SENT', 'SIMULATED', 'SKIPPED', 'FAILED'] as const
 export type LonStatus = (typeof LON_DELIVERY_STATUSES)[number]
 
+export const LON_DEFAULT_BASE_URL = 'https://lon.thaiwatsadu.com'
+
 export const LON_ENDPOINTS: Record<LonType, string> = {
   SEND_TO_REPAIR: '/repair/send_to_repair_jobs',
-  SEND_PRICE: '/repair/send_price_jobs',
+  SEND_PRICE: '/repair/send_price_repair_jobs',
   STATUS_REPAIR: '/repair/status_repair_jobs',
   REJECT_REPAIR: '/repair/reject_repair_jobs',
   RECEIVE_JOB: '/repair/recive_jobs',
@@ -84,6 +86,7 @@ export interface LonBasePayload {
   customer_phone: string
   customer_name: string
   repair_date: string
+  store_name: string
   branch_name: string
   branch_phone: string
   sku: string
@@ -91,9 +94,11 @@ export interface LonBasePayload {
   brand_name: string
   serial_no: string
   quantity: number
+  repair_reason: string
   symptom: string
   items: LonRepairItemDto[]
   contact_center: string
+  button: string
   tracking_url: string
 }
 
@@ -102,11 +107,13 @@ export interface LonSendToRepairPayload extends LonBasePayload {
 }
 
 export interface LonSendPricePayload extends LonBasePayload {
+  repair_price: number
   total_price: number
   total_price_formatted: string
   repair_days: number
   warranty_days: number
   findings: string[]
+  status: string
   quote_url: string
   payment_url: string | null
 }
@@ -118,13 +125,16 @@ export interface LonStatusRepairPayload extends LonBasePayload {
 
 export interface LonRejectRepairPayload extends LonBasePayload {
   return_date: string
+  recived_store_name: string
   pickup_branch_name: string
   pickup_within_days: number
   status: string
 }
 
 export interface LonReceiveJobPayload extends LonBasePayload {
+  received_date: string
   receive_date: string
+  recived_store_name: string
   pickup_branch_name: string
   pickup_within_days: number
   operation_fee: number
@@ -135,11 +145,14 @@ export interface LonSatisfactionPayload {
   repair_no: string
   customer_phone: string
   customer_name: string
+  status: string
   repair_date: string
   closed_date: string
+  store_name: string
   branch_name: string
   product_name: string
   contact_center: string
+  button: string
   satisfaction_url: string
   rate_satisfied_url: string
   rate_neutral_url: string

@@ -167,11 +167,20 @@ export async function POST(req: NextRequest) {
       isTest: result.job.isTest,
       customerPhone: result.job.customerPhone,
     })
-    if (lonTrigger) {
-      void dispatchLonNotification({ jobId: result.job.id, type: lonTrigger.type, statusLabel: lonTrigger.statusLabel, req })
-    }
+    const lonResult = lonTrigger
+      ? await dispatchLonNotification({
+          jobId: result.job.id,
+          type: lonTrigger.type,
+          statusLabel: lonTrigger.statusLabel,
+          triggeredBy: user.username,
+          req,
+        })
+      : null
 
-    return NextResponse.json({ id: result.job.id, jobNo: result.job.jobNo, stage: result.job.stage, fees, routing, ...result.extra }, { status: 201 })
+    return NextResponse.json(
+      { id: result.job.id, jobNo: result.job.jobNo, stage: result.job.stage, fees, routing, lonResult, ...result.extra },
+      { status: 201 }
+    )
   } catch (e) {
     return handleError(e)
   }

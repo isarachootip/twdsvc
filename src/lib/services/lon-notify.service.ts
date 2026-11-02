@@ -4,9 +4,11 @@ import { prisma } from '@/lib/db'
 import { ensureCsatToken, ensurePaymentToken, ensureTrackingToken } from '@/lib/public-token'
 import { publicBaseUrl } from '@/lib/settings'
 import { getIntegrationConfig } from '@/lib/services/integration-config.service'
+import { lonHttpRequest } from '@/lib/services/lon-http-client'
 import { buildLonNotificationRequest } from '@/lib/services/lon-mapper'
 import { getLonEndpointToggles, saveLonEndpointToggles } from '@/lib/services/lon-toggles.service'
 import {
+  LON_DEFAULT_BASE_URL,
   LON_ENDPOINTS,
   normalizeThaiMobilePhone,
   type LonStatus,
@@ -135,10 +137,11 @@ export async function dispatchLonNotification(params: {
       return { ok: true, status: 'SKIPPED', endpoint: built.endpoint, logId: log.id }
     }
 
-    const lonBaseUrl = cfg.LON_API_BASE_URL.trim()
+    const configuredBaseUrl = cfg.LON_API_BASE_URL.trim()
+    const lonBaseUrl = configuredBaseUrl || (job.isTest ? '' : LON_DEFAULT_BASE_URL)
     const lonToken = cfg.LON_API_TOKEN.trim()
 
-    if (!lonBaseUrl || !lonToken) {
+    if (!lonBaseUrl || job.isTest) {
       const log = await prisma.lonNotificationLog.create({
         data: {
           jobId: job.id,
@@ -147,26 +150,24 @@ export async function dispatchLonNotification(params: {
           recipientPhone: built.recipientPhone,
           status: 'SIMULATED',
           requestPayload: payloadJson,
-          responseBody: 'SIMULATED (ยังไม่ได้ตั้งค่า LON_API_BASE_URL / LON_API_TOKEN)',
+          responseBody: job.isTest
+            ? 'SIMULATED (งานทดสอบ isTest — ไม่ยิงออกไปยังเซิร์ฟเวอร์ LON จริง)'
+            : 'SIMULATED (ยังไม่ได้ตั้งค่า LON_API_BASE_URL)',
           triggeredBy: actor,
         },
       })
       return { ok: true, status: 'SIMULATED', endpoint: built.endpoint, logId: log.id }
     }
 
-    const res = await fetch(`${lonBaseUrl.replace(/\/+$/, '')}${built.endpoint}`, {
+    const res = await lonHttpRequest({
+      url: `${lonBaseUrl.replace(/\/+$/, '')}${built.endpoint}`,
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        Authorization: `Bearer ${lonToken}`,
-        'X-API-Key': lonToken,
-      },
+      token: lonToken,
       body: JSON.stringify(built.payload),
-      signal: AbortSignal.timeout(LON_TIMEOUT_MS),
+      timeoutMs: LON_TIMEOUT_MS,
     })
 
-    const bodyText = (await res.text().catch(() => '')).slice(0, 1000)
+    const bodyText = res.bodyText.slice(0, 1000)
     const status: LonStatus = res.ok ? 'SENT' : 'FAILED'
     const log = await prisma.lonNotificationLog.create({
       data: {

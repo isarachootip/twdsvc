@@ -48,7 +48,7 @@ export function formatLonDate(date: Date): string {
     year: 'numeric',
   }).formatToParts(date)
   const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '01'
-  return `${get('day')}/${get('month')}/${get('year')}`
+  return `${get('year')}-${get('month')}-${get('day')}`
 }
 
 function formatBahtAmount(amount: number): string {
@@ -77,12 +77,14 @@ export function buildLonNotificationRequest(
   const trackingUrl = `${cleanBase}/t/${job.tokens.tracking}`
   const statusText = options.statusLabel || STAGE_LABELS[job.stage] || job.stage
   const endpoint = LON_ENDPOINTS[type]
+  const reasonText = job.symptom ?? '-'
 
   const base: LonBasePayload = {
     repair_no: job.jobNo,
     customer_phone: recipientPhone,
     customer_name: job.customerName ?? 'ลูกค้าไทวัสดุ',
     repair_date: formatLonDate(job.openedAt),
+    store_name: job.branch.name,
     branch_name: job.branch.name,
     branch_phone: job.branch.phone ?? '1308',
     sku: job.sku ?? items[0]?.sku ?? '-',
@@ -90,9 +92,11 @@ export function buildLonNotificationRequest(
     brand_name: job.brandName,
     serial_no: job.serialNo ?? '-',
     quantity: items.reduce((sum, item) => sum + item.quantity, 0),
-    symptom: job.symptom ?? '-',
+    repair_reason: reasonText,
+    symptom: reasonText,
     items,
     contact_center: '1308',
+    button: trackingUrl,
     tracking_url: trackingUrl,
   }
 
@@ -103,6 +107,7 @@ export function buildLonNotificationRequest(
     case 'SEND_PRICE': {
       const q = job.activeQuote
       const total = q?.total ?? 0
+      const quoteUrl = job.tokens.quote ? `${cleanBase}/q/${job.tokens.quote}` : trackingUrl
       const findings =
         q && q.lines.length > 0
           ? q.lines.map((l) => (l.quantity > 1 ? `${l.description} x${l.quantity}` : l.description))
@@ -112,12 +117,15 @@ export function buildLonNotificationRequest(
         recipientPhone,
         payload: {
           ...base,
+          button: quoteUrl,
+          repair_price: Math.round(total),
           total_price: total,
           total_price_formatted: formatBahtAmount(total),
           repair_days: q?.repairDays ?? 7,
           warranty_days: q?.repairWarrantyDays ?? 30,
           findings,
-          quote_url: job.tokens.quote ? `${cleanBase}/q/${job.tokens.quote}` : trackingUrl,
+          status: options.statusLabel || 'แจ้งค่าบริการซ่อมสินค้า',
+          quote_url: quoteUrl,
           payment_url: job.tokens.payment ? `${cleanBase}/pay/${job.tokens.payment}` : null,
         },
       }
@@ -133,25 +141,30 @@ export function buildLonNotificationRequest(
         payload: {
           ...base,
           return_date: formatLonDate(now),
+          recived_store_name: job.branch.name,
           pickup_branch_name: job.branch.name,
           pickup_within_days: 7,
           status: statusText,
         },
       }
 
-    case 'RECEIVE_JOB':
+    case 'RECEIVE_JOB': {
+      const receivedDate = formatLonDate(now)
       return {
         endpoint,
         recipientPhone,
         payload: {
           ...base,
-          receive_date: formatLonDate(now),
+          received_date: receivedDate,
+          receive_date: receivedDate,
+          recived_store_name: job.branch.name,
           pickup_branch_name: job.branch.name,
           pickup_within_days: 7,
           operation_fee: job.operationFeeAmount,
           status: statusText,
         },
       }
+    }
 
     case 'SATISFACTION': {
       const csatUrl = job.tokens.csat ? `${cleanBase}/s/${job.tokens.csat}` : trackingUrl
@@ -163,11 +176,14 @@ export function buildLonNotificationRequest(
           repair_no: job.jobNo,
           customer_phone: recipientPhone,
           customer_name: job.customerName ?? 'ลูกค้าไทวัสดุ',
+          status: options.statusLabel || 'ประเมินความพึงพอใจซ่อมสินค้า',
           repair_date: formatLonDate(job.openedAt),
           closed_date: formatLonDate(job.closedAt ?? now),
+          store_name: job.branch.name,
           branch_name: job.branch.name,
           product_name: job.productName,
           contact_center: '1308',
+          button: csatUrl,
           satisfaction_url: csatUrl,
           rate_satisfied_url: `${csatUrl}${joinCh}rate=satisfied`,
           rate_neutral_url: `${csatUrl}${joinCh}rate=neutral`,

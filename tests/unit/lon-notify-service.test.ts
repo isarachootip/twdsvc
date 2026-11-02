@@ -59,7 +59,7 @@ describe('Unit: LON Notification Service & Persistence', () => {
         triggeredBy: 'AUTO',
       })
       expect(skipRes.status).toBe('SKIPPED')
-      expect(skipRes.endpoint).toBe('/repair/send_price_jobs')
+      expect(skipRes.endpoint).toBe('/repair/send_price_repair_jobs')
 
       // 3. Verify persisted audit logs
       const logs = await listJobLonLogs(job.id)

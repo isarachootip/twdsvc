@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { requireUser, handleError, HttpError } from '@/lib/api'
 import { getIntegrationConfig } from '@/lib/services/integration-config.service'
+import { lonHttpRequest } from '@/lib/services/lon-http-client'
 import { createSmtpTransport, readSmtpSettings } from '@/lib/services/smtp-transport'
+import { LON_DEFAULT_BASE_URL } from '@/lib/validations/lon.schema'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,26 +37,19 @@ async function testLine(token: string): Promise<TestResult> {
 }
 
 async function testLon(baseUrl: string, token: string): Promise<TestResult> {
-  if (!baseUrl || !token) {
-    return {
-      ok: true,
-      message: 'ยังไม่ได้ตั้งค่า URL/Token จริง — ระบบพร้อมทำงานในโหมดจำลอง (SIMULATED) และบันทึก Payload ครบถ้วน',
-    }
-  }
-  const url = `${baseUrl.replace(/\/+$/, '')}/repair/get_repair_by_phone_repairno/HEALTHCHECK/0000000000`
-  const res = await fetch(url, {
-    headers: {
-      Accept: 'application/json',
-      Authorization: `Bearer ${token}`,
-      'X-API-Key': token,
-    },
-    signal: AbortSignal.timeout(TIMEOUT_MS),
+  const effectiveUrl = baseUrl.trim() || LON_DEFAULT_BASE_URL
+  const url = `${effectiveUrl.replace(/\/+$/, '')}/repair/get_repair_by_phone_repairno/HEALTHCHECK/0000000000`
+  const res = await lonHttpRequest({
+    url,
+    method: 'GET',
+    token,
+    timeoutMs: TIMEOUT_MS,
   })
   if (res.status === 401 || res.status === 403) {
     return { ok: false, message: `LON ปฏิเสธสิทธิ์หรือติด Cloudflare (${res.status}) กรุณาตรวจสอบ Token / Whitelist` }
   }
   if (res.ok || res.status === 404 || res.status === 400) {
-    return { ok: true, message: `เชื่อมต่อเซิร์ฟเวอร์ LON สำเร็จ (HTTP ${res.status})` }
+    return { ok: true, message: `เชื่อมต่อเซิร์ฟเวอร์ LON (${effectiveUrl}) สำเร็จ (HTTP ${res.status})` }
   }
   return { ok: false, message: `LON ตอบกลับสถานะ ${res.status}` }
 }

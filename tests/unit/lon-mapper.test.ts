@@ -57,7 +57,7 @@ describe('Unit: LON Payload Mapper & Phone Normalizer', () => {
     expect(normalizeThaiMobilePhone(null)).toBeNull()
   })
 
-  it('LMP-02: buildLonNotificationRequest maps SEND_TO_REPAIR to /repair/send_to_repair_jobs', () => {
+  it('LMP-02: buildLonNotificationRequest maps SEND_TO_REPAIR to /repair/send_to_repair_jobs with Swagger fields', () => {
     const req = buildLonNotificationRequest(SAMPLE_JOB, 'SEND_TO_REPAIR', {
       baseUrl: 'https://svc.thaiwatsadu.com/',
       now: new Date('2026-01-07T04:00:00.000Z'),
@@ -65,8 +65,11 @@ describe('Unit: LON Payload Mapper & Phone Normalizer', () => {
     expect(req.endpoint).toBe('/repair/send_to_repair_jobs')
     expect(req.recipientPhone).toBe('0812345678')
     expect(req.payload.repair_no).toBe('TWBN2601070001')
-    expect(req.payload.repair_date).toBe('07/01/2026')
+    expect(req.payload.repair_date).toBe('2026-01-07')
     if ('tracking_url' in req.payload) {
+      expect(req.payload.button).toBe('https://svc.thaiwatsadu.com/t/trk_123')
+      expect(req.payload.store_name).toBe('ไทวัสดุ สาขาบางนา')
+      expect(req.payload.repair_reason).toBe('เครื่องไม่เปิดติด')
       expect(req.payload.tracking_url).toBe('https://svc.thaiwatsadu.com/t/trk_123')
       expect(req.payload.sku).toBe('60000205')
       expect(req.payload.serial_no).toBe('SR440')
@@ -76,17 +79,19 @@ describe('Unit: LON Payload Mapper & Phone Normalizer', () => {
     }
   })
 
-  it('LMP-03: buildLonNotificationRequest maps SEND_PRICE with quote & payment links', () => {
+  it('LMP-03: buildLonNotificationRequest maps SEND_PRICE to /repair/send_price_repair_jobs with repair_price & button', () => {
     const req = buildLonNotificationRequest(SAMPLE_JOB, 'SEND_PRICE', {
       baseUrl: 'https://svc.thaiwatsadu.com',
     })
-    expect(req.endpoint).toBe('/repair/send_price_jobs')
+    expect(req.endpoint).toBe('/repair/send_price_repair_jobs')
     if ('quote_url' in req.payload) {
+      expect(req.payload.repair_price).toBe(1650)
       expect(req.payload.total_price).toBe(1650)
       expect(req.payload.total_price_formatted).toBe('1,650.00')
       expect(req.payload.repair_days).toBe(5)
       expect(req.payload.warranty_days).toBe(30)
       expect(req.payload.findings.length).toBe(2)
+      expect(req.payload.button).toBe('https://svc.thaiwatsadu.com/q/qt_456')
       expect(req.payload.quote_url).toBe('https://svc.thaiwatsadu.com/q/qt_456')
       expect(req.payload.payment_url).toBe('https://svc.thaiwatsadu.com/pay/pay_789')
     } else {
@@ -94,14 +99,15 @@ describe('Unit: LON Payload Mapper & Phone Normalizer', () => {
     }
   })
 
-  it('LMP-04: buildLonNotificationRequest maps REJECT_REPAIR and RECEIVE_JOB with 7-day condition & operation fee', () => {
+  it('LMP-04: buildLonNotificationRequest maps REJECT_REPAIR and RECEIVE_JOB with Swagger fields (recived_store_name & received_date)', () => {
     const rejectReq = buildLonNotificationRequest(SAMPLE_JOB, 'REJECT_REPAIR', {
       baseUrl: 'https://svc.thaiwatsadu.com',
       now: new Date('2026-01-09T04:00:00.000Z'),
     })
     expect(rejectReq.endpoint).toBe('/repair/reject_repair_jobs')
     if ('return_date' in rejectReq.payload) {
-      expect(rejectReq.payload.return_date).toBe('09/01/2026')
+      expect(rejectReq.payload.return_date).toBe('2026-01-09')
+      expect(rejectReq.payload.recived_store_name).toBe('ไทวัสดุ สาขาบางนา')
       expect(rejectReq.payload.pickup_within_days).toBe(7)
       expect(rejectReq.payload.pickup_branch_name).toBe('ไทวัสดุ สาขาบางนา')
     } else {
@@ -114,7 +120,9 @@ describe('Unit: LON Payload Mapper & Phone Normalizer', () => {
     })
     expect(receiveReq.endpoint).toBe('/repair/recive_jobs')
     if ('operation_fee' in receiveReq.payload) {
-      expect(receiveReq.payload.receive_date).toBe('09/01/2026')
+      expect(receiveReq.payload.received_date).toBe('2026-01-09')
+      expect(receiveReq.payload.receive_date).toBe('2026-01-09')
+      expect(receiveReq.payload.recived_store_name).toBe('ไทวัสดุ สาขาบางนา')
       expect(receiveReq.payload.operation_fee).toBe(300)
       expect(receiveReq.payload.pickup_within_days).toBe(7)
     } else {
@@ -122,12 +130,13 @@ describe('Unit: LON Payload Mapper & Phone Normalizer', () => {
     }
   })
 
-  it('LMP-05: buildLonNotificationRequest maps SATISFACTION with 3 quick-rate URLs', () => {
+  it('LMP-05: buildLonNotificationRequest maps SATISFACTION with status and 3 quick-rate URLs', () => {
     const req = buildLonNotificationRequest(SAMPLE_JOB, 'SATISFACTION', {
       baseUrl: 'https://svc.thaiwatsadu.com',
     })
     expect(req.endpoint).toBe('/repair/satisfaction_jobs')
     if ('satisfaction_url' in req.payload) {
+      expect(req.payload.status).toBe('ประเมินความพึงพอใจซ่อมสินค้า')
       expect(req.payload.satisfaction_url).toBe('https://svc.thaiwatsadu.com/s/csat_999')
       expect(req.payload.rate_satisfied_url).toBe('https://svc.thaiwatsadu.com/s/csat_999?rate=satisfied')
       expect(req.payload.rate_neutral_url).toBe('https://svc.thaiwatsadu.com/s/csat_999?rate=neutral')
