@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import Link from 'next/link'
 import { api } from '@/lib/client'
 import { fmtDateTime } from '@/lib/constants'
 import { useToast } from '@/components/ui/Toast'
@@ -111,7 +112,12 @@ export function LonNotificationPanel({
     <div className="note" style={{ marginTop: 12 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
         <b>การแจ้งเตือนลูกค้า LON (LINE Official)</b>
-        <span className="sub-mute" style={{ fontSize: 11.5 }}>{logs.length} รายการ</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span className="sub-mute" style={{ fontSize: 11.5 }}>{logs.length} รายการ</span>
+          <Link href="/admin/api-monitor" className="link-btn" style={{ fontSize: 11.5 }}>
+            ดูรายงาน Monitor API ↗
+          </Link>
+        </div>
       </div>
 
       {canResend && (

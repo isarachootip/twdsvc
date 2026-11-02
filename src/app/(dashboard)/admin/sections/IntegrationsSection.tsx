@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import Link from 'next/link'
 import { api } from '@/lib/client'
 import { INTEGRATION_FIELDS, type IntegrationGroup, type IntegrationKey } from '@/lib/config/integration-fields'
 import type { MaskedField } from '@/lib/services/integration-config.service'
@@ -60,7 +61,12 @@ export function IntegrationsSection() {
 
   return (
     <div className="pcard">
-      <h3>เชื่อมต่อระบบ (Integrations)</h3>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <h3 style={{ margin: 0 }}>เชื่อมต่อระบบ (Integrations)</h3>
+        <Link href="/admin/api-monitor" className="btn btn-outline" style={{ fontSize: 12.5 }}>
+          เปิดรายงาน Monitor API (LON) →
+        </Link>
+      </div>
       <p className="sub-mute">
         ค่าที่ตั้งที่นี่มีผลก่อนค่าใน .env ส่วนค่าลับ (Secret/Token/รหัสผ่าน) จะถูกเข้ารหัสก่อนเก็บ และไม่แสดงกลับมา — เว้นว่างไว้หากไม่ต้องการเปลี่ยน
       </p>

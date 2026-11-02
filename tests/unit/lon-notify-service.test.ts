@@ -5,6 +5,7 @@ import {
   getLonEndpointToggles,
   listJobLonLogs,
 } from '../../src/lib/services/lon-notify.service'
+import { getLonMonitorReport } from '../../src/lib/services/lon-monitor.service'
 
 setTier('Tier 1')
 
@@ -61,11 +62,17 @@ describe('Unit: LON Notification Service & Persistence', () => {
       expect(skipRes.status).toBe('SKIPPED')
       expect(skipRes.endpoint).toBe('/repair/send_price_repair_jobs')
 
-      // 3. Verify persisted audit logs
+      // 3. Verify persisted audit logs & API Monitor Report aggregation
       const logs = await listJobLonLogs(job.id)
       expect(logs.length).toBe(2)
       expect(logs.some((l) => l.type === 'SEND_TO_REPAIR' && l.status === 'SIMULATED')).toBe(true)
       expect(logs.some((l) => l.type === 'SEND_PRICE' && l.status === 'SKIPPED')).toBe(true)
+
+      const monitor = await getLonMonitorReport({ search: job.jobNo })
+      expect(monitor.summary.total).toBe(2)
+      expect(monitor.summary.simulated).toBe(1)
+      expect(monitor.summary.skipped).toBe(1)
+      expect(monitor.logs[0]?.jobNo).toBe(job.jobNo)
     } finally {
       await prisma.job.delete({ where: { id: job.id } })
     }

@@ -20,6 +20,7 @@ export {
   PendingVendorSection,
   ProductsSection,
   IntegrationsSection,
+  ApiMonitorSection,
   useSave,
   SaveButton,
   Row,
