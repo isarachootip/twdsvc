@@ -11,77 +11,47 @@ import type { EOrderingLineItem } from '@/lib/validations/eordering.schema'
 
 interface Props {
   job: { id: string; jobNo: string; version: number } | null
-  kind: 'intake' | 'repair'
-  amount: number
+  kind: 'intake' | 'repair'; amount: number
   initialMethod?: 'PROMPTPAY_QR' | 'CARD_LINK' | 'POS_RECEIPT'
-  onClose: () => void
-  onPaid: () => void
+  onClose: () => void; onPaid: () => void
 }
 
 interface EOrderingQrApiResponse {
-  orderRef: string
-  qrPayload: string | null
-  qrImageUrl: string | null
-  payUrl: string
-  token: string
-  expiresAt: string
-  reused: boolean
-  payloadSent: {
-    jobNo: string
-    items: EOrderingLineItem[]
-    totalAmount: number
-  }
+  orderRef: string; qrPayload: string | null; qrImageUrl: string | null
+  payUrl: string; token: string; expiresAt: string; reused: boolean
+  payloadSent: { jobNo: string; items: EOrderingLineItem[]; totalAmount: number }
 }
 
 /** รับชำระ: QR ผ่านระบบ E-ordering / Link บัตรเครดิต / เลขที่ใบเสร็จ POS */
 export default function PaymentModal({ job, kind, amount, initialMethod = 'PROMPTPAY_QR', onClose, onPaid }: Props) {
-  const [method, setMethod] = useState(initialMethod)
-  const [pos, setPos] = useState('')
-  const [payUrl, setPayUrl] = useState<string | null>(null)
-  const [qrData, setQrData] = useState<EOrderingQrApiResponse | null>(null)
-  const [qrLoading, setQrLoading] = useState(false)
-  const [qrError, setQrError] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
-  const { toast } = useToast()
-  const me = useMe()
-  const poll = useRef<ReturnType<typeof setInterval> | undefined>(undefined)
+  const [method, setMethod] = useState(initialMethod), [pos, setPos] = useState('')
+  const [payUrl, setPayUrl] = useState<string | null>(null), [qrData, setQrData] = useState<EOrderingQrApiResponse | null>(null)
+  const [qrLoading, setQrLoading] = useState(false), [qrError, setQrError] = useState<string | null>(null), [busy, setBusy] = useState(false)
+  const { toast } = useToast(), me = useMe(), poll = useRef<ReturnType<typeof setInterval> | undefined>(undefined)
 
   useEffect(() => {
     if (!job) return
-    setMethod(initialMethod)
-    setPos('')
-    setPayUrl(null)
-    setQrData(null)
-    setQrError(null)
+    setMethod(initialMethod); setPos(''); setPayUrl(null); setQrData(null); setQrError(null)
   }, [job, initialMethod])
 
   const loadEOrderingQr = useCallback(async (forceNew = false) => {
     if (!job) return
-    setQrLoading(true)
-    setQrError(null)
+    setQrLoading(true); setQrError(null)
     try {
-      const r = await api<EOrderingQrApiResponse>(`/api/jobs/${job.id}/e-ordering-qr`, {
-        method: 'POST',
-        body: { kind, forceNew },
-      })
-      setQrData(r)
-      setPayUrl(r.payUrl)
+      const r = await api<EOrderingQrApiResponse>(`/api/jobs/${job.id}/e-ordering-qr`, { method: 'POST', body: { kind, forceNew } })
+      setQrData(r); setPayUrl(r.payUrl)
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'ไม่สามารถเชื่อมต่อระบบ E-ordering ได้'
-      setQrError(msg)
-      toast(msg, 'error')
-    } finally {
-      setQrLoading(false)
-    }
+      setQrError(msg); toast(msg, 'error')
+    } finally { setQrLoading(false) }
   }, [job, kind, toast])
 
   useEffect(() => {
     clearInterval(poll.current)
     if (!job || method === 'POS_RECEIPT') return
     let alive = true
-    if (method === 'PROMPTPAY_QR') {
-      loadEOrderingQr(false)
-    } else if (method === 'CARD_LINK') {
+    if (method === 'PROMPTPAY_QR') loadEOrderingQr(false)
+    else if (method === 'CARD_LINK') {
       api<{ payUrl: string }>(`/api/jobs/${job.id}/payment-link`, { method: 'POST', body: {} })
         .then(r => { if (alive) setPayUrl(r.payUrl) })
         .catch(e => toast(e instanceof Error ? e.message : 'สร้างลิงก์ไม่สำเร็จ', 'error'))
@@ -98,9 +68,7 @@ export default function PaymentModal({ job, kind, amount, initialMethod = 'PROMP
       try {
         const s = await api<{ paid: boolean; balance: number }>(`/api/public/pay/${token}`)
         if (s.paid || (kind === 'intake' && s.balance <= 0)) {
-          clearInterval(poll.current)
-          toast('ชำระเงินสำเร็จ ✓', 'success')
-          onPaid()
+          clearInterval(poll.current); toast('ชำระเงินสำเร็จ ✓', 'success'); onPaid()
         }
       } catch { /* ignore */ }
     }, 3000)
@@ -114,19 +82,11 @@ export default function PaymentModal({ job, kind, amount, initialMethod = 'PROMP
     setBusy(true)
     try {
       await api(`/api/jobs/${job.id}/action`, {
-        body: {
-          action: kind === 'intake' ? 'record_intake_payment' : 'record_repair_payment',
-          paymentMethod: 'POS_RECEIPT',
-          posReceiptNo: pos.trim(),
-        },
+        body: { action: kind === 'intake' ? 'record_intake_payment' : 'record_repair_payment', paymentMethod: 'POS_RECEIPT', posReceiptNo: pos.trim() },
       })
-      toast('บันทึกการชำระเงินแล้ว ✓', 'success')
-      onPaid()
-    } catch (e) {
-      toast(e instanceof Error ? e.message : 'เกิดข้อผิดพลาด', 'error')
-    } finally {
-      setBusy(false)
-    }
+      toast('บันทึกการชำระเงินแล้ว ✓', 'success'); onPaid()
+    } catch (e) { toast(e instanceof Error ? e.message : 'เกิดข้อผิดพลาด', 'error') }
+    finally { setBusy(false) }
   }
 
   const simulate = async () => {
@@ -136,11 +96,9 @@ export default function PaymentModal({ job, kind, amount, initialMethod = 'PROMP
       await api(`/api/public/pay/${payUrl.split('/pay/')[1]}/confirm`, {
         body: { method: method === 'CARD_LINK' ? 'CARD' : 'QR', posReceiptNo: qrData?.orderRef },
       })
-    } catch (e) {
-      toast(e instanceof Error ? e.message : 'เกิดข้อผิดพลาด', 'error')
-    } finally {
-      setBusy(false)
-    }
+      clearInterval(poll.current); toast('ชำระเงินสำเร็จ ✓', 'success'); onPaid()
+    } catch (e) { toast(e instanceof Error ? e.message : 'เกิดข้อผิดพลาด', 'error') }
+    finally { setBusy(false) }
   }
 
   const qrValue = qrData?.qrPayload || (payUrl ? absUrl(payUrl) : '')

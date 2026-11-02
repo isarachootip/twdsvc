@@ -162,10 +162,12 @@ export async function POST(req: NextRequest) {
       return { job, extra }
     }, { timeout: 20000 })
 
+    const hasPendingIntakeFee = fees.total > 0 && d.paymentMethod !== 'POS_RECEIPT'
     const lonTrigger = resolveLonIntakeTrigger({
       type: result.job.type,
       isTest: result.job.isTest,
       customerPhone: result.job.customerPhone,
+      hasPendingIntakeFee,
     })
     const lonResult = lonTrigger
       ? await dispatchLonNotification({

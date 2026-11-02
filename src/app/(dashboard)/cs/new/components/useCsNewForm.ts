@@ -16,13 +16,10 @@ import { useCustomerLookup } from './useCustomerLookup'
 import { useProductTypes } from './useProductTypes'
 
 export interface SavedJob {
-  id: string
-  jobNo: string
-  stage: JobStage
+  id: string; jobNo: string; stage: JobStage
   fees: { operationFee: number; shippingFee: number; total: number }
   routing: { centerCode: string; vendorCode: string; vendorName: string; channel: string } | null
-  trackingUrl?: string
-  payUrl?: string
+  trackingUrl?: string; payUrl?: string
   lonResult?: { ok: boolean; status: 'SENT' | 'SIMULATED' | 'SKIPPED' | 'FAILED'; endpoint: string; error?: string } | null
 }
 
@@ -54,14 +51,10 @@ export function useCsNewForm({
 
   const handleApplyCustomer = useCallback((cust: CustomerLookupResult) => {
     const { firstName: fName, lastName: lName } = splitCustomerFullName(cust.customerName)
-    setFirstName(fName); setLastName(lName)
-    setAddr(parseFormattedAddress(cust.customerAddress, cust.customerZip))
+    setFirstName(fName); setLastName(lName); setAddr(parseFormattedAddress(cust.customerAddress, cust.customerZip))
     if (cust.taxInvoiceId && cust.taxInvoiceName) {
-      setTaxSame(false)
-      setTax({ name: cust.taxInvoiceName, id: cust.taxInvoiceId, addr: parseFormattedAddress(cust.taxInvoiceAddr, null) })
-    } else {
-      setTaxSame(true); setTax(null)
-    }
+      setTaxSame(false); setTax({ name: cust.taxInvoiceName, id: cust.taxInvoiceId, addr: parseFormattedAddress(cust.taxInvoiceAddr, null) })
+    } else { setTaxSame(true); setTax(null) }
   }, [])
 
   const {
@@ -70,25 +63,21 @@ export function useCsNewForm({
   } = useCustomerLookup({ initialPhone, onApplyCustomer: handleApplyCustomer })
 
   const [fees, setFees] = useState<FeesState>({ operationFee: 0, shippingFee: 0, total: 0 })
-  const [pay, setPay] = useState<'PROMPTPAY_QR' | 'CARD_LINK' | 'POS_RECEIPT'>('PROMPTPAY_QR')
-  const [pos, setPos] = useState('')
-  const [saving, setSaving] = useState(false), [saved, setSaved] = useState<SavedJob | null>(null)
-  const [payOpen, setPayOpen] = useState(false), [paid, setPaid] = useState(false)
-  const [lon, setLon] = useState(false), [printDoc, setPrintDoc] = useState(false)
+  const [pay, setPay] = useState<'PROMPTPAY_QR' | 'CARD_LINK' | 'POS_RECEIPT'>('PROMPTPAY_QR'), [pos, setPos] = useState('')
+  const [saving, setSaving] = useState(false), [sendingLon, setSendingLon] = useState(false), [saved, setSaved] = useState<SavedJob | null>(null)
+  const [payOpen, setPayOpen] = useState(false), [paid, setPaid] = useState(false), [lon, setLon] = useState(false), [printDoc, setPrintDoc] = useState(false)
   const skuTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const hasValidPhoto = photos.some((p): p is Photo => Boolean(p && p.fileUrl))
+  const canSendLon = hasValidPhoto && (fees.total === 0 || paid || (pay === 'POS_RECEIPT' && pos.trim().length > 0))
 
   useEffect(() => {
     api<Brand[]>('/api/brands').then(setBrands).catch(() => {})
     api<Size[]>('/api/size-categories').then(s => { setSizes(s); if (s[0]) setSizeId(s[0].id) }).catch(() => {})
-    if (branches.length > 0) {
-      setBranchList(branches)
-    } else if (role === 'ADMIN') {
+    if (branches.length > 0) setBranchList(branches)
+    else if (role === 'ADMIN') {
       api<Array<BranchOption & { type: string }>>('/api/sites').then(sites => {
         const b = sites?.filter(s => s.type === 'BRANCH')
-        if (b?.length) {
-          setBranchList(b)
-          setSelectedBranchId(prev => prev || b.find(x => x.code === 'BN' || x.name.includes('บางนา'))?.id || b[0].id)
-        }
+        if (b?.length) { setBranchList(b); setSelectedBranchId(prev => prev || b.find(x => x.code === 'BN' || x.name.includes('บางนา'))?.id || b[0].id) }
       }).catch(() => {})
     }
   }, [branches, role])
@@ -104,8 +93,7 @@ export function useCsNewForm({
   }, [sizeId, warranty, method])
 
   const onSku = (v: string) => {
-    setSku(v)
-    clearTimeout(skuTimer.current)
+    setSku(v); clearTimeout(skuTimer.current)
     if (v.trim().length < 2) { setSkuResults([]); return }
     skuTimer.current = setTimeout(() => api<Commodity[]>(`/api/commodities?search=${encodeURIComponent(v)}`).then(setSkuResults).catch(() => {}), 300)
   }
@@ -128,8 +116,7 @@ export function useCsNewForm({
   const onTaxCheckbox = (checked: boolean) => {
     if (checked) { setTaxSame(true); setTax(null); return }
     const fullName = [firstName.trim(), lastName.trim()].filter(Boolean).join(' ')
-    setTaxDraft(tax ?? { name: fullName, id: '', addr: emptyAddress })
-    setTaxSame(false); setTaxModal(true)
+    setTaxDraft(tax ?? { name: fullName, id: '', addr: emptyAddress }); setTaxSame(false); setTaxModal(true)
   }
 
   const closeTax = (doSave: boolean) => {
@@ -137,7 +124,7 @@ export function useCsNewForm({
       if (!taxDraft.name.trim()) { toast('กรุณากรอกชื่อ/บริษัทสำหรับใบกำกับภาษี', 'error'); return }
       if (!/^\d{13}$/.test(taxDraft.id)) { toast('เลขประจำตัวผู้เสียภาษีต้องมี 13 หลัก', 'error'); return }
       setTax(taxDraft)
-    } else if (!tax) { setTaxSame(true) }
+    } else if (!tax) setTaxSame(true)
     setTaxModal(false)
   }
 
@@ -177,6 +164,21 @@ export function useCsNewForm({
     } finally { setSaving(false) }
   }, [saved, firstName, lastName, phone, addr, tax, taxSame, sku, product, productGroupName, brandName, brandId, symptom, serialNo, warranty, allowOutside, sizeId, method, photos, defect, fees.total, pay, pos, selectedBranchId, role, toast])
 
+  const sendLon = useCallback(async (jobTarget?: SavedJob | null) => {
+    const target = jobTarget ?? saved
+    if (!target) return
+    if (target.lonResult) { setLon(true); return }
+    setSendingLon(true)
+    try {
+      const res = await api<{ result: NonNullable<SavedJob['lonResult']> }>(`/api/jobs/${target.id}/lon`, { method: 'POST', body: { type: 'SEND_TO_REPAIR' } })
+      setSaved(prev => (prev ? { ...prev, lonResult: res.result } : prev))
+      if (res.result.status === 'FAILED') toast(res.result.error || 'ส่งแจ้งเตือนทาง LON ไม่สำเร็จ', 'error')
+      else toast(`ส่งแจ้งเตือนใบแจ้งซ่อม ${target.jobNo} ทาง LON แล้ว`, 'success')
+      setLon(true)
+    } catch (e) { toast(e instanceof Error ? e.message : 'ส่งแจ้งเตือนทาง LON ไม่สำเร็จ', 'error') }
+    finally { setSendingLon(false) }
+  }, [saved, toast])
+
   return {
     branchList, selectedBranchId, setSelectedBranchId, brands, sizes, productTypes,
     firstName, setFirstName, lastName, setLastName, phone, setPhone,
@@ -185,8 +187,9 @@ export function useCsNewForm({
     sku, skuResults, setSkuResults, productGroupName, setProductGroupName, product, setProduct, brandId, setBrandId, brandName, setBrandName: onBrandChange,
     symptom, setSymptom, serialNo, setSerialNo, extractSerialFromPhoto, extractingSerial,
     warranty, setWarranty, allowOutside, setAllowOutside, sizeId, setSizeId, method, setMethod,
-    photos, setPhotos, defect, setDefect, fees, pay, setPay, pos, setPos, saving, saved,
-    payOpen, setPayOpen, paid, setPaid, lon, setLon, printDoc, setPrintDoc, onSku, pickSku, onTaxCheckbox, closeTax, save,
+    photos, setPhotos, defect, setDefect, fees, pay, setPay, pos, setPos, saving, sendingLon, saved,
+    hasValidPhoto, canSendLon, payOpen, setPayOpen, paid, setPaid, lon, setLon, printDoc, setPrintDoc,
+    onSku, pickSku, onTaxCheckbox, closeTax, save, sendLon,
     readOnly: role !== 'CS' && role !== 'ADMIN',
     sizeName: sizes.find(s => s.id === sizeId)?.name ?? '',
     activeBranch: branchList.find(b => b.id === selectedBranchId) || branchList.find(b => b.name === branchName) || null,

@@ -15,6 +15,7 @@ export interface SavedState {
   routing: SavedRouting | null
   trackingUrl?: string
   payUrl?: string
+  lonResult?: { ok: boolean; status: string; endpoint: string; error?: string } | null
 }
 
 interface FeesAndPaymentSectionProps {
@@ -25,6 +26,9 @@ interface FeesAndPaymentSectionProps {
   setPos: (val: string) => void
   saved: SavedState | null
   saving: boolean
+  sendingLon?: boolean
+  hasValidPhoto?: boolean
+  canSendLon?: boolean
   readOnly: boolean
   paid: boolean
   onShowPayment: () => void
@@ -37,22 +41,9 @@ interface FeesAndPaymentSectionProps {
 }
 
 export function FeesAndPaymentSection({
-  fees,
-  pay,
-  setPay,
-  pos,
-  setPos,
-  saved,
-  saving,
-  readOnly,
-  paid,
-  onShowPayment,
-  onSaveAndSend,
-  onOpenLon,
-  onOpenPrint,
-  onOpenPayModal,
-  onReset,
-  onBackToCs,
+  fees, pay, setPay, pos, setPos, saved, saving, sendingLon = false,
+  hasValidPhoto = true, canSendLon = true, readOnly, paid,
+  onShowPayment, onSaveAndSend, onOpenLon, onOpenPrint, onOpenPayModal, onReset, onBackToCs,
 }: FeesAndPaymentSectionProps) {
   return (
     <div style={{ position: 'sticky', top: 0 }}>
@@ -146,13 +137,21 @@ export function FeesAndPaymentSection({
 
       <div className="pcard" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {!saved ? (
-          <button className="btn btn-primary btn-lg" disabled={saving || readOnly} onClick={onSaveAndSend}>
-            {saving ? 'กำลังบันทึก…' : 'บันทึก + ส่งข้อมูลแจ้งซ่อมให้ลูกค้าทาง LON'}
+          <button
+            className="btn btn-primary btn-lg"
+            disabled={saving || sendingLon || readOnly || !canSendLon}
+            onClick={onSaveAndSend}
+          >
+            {saving || sendingLon ? 'กำลังบันทึกและส่ง LON…' : 'บันทึก + ส่งข้อมูลแจ้งซ่อมให้ลูกค้าทาง LON'}
           </button>
         ) : (
           <>
-            <button className="btn btn-primary btn-lg" onClick={onOpenLon}>
-              ส่งข้อมูลแจ้งซ่อมให้ลูกค้าทาง LON
+            <button
+              className="btn btn-primary btn-lg"
+              disabled={sendingLon || readOnly || !canSendLon}
+              onClick={onOpenLon}
+            >
+              {sendingLon ? 'กำลังส่งข้อมูลทาง LON…' : 'ส่งข้อมูลแจ้งซ่อมให้ลูกค้าทาง LON'}
             </button>
             <button type="button" className="btn" disabled onClick={onOpenPrint}>
               พิมพ์ใบแจ้งซ่อม
@@ -169,6 +168,15 @@ export function FeesAndPaymentSection({
               กลับคิว CS
             </button>
           </>
+        )}
+        {!canSendLon && !readOnly && (
+          <p className="text-amber-700" style={{ margin: 0, fontSize: 12 }}>
+            {!hasValidPhoto && fees.total > 0 && !paid
+              ? 'กรุณาแนบรูปถ่ายสินค้าอย่างน้อย 1 รูป และกดรับชำระเงิน (จำลองชำระเงิน) ก่อน จึงจะเปิดใช้งานปุ่มส่ง LON'
+              : !hasValidPhoto
+              ? 'กรุณาแนบรูปถ่ายสินค้าอย่างน้อย 1 รูปก่อนส่งข้อมูลทาง LON'
+              : 'กรุณารับชำระค่าดำเนินการ (กดแสดง QR แล้วกดปุ่มจำลองชำระเงิน หรือกรอกเลขใบเสร็จ POS) เพื่อเปิดใช้งานปุ่มส่ง LON'}
+          </p>
         )}
         {readOnly && <p className="hint">โหมดดูอย่างเดียว (เปิดงานได้เฉพาะ CS หรือ Admin)</p>}
       </div>

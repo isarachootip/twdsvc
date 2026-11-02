@@ -8,16 +8,25 @@ import {
 setTier('Tier 1')
 
 describe('Unit: LON Trigger Rules (Lifecycle Mapping)', () => {
-  it('LTR-01: CS intake (JOB_OPENED) triggers SEND_TO_REPAIR for active CUSTOMER job with valid mobile', () => {
+  it('LTR-01: CS intake (JOB_OPENED) triggers SEND_TO_REPAIR for active CUSTOMER job with valid mobile and no pending fee', () => {
     const res = resolveLonIntakeTrigger({
       type: 'CUSTOMER',
       isTest: false,
       customerPhone: '081-234-5678',
+      hasPendingIntakeFee: false,
     })
     expect(res).toEqual({
       type: 'SEND_TO_REPAIR',
       statusLabel: 'รับเรื่องส่งซ่อมสินค้า',
     })
+
+    const pendingFeeRes = resolveLonIntakeTrigger({
+      type: 'CUSTOMER',
+      isTest: false,
+      customerPhone: '081-234-5678',
+      hasPendingIntakeFee: true,
+    })
+    expect(pendingFeeRes).toBeNull()
   })
 
   it('LTR-02: Skips STOCK jobs, test jobs (isTest), or invalid phone numbers', () => {

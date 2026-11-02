@@ -50,7 +50,7 @@ export default function CsNewForm({
     if (form.fees.total > 0 && form.pay !== 'POS_RECEIPT' && !form.paid) {
       form.setPayOpen(true)
     } else {
-      form.setLon(true)
+      await form.sendLon(r)
     }
   }
 
@@ -120,11 +120,12 @@ export default function CsNewForm({
         <FeesAndPaymentSection
           fees={form.fees} pay={form.pay} setPay={form.setPay}
           pos={form.pos} setPos={form.setPos}
-          saved={form.saved} saving={form.saving}
+          saved={form.saved} saving={form.saving} sendingLon={form.sendingLon}
+          hasValidPhoto={form.hasValidPhoto} canSendLon={form.canSendLon}
           readOnly={form.readOnly} paid={form.paid}
           onShowPayment={handleShowPayment}
           onSaveAndSend={handleSaveAndSend}
-          onOpenLon={() => form.setLon(true)}
+          onOpenLon={() => form.sendLon()}
           onOpenPrint={() => form.setPrintDoc(true)}
           onOpenPayModal={() => form.setPayOpen(true)}
           onReset={() => { window.location.href = '/cs/new' }}
@@ -142,7 +143,7 @@ export default function CsNewForm({
           job={{ id: form.saved.id, jobNo: form.saved.jobNo, version: 0 }}
           kind="intake" amount={form.fees.total} initialMethod={form.pay}
           onClose={() => form.setPayOpen(false)}
-          onPaid={() => { form.setPaid(true); form.setPayOpen(false); form.setLon(true) }}
+          onPaid={() => { form.setPaid(true); form.setPayOpen(false) }}
         />
       )}
 

@@ -18,8 +18,11 @@ function isEligibleCustomerJob(ctx: EligibilityContext): boolean {
 }
 
 /** 1. Trigger when CS opens a customer repair job (POST /api/jobs). */
-export function resolveLonIntakeTrigger(ctx: EligibilityContext): LonTriggerDecision | null {
+export function resolveLonIntakeTrigger(
+  ctx: EligibilityContext & { hasPendingIntakeFee?: boolean }
+): LonTriggerDecision | null {
   if (!isEligibleCustomerJob(ctx)) return null
+  if (ctx.hasPendingIntakeFee) return null
   return {
     type: 'SEND_TO_REPAIR',
     statusLabel: 'รับเรื่องส่งซ่อมสินค้า',
