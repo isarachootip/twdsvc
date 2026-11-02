@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Modal from '@/components/ui/Modal'
+import { LonNotificationPanel } from '@/components/jobs/LonNotificationPanel'
 import { absUrl, api } from '@/lib/client'
 import { fmtBaht } from '@/lib/constants'
 import { useToast } from '@/components/ui/Toast'
@@ -148,6 +149,11 @@ export function LinePreviewModal({
               {lonState.error}
             </p>
           )}
+          {lonState?.endpoint && (
+            <p className="sub-mute font-mono" style={{ marginTop: 8, fontSize: 11 }}>
+              Endpoint: POST {lonState.endpoint} · Status: {lonState.status}
+            </p>
+          )}
           <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
             <button
               type="button"
@@ -170,6 +176,7 @@ export function LinePreviewModal({
               </button>
             )}
           </div>
+          <LonNotificationPanel key={lonState?.status ?? 'init'} jobId={saved.id} stage="CS_OPENED" role="CS" />
         </div>
       </div>
     </Modal>

@@ -161,7 +161,7 @@ export function LonNotificationPanel({
                 {log.errorMessage && <div className="text-amber-700" style={{ fontSize: 11, marginTop: 2 }}>{log.errorMessage}</div>}
                 {open && (
                   <pre className="font-mono" style={{ marginTop: 4, padding: 8, background: 'var(--surface)', borderRadius: 6, fontSize: 10.5, overflowX: 'auto', whiteSpace: 'pre-wrap' }}>
-                    {`POST ${log.endpoint}\n${JSON.stringify(log.requestPayload, null, 2)}`}
+                    {`POST ${log.endpoint}${log.httpStatus ? ` → HTTP ${log.httpStatus}` : ''}\nRequest:\n${JSON.stringify(log.requestPayload, null, 2)}${log.responseBody ? `\n\nResponse:\n${log.responseBody}` : ''}`}
                   </pre>
                 )}
               </div>
