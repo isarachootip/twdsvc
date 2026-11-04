@@ -59,10 +59,22 @@ async function verifyToken(token?: string) {
   }
 }
 
+export function isVendorOnboardingHost(host: string): boolean {
+  const h = host.toLowerCase()
+  return (
+    h.startsWith('vendor.') ||
+    h.startsWith('vendor-') ||
+    h.startsWith('vd.') ||
+    h.startsWith('vd-') ||
+    h.startsWith('sp.') ||
+    h.startsWith('sp-')
+  )
+}
+
 export async function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl
   const host = req.headers.get('host') || ''
-  const isVendorSubdomain = host.startsWith('vendor.') || host.startsWith('vendor-')
+  const isVendorSubdomain = isVendorOnboardingHost(host)
 
   // Subdomain routing for vendor.vhomesvc.online
   if (isVendorSubdomain) {

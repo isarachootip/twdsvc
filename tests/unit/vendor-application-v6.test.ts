@@ -2,6 +2,7 @@ import { describe, it, expect, setTier } from '../framework/core'
 import { vendorApplicationV6Schema } from '../../src/lib/validations/vendor-application-v6.schema'
 import { INITIAL_FORM_V6 } from '../../src/components/vendor-setup/initial-form-v6'
 import { normalizeVendorFormV6 } from '../../src/components/vendor-setup/useVendorSetupV6'
+import { isVendorOnboardingHost } from '../../src/middleware'
 
 setTier('Tier 1')
 
@@ -175,5 +176,13 @@ describe('Unit: Vendor Application V6 Zod Validation & Schema Rules', () => {
 
     const parsed = vendorApplicationV6Schema.safeParse(normalized)
     expect(parsed.success).toBe(true)
+  })
+
+  it('V6-VAL-08: Recognizes vd.vhomesvc.online, sp.vhomesvc.online, and vendor.vhomesvc.online as vendor onboarding hosts', () => {
+    expect(isVendorOnboardingHost('vd.vhomesvc.online')).toBe(true)
+    expect(isVendorOnboardingHost('sp.vhomesvc.online')).toBe(true)
+    expect(isVendorOnboardingHost('vendor.vhomesvc.online')).toBe(true)
+    expect(isVendorOnboardingHost('prod.vhomesvc.online')).toBe(false)
+    expect(isVendorOnboardingHost('localhost:3000')).toBe(false)
   })
 })
