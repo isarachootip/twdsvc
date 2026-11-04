@@ -60,29 +60,59 @@ async function verifyToken(token?: string) {
 }
 
 export function isVendorOnboardingHost(host: string): boolean {
-  const h = host.toLowerCase()
+  if (!host) return false
+  return host
+    .split(',')
+    .map(part => part.trim().toLowerCase())
+    .some(
+      h =>
+        h.startsWith('vendor.') ||
+        h.startsWith('vendor-') ||
+        h.startsWith('vd.') ||
+        h.startsWith('vd-') ||
+        h.startsWith('sp.') ||
+        h.startsWith('sp-')
+    )
+}
+
+export function isAllowedVendorSubdomainPath(pathname: string): boolean {
   return (
-    h.startsWith('vendor.') ||
-    h.startsWith('vendor-') ||
-    h.startsWith('vd.') ||
-    h.startsWith('vd-') ||
-    h.startsWith('sp.') ||
-    h.startsWith('sp-')
+    pathname === '/' ||
+    pathname === '/register' ||
+    pathname === '/status' ||
+    pathname.startsWith('/vendor/') ||
+    pathname.startsWith('/api/vendors/') ||
+    pathname.startsWith('/api/public/') ||
+    pathname.startsWith('/api/settings/branding') ||
+    pathname.startsWith('/api/files/') ||
+    pathname.startsWith('/_next/') ||
+    pathname.startsWith('/images/') ||
+    pathname.startsWith('/favicon') ||
+    pathname === '/logo.png'
   )
 }
 
 export async function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl
-  const host = req.headers.get('host') || ''
-  const isVendorSubdomain = isVendorOnboardingHost(host)
+  const hostCandidates = [
+    req.headers.get('x-forwarded-host') || '',
+    req.headers.get('host') || '',
+    req.nextUrl.hostname || '',
+  ]
+    .filter(Boolean)
+    .join(',')
+  const isVendorSubdomain = isVendorOnboardingHost(hostCandidates)
 
-  // Subdomain routing for vendor.vhomesvc.online
+  // Subdomain routing & lock-in for vendor.vhomesvc.online / vd.vhomesvc.online / sp.vhomesvc.online
   if (isVendorSubdomain) {
     if (pathname === '/' || pathname === '/register') {
       return NextResponse.rewrite(new URL('/vendor/register', req.url))
     }
     if (pathname === '/status') {
       return NextResponse.rewrite(new URL('/vendor/status', req.url))
+    }
+    if (!isAllowedVendorSubdomainPath(pathname)) {
+      return NextResponse.redirect(new URL('/', req.url))
     }
   }
 
