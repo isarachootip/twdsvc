@@ -11,12 +11,14 @@ COPY prisma ./prisma
 RUN npm ci --no-audit --maxsockets=3
 
 FROM deps AS builder
+# Force production environment for Next.js 15 / React 19 static page generation
+ENV NODE_ENV=production
 # Cap Node memory to avoid OOM killer on small VPS instances
 ENV NODE_OPTIONS="--max-old-space-size=1536"
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY . .
 RUN npx prisma generate
-RUN npm run build
+RUN NODE_ENV=production npm run build
 
 FROM base AS runner
 WORKDIR /app
