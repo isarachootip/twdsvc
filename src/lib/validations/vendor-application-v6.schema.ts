@@ -126,7 +126,7 @@ export const vendorApplicationV6Schema = z.object({
   // 7
   gpPct: z.string().default('18%'),
   creditTerm: z.string().default('30 วัน'),
-  billingCycle: z.string().default('ทุกวันที่ 25'),
+  billingCycle: z.string().trim().min(1, 'กรุณาเลือกรอบวางบิล / จ่ายเงิน (ข้อ 7.2)').default('ทุกวันที่ 25 ของเดือน'),
 
   // 8
   cinSlaDays: z.string().default('7 วัน'),

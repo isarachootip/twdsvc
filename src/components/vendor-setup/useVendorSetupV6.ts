@@ -127,6 +127,7 @@ export function useVendorSetupV6() {
       )
       if (!allCinConfigured || !allOnsConfigured) return false
     }
+    if (step === 7 && (!form.creditTerm.trim() || !form.billingCycle.trim())) return false
     if (step === 10) {
       const a = form.agreements
       if (!a.sla || !a.inspect || !a.reportApp || !a.training || !a.pdpa || !a.truth) return false

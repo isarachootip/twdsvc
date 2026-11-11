@@ -9,6 +9,7 @@ import {
   extractApplicationProductRates,
   type ProductGroupRateConfig,
 } from '@/lib/validations/vendor-product-group.schema'
+import { ApplicationCommercialSummary } from './ApplicationCommercialSummary'
 
 export interface VendorApplicationDetail {
   id: string
@@ -140,6 +141,8 @@ export function ApplicationReviewModal({
             </div>
           )}
         </div>
+
+        <ApplicationCommercialSummary agreements={application.agreements} />
 
         {application.signatureUrl && (
           <div className="pt-2 text-xs">

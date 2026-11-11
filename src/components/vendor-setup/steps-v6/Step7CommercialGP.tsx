@@ -3,6 +3,7 @@
 import React from 'react'
 import type { VendorApplicationFormV6 } from '../types-v6'
 import { SectionHeader } from '../common/SectionHeader'
+import { BillingCyclePicker } from '../common/BillingCyclePicker'
 import { ProductRatesSummaryTable } from './ProductRatesSummaryTable'
 
 interface Step7CommercialGPProps {
@@ -51,14 +52,14 @@ export function Step7CommercialGP({ form, onChange, onEditStep2 }: Step7Commerci
           </div>
 
           <div>
-            <label className="block font-bold text-slate-800 mb-1.5">7.2 รอบวางบิล / จ่ายเงิน</label>
-            <input
-              type="text"
+            <label className="block font-bold text-slate-800 mb-1.5">7.2 รอบวางบิล / จ่ายเงิน *</label>
+            <BillingCyclePicker
               value={form.billingCycle}
-              onChange={e => onChange({ billingCycle: e.target.value })}
-              placeholder="เช่น ทุกวันที่ 25 ของเดือน"
-              className="w-full h-10 px-3 border border-slate-300 rounded-lg bg-white"
+              onChange={billingCycle => onChange({ billingCycle })}
             />
+            <p className="text-[11px] text-slate-500 mt-1">
+              เลือกรอบวางบิลมาตรฐาน หรือคลิกเลือกวันที่ (1–31 / วันสิ้นเดือน) จากตารางปฏิทิน
+            </p>
           </div>
         </div>
       </div>
