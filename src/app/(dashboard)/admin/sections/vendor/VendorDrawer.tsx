@@ -104,7 +104,7 @@ export function VendorDrawer({
           <div className="flex border-b border-slate-200 px-6 bg-white text-xs font-medium shrink-0">
             {[
               { id: 'contract', label: 'ข้อมูลสัญญา & ค่าบริการ', icon: FileText },
-              { id: 'brands', label: `แบรนด์ & ขนาด (${form.brandIds?.length || 0})`, icon: Award },
+              { id: 'brands', label: `แบรนด์ & ขนาด (${form.brandIds?.length ? form.brandIds.length : 'ทุกแบรนด์'})`, icon: Award },
               { id: 'centers', label: `ศูนย์บริการย่อย (${form.centers?.length || 0})`, icon: Store },
             ].map(t => {
               const Icon = t.icon

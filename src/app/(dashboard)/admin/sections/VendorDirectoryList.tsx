@@ -45,7 +45,10 @@ export function VendorDirectoryList({ onOpenWizard }: VendorDirectoryListProps) 
 
   useEffect(() => {
     load()
-    api<NamedOption[]>('/api/brands').then(setBrands).catch(() => {})
+      .then(() => api<NamedOption[]>('/api/brands').then(setBrands))
+      .catch(() => {
+        api<NamedOption[]>('/api/brands').then(setBrands).catch(() => {})
+      })
     api<NamedOption[]>('/api/size-categories').then(setSizes).catch(() => {})
   }, [load])
 

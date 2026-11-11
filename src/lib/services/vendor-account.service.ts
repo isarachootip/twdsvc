@@ -32,22 +32,41 @@ export interface VendorCredentials {
   tempPassword: string
 }
 
-interface CreateVendorUserInput {
+export interface CreateVendorUserInput {
   parentCode: string
   storeName: string
   centerId: string | null
+  email?: string | null
+  preserveExisting?: boolean
 }
 
 /**
- * Creates the VD login for an approved vendor. Runs inside the approval transaction so a
- * failure here (e.g. duplicate username) rolls the whole approval back.
- * The plaintext password is returned once and never persisted.
+ * Creates or links the VD login for an approved vendor inside the approval transaction.
+ * When `preserveExisting` is true and the username already exists (e.g. registered SPCODE vendor),
+ * links centerId/email if missing without overwriting the existing password, returning `null`.
  */
 export async function createVendorUser(
   tx: Prisma.TransactionClient,
   input: CreateVendorUserInput
-): Promise<VendorCredentials> {
+): Promise<VendorCredentials | null> {
   const username = usernameForParent(input.parentCode)
+  const cleanEmail = input.email?.trim() || null
+
+  if (input.preserveExisting) {
+    const existing = await tx.user.findUnique({ where: { username } })
+    if (existing) {
+      await tx.user.update({
+        where: { id: existing.id },
+        data: {
+          vendorCenterId: existing.vendorCenterId ?? input.centerId,
+          email: existing.email ?? cleanEmail,
+          active: true,
+        },
+      })
+      return null
+    }
+  }
+
   const tempPassword = generateTempPassword()
   try {
     await tx.user.create({
@@ -55,6 +74,7 @@ export async function createVendorUser(
         username,
         password: await bcrypt.hash(tempPassword, 12),
         fullName: input.storeName,
+        email: cleanEmail,
         role: 'VD',
         vendorCenterId: input.centerId,
         mustChangePassword: true,

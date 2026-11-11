@@ -42,9 +42,11 @@ export const INITIAL_FORM_V6: VendorApplicationFormV6 = {
 
   // 2
   cinProducts: [],
+  cinAllBrands: false,
   cinBrands: [],
   cinReceiveMethod: 'รับสินค้าจาก DC',
   onsProducts: [],
+  onsAllBrands: false,
   onsBrands: [],
   productDetails: {},
   productGroupRates: [],

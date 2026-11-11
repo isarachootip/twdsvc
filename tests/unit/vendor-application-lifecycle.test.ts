@@ -156,6 +156,7 @@ async function runLifecycleTest() {
   console.log('✔ 4b. Double decision correctly blocked, no duplicate routes')
 
   // 4c. VD login created in the same transaction: role VD, linked to first center, password hashed
+  if (!credentials) throw new Error('Expected new VD credentials on fresh application approval')
   const vdUser = await prisma.user.findUnique({ where: { username: credentials.username } })
   if (!vdUser) throw new Error('VD user was not created on approval')
   if (vdUser.role !== 'VD') throw new Error(`Expected role VD, got ${vdUser.role}`)

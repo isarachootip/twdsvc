@@ -3,34 +3,31 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { api } from '@/lib/client'
 import { fmtDate, fmtPhone } from '@/lib/constants'
-import { useToast } from '@/components/ui/Toast'
-import { Eye, ArrowLeft } from 'lucide-react'
+import { Eye, ArrowLeft, RefreshCw } from 'lucide-react'
 import Link from 'next/link'
+import { useToast } from '@/components/ui/Toast'
 import { CopyRegisterLinkButton } from '@/components/vendor-setup/CopyRegisterLinkButton'
-import {
-  ApprovedCredentialsModal,
-  type ApprovedCredentials,
-  type EmailStatus,
-} from '@/components/vendor-setup/ApprovedCredentialsModal'
-import {
-  ApplicationReviewModal,
-  type VendorApplicationDetail,
-} from './ApplicationReviewModal'
+import type { ApplicationStatusType } from '@/lib/vendor-application-types'
+
+interface VendorApplicationListItem {
+  id: string
+  applicationNo: string
+  status: ApplicationStatusType
+  storeName: string
+  businessType: string
+  phone: string
+  estimatedTier: string
+  score: number
+  createdAt: string
+}
 
 export default function VendorApplicationsPage() {
-  const [list, setList] = useState<VendorApplicationDetail[] | null>(null)
-  const [selected, setSelected] = useState<VendorApplicationDetail | null>(null)
-  const [rejectReason, setRejectReason] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [approved, setApproved] = useState<{
-    credentials: ApprovedCredentials
-    storeName: string
-    emailStatus?: EmailStatus
-  } | null>(null)
+  const [list, setList] = useState<VendorApplicationListItem[] | null>(null)
+  const [syncingAll, setSyncingAll] = useState(false)
   const { toast } = useToast()
 
   const load = useCallback(() => {
-    api<VendorApplicationDetail[]>('/api/admin/vendor-applications')
+    api<VendorApplicationListItem[]>('/api/admin/vendor-applications')
       .then(setList)
       .catch(() => setList([]))
   }, [])
@@ -39,40 +36,24 @@ export default function VendorApplicationsPage() {
     load()
   }, [load])
 
-  const handleAction = async (id: string, action: 'APPROVE' | 'REJECT') => {
-    setBusy(true)
+  const handleResyncAll = async () => {
+    setSyncingAll(true)
     try {
-      const res = await fetch(`/api/admin/vendor-applications/${id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, reason: rejectReason }),
+      const res = await api<{ ok: boolean; syncedCount: number }>('/api/admin/vendor-applications', {
+        method: 'PATCH',
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'ดำเนินการไม่สำเร็จ')
-      toast(
-        action === 'APPROVE' ? 'อนุมัติคู่ค้าสำเร็จ' : 'ปฏิเสธใบสมัครแล้ว',
-        action === 'APPROVE' ? 'success' : 'info'
-      )
-      if (action === 'APPROVE' && data.credentials) {
-        setApproved({
-          credentials: data.credentials,
-          storeName: selected?.storeName ?? '',
-          emailStatus: data.email,
-        })
-      }
-      setSelected(null)
-      setRejectReason('')
+      toast(`ซิงก์ข้อมูลคู่ค้าที่อนุมัติแล้วสำเร็จ (${res.syncedCount} รายการ)`, 'success')
       load()
     } catch (err) {
-      toast(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด', 'error')
+      toast(err instanceof Error ? err.message : 'ซิงก์ข้อมูลไม่สำเร็จ', 'error')
     } finally {
-      setBusy(false)
+      setSyncingAll(false)
     }
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <Link href="/admin/vendor" className="btn btn-secondary text-xs flex items-center gap-1">
             <ArrowLeft className="w-3.5 h-3.5" /> กลับหน้าตั้งค่า Vendor
@@ -81,7 +62,16 @@ export default function VendorApplicationsPage() {
             ใบสมัครคู่ค้าใหม่ (Vendor Applications)
           </h2>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            disabled={syncingAll}
+            onClick={handleResyncAll}
+            className="btn btn-secondary text-xs flex items-center gap-1.5"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${syncingAll ? 'animate-spin' : ''}`} />
+            <span>ซิงก์ใบสมัครที่อนุมัติแล้วทั้งหมด</span>
+          </button>
           <CopyRegisterLinkButton />
           <Link href="/vendor/register" target="_blank" className="btn btn-primary text-xs">
             เปิดหน้าสมัคร (Portal)
@@ -117,7 +107,12 @@ export default function VendorApplicationsPage() {
                 list.map(app => (
                   <tr key={app.id}>
                     <td>
-                      <b className="font-mono">{app.applicationNo}</b>
+                      <Link
+                        href={`/admin/vendors/applications/${app.id}`}
+                        className="font-mono font-bold text-red-700 hover:underline"
+                      >
+                        {app.applicationNo}
+                      </Link>
                     </td>
                     <td>{app.storeName}</td>
                     <td>
@@ -168,13 +163,12 @@ export default function VendorApplicationsPage() {
                       </span>
                     </td>
                     <td>
-                      <button
-                        type="button"
-                        onClick={() => setSelected(app)}
-                        className="btn btn-secondary text-xs py-1 px-2.5 flex items-center gap-1"
+                      <Link
+                        href={`/admin/vendors/applications/${app.id}`}
+                        className="btn btn-secondary text-xs py-1 px-2.5 inline-flex items-center gap-1"
                       >
                         <Eye className="w-3.5 h-3.5" /> ตรวจสอบ
-                      </button>
+                      </Link>
                     </td>
                   </tr>
                 ))}
@@ -182,17 +176,6 @@ export default function VendorApplicationsPage() {
           </table>
         </div>
       </div>
-
-      <ApplicationReviewModal
-        application={selected}
-        busy={busy}
-        rejectReason={rejectReason}
-        onChangeRejectReason={setRejectReason}
-        onDecision={handleAction}
-        onClose={() => setSelected(null)}
-      />
-
-      {approved && <ApprovedCredentialsModal {...approved} onClose={() => setApproved(null)} />}
     </div>
   )
 }

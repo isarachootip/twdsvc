@@ -76,9 +76,11 @@ export const vendorApplicationV6Schema = z.object({
 
   // 2
   cinProducts: z.array(z.string()).default([]),
+  cinAllBrands: z.boolean().default(false),
   cinBrands: z.array(z.string()).default([]),
   cinReceiveMethod: z.string().default(''),
   onsProducts: z.array(z.string()).default([]),
+  onsAllBrands: z.boolean().default(false),
   onsBrands: z.array(z.string()).default([]),
   productDetails: z.record(z.string(), z.object({
     repair: z.boolean(),

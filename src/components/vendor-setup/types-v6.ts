@@ -72,9 +72,11 @@ export interface VendorApplicationFormV6 {
 
   // Step 2: ประเภทสินค้าและรูปแบบบริการ
   cinProducts: string[]
+  cinAllBrands: boolean
   cinBrands: string[]
   cinReceiveMethod: string
   onsProducts: string[]
+  onsAllBrands: boolean
   onsBrands: string[]
   productDetails: Record<string, ProductDetailItem>
   productGroupRates: ProductGroupRateConfig[]

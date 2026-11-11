@@ -5,6 +5,7 @@ import type { VendorApplicationFormV6 } from '../types-v6'
 import { SectionHeader } from '../common/SectionHeader'
 import { ThaiAddressInput } from '../common/ThaiAddressInput'
 import { Step1BranchList } from './Step1BranchList'
+import { Step1AuthorizedSection } from './Step1AuthorizedSection'
 import { Step1Contacts } from './Step1Contacts'
 
 interface Step1CompanyInfoProps {
@@ -172,6 +173,13 @@ export function Step1CompanyInfo({ form, onChange }: Step1CompanyInfoProps) {
         companyAddr={form.companyAddr}
         onChangeBranchType={type => onChange({ branchType: type })}
         onChangeBranches={branches => onChange({ branches })}
+      />
+
+      {/* 1.4 สถานะศูนย์บริการแต่งตั้งจากแบรนด์ */}
+      <Step1AuthorizedSection
+        authorized={form.authorized}
+        authorizedBrands={form.authorizedBrands}
+        onChange={patch => onChange(patch)}
       />
 
       {/* 1.5 - 1.8 ผู้ติดต่อและการเงิน */}

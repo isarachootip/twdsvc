@@ -26,8 +26,11 @@ export function normalizeVendorFormV6(form: VendorApplicationFormV6): VendorAppl
       : hasOnsite && form.onsProducts.includes(r.groupName)
   )
   const onsiteOverrides: Partial<VendorApplicationFormV6> = hasOnsite
-    ? {}
+    ? {
+        onsBrands: form.onsAllBrands ? [] : form.onsBrands,
+      }
     : {
+        onsAllBrands: false,
         onsBrands: [],
         productDetails: {},
         productNote: '',
@@ -52,6 +55,7 @@ export function normalizeVendorFormV6(form: VendorApplicationFormV6): VendorAppl
 
   return {
     ...form,
+    cinBrands: form.cinAllBrands ? [] : form.cinBrands,
     ...onsiteOverrides,
     productGroupRates: filteredRates,
     branches,
@@ -184,16 +188,7 @@ export function useVendorSetupV6() {
   }
 
   return {
-    currentStep,
-    setCurrentStep,
-    form,
-    updateForm,
-    nextStep,
-    prevStep,
-    validateStep,
-    submitting,
-    submitError,
-    submittedAppNo,
-    submitApplication,
+    currentStep, setCurrentStep, form, updateForm, nextStep, prevStep,
+    validateStep, submitting, submitError, submittedAppNo, submitApplication,
   }
 }

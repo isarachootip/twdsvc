@@ -33,6 +33,7 @@ export interface VendorParentRow {
   repairWarrantyDays: number | string
   isBrandAuthorized: boolean
   brandIds: number[]
+  brands?: Array<{ brandId: number; brand?: NamedOption }>
   sizeIds: number[]
   centers: VendorCenterRow[]
   productRates?: VendorProductRateRow[]

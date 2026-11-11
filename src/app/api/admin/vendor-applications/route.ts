@@ -4,6 +4,7 @@ import {
   listVendorApplications,
   createVendorApplication,
   approveVendorApplication,
+  backfillAllApprovedApplications,
 } from '@/lib/services/vendor-application.service'
 import { fullVendorApplicationSchema } from '@/lib/validations/vendor-setup.schema'
 import { saveSignatureDataUrl } from '@/lib/services/file-storage.service'
@@ -22,6 +23,16 @@ export async function GET(req: NextRequest) {
 
     const applications = await listVendorApplications(validStatus)
     return NextResponse.json(applications)
+  } catch (error) {
+    return handleError(error)
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  try {
+    await requireUser(['ADMIN'], req)
+    const summary = await backfillAllApprovedApplications({ onlyMissingData: false })
+    return NextResponse.json({ ok: true, ...summary })
   } catch (error) {
     return handleError(error)
   }

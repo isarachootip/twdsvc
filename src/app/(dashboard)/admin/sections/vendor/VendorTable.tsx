@@ -51,8 +51,12 @@ export function VendorTable({
           <tbody className="divide-y divide-slate-100">
             {displayed.map(v => {
               const brandNames = (v.brandIds || [])
-                .map(id => brands.find(b => b.id === id)?.name)
-                .filter(Boolean)
+                .map(
+                  id =>
+                    v.brands?.find(vb => vb.brandId === id)?.brand?.name ||
+                    brands.find(b => b.id === id)?.name
+                )
+                .filter((n): n is string => Boolean(n))
 
               return (
                 <tr
@@ -92,7 +96,10 @@ export function VendorTable({
                         </span>
                       </div>
                     ) : (
-                      <span className="text-slate-400">-</span>
+                      <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-700">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" />
+                        รับซ่อมทุกแบรนด์
+                      </span>
                     )}
                   </td>
                   <td className="py-3 px-3 text-center">

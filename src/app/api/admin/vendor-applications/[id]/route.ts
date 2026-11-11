@@ -5,6 +5,7 @@ import {
   getVendorApplication,
   approveVendorApplication,
   rejectVendorApplication,
+  resyncApprovedVendorApplication,
 } from '@/lib/services/vendor-application.service'
 import { sendApprovalEmail } from '@/lib/services/vendor-notify.service'
 
@@ -12,6 +13,7 @@ export const dynamic = 'force-dynamic'
 
 const decisionSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('APPROVE') }),
+  z.object({ action: z.literal('RESYNC') }),
   z.object({ action: z.literal('REJECT'), reason: z.string().trim().min(1, 'กรุณาระบุเหตุผลการปฏิเสธ').max(1000) }),
 ])
 
@@ -33,14 +35,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const { id } = await params
     const parsed = decisionSchema.safeParse(await req.json().catch(() => null))
     if (!parsed.success) {
-      throw new HttpError(400, parsed.error.issues[0]?.message ?? 'การกระทำไม่ถูกต้อง (ต้องเป็น APPROVE หรือ REJECT)')
+      throw new HttpError(400, parsed.error.issues[0]?.message ?? 'การกระทำไม่ถูกต้อง')
     }
 
     if (parsed.data.action === 'APPROVE') {
       const { application, credentials } = await approveVendorApplication(id, user.id)
-      const email = await sendApprovalEmail(application.email, application.storeName, credentials)
+      const email = credentials
+        ? await sendApprovalEmail(application.email, application.storeName, credentials)
+        : { sent: false, reason: 'เชื่อมต่อบัญชีคู่ค้าเดิมแล้ว (คงรหัสผ่านเดิม)' }
       return NextResponse.json({ ok: true, result: application, credentials, email })
     }
+
+    if (parsed.data.action === 'RESYNC') {
+      const { application, synced } = await resyncApprovedVendorApplication(id)
+      return NextResponse.json({ ok: true, result: application, synced })
+    }
+
     const result = await rejectVendorApplication(id, parsed.data.reason, user.id)
     return NextResponse.json({ ok: true, result })
   } catch (error) {

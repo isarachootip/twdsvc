@@ -66,8 +66,12 @@ export function Step2ProductsServices({ form, onChange }: Step2ProductsServicesP
           <label className="text-xs font-semibold text-slate-700">แบรนด์ที่รับซ่อม (Carry-in)</label>
           <BrandSelectorInput
             selectedBrands={form.cinBrands}
+            allBrands={Boolean(form.cinAllBrands)}
+            onChangeAllBrands={checked =>
+              onChange({ cinAllBrands: checked, ...(checked ? { cinBrands: [] } : {}) })
+            }
             onChange={brands => onChange({ cinBrands: brands })}
-            placeholder="ค้นหาและเลือกแบรนด์ Carry-in..."
+            placeholder="Search ค้นหาแบรนด์ Carry-in เช่น PANASONIC, TOSHIBA..."
           />
         </div>
 
@@ -115,10 +119,15 @@ export function Step2ProductsServices({ form, onChange }: Step2ProductsServicesP
           <div className="space-y-1.5 pt-2">
             <div className="flex items-center justify-between">
               <label className="text-xs font-semibold text-slate-700">แบรนด์ที่รับซ่อม (On-site)</label>
-              {hasOnsite && form.cinBrands.length > 0 && (
+              {hasOnsite && (form.cinAllBrands || form.cinBrands.length > 0) && (
                 <button
                   type="button"
-                  onClick={() => onChange({ onsBrands: [...form.cinBrands] })}
+                  onClick={() =>
+                    onChange({
+                      onsAllBrands: Boolean(form.cinAllBrands),
+                      onsBrands: form.cinAllBrands ? [] : [...form.cinBrands],
+                    })
+                  }
                   className="text-[11px] text-amber-700 hover:text-amber-800 flex items-center gap-1 font-semibold"
                 >
                   <Copy className="w-3 h-3" /> คัดลอกแบรนด์จาก Carry-in
@@ -127,8 +136,12 @@ export function Step2ProductsServices({ form, onChange }: Step2ProductsServicesP
             </div>
             <BrandSelectorInput
               selectedBrands={hasOnsite ? form.onsBrands : []}
+              allBrands={hasOnsite ? Boolean(form.onsAllBrands) : false}
+              onChangeAllBrands={checked =>
+                onChange({ onsAllBrands: checked, ...(checked ? { onsBrands: [] } : {}) })
+              }
               onChange={brands => onChange({ onsBrands: brands })}
-              placeholder="ค้นหาและเลือกแบรนด์ On-site..."
+              placeholder="Search ค้นหาแบรนด์ On-site เช่น DAIKIN, MITSUBISHI..."
               disabled={!hasOnsite}
             />
           </div>

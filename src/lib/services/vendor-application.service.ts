@@ -3,8 +3,14 @@ import { prisma } from '@/lib/db'
 import { Prisma, VendorApplicationStatus } from '@prisma/client'
 import { calculateVendorScoreAndTier } from './vendor-tier.service'
 import type { FullVendorApplicationInput } from '../validations/vendor-setup.schema'
+import type { ResolvedSiteMeta } from '../vendor-application-types'
 
-export { approveVendorApplication, rejectVendorApplication } from './vendor-approval.service'
+export {
+  approveVendorApplication,
+  rejectVendorApplication,
+  resyncApprovedVendorApplication,
+  backfillAllApprovedApplications,
+} from './vendor-approval.service'
 
 export async function createVendorApplication(input: FullVendorApplicationInput) {
   const branches = input.store.branches
@@ -70,7 +76,47 @@ export async function listVendorApplications(status?: VendorApplicationStatus) {
 }
 
 export async function getVendorApplication(id: string) {
-  return prisma.vendorApplication.findUnique({
-    where: { id },
-  })
+  const app = await prisma.vendorApplication.findUnique({ where: { id } })
+  if (!app) return null
+
+  let reviewerName: string | null = null
+  if (app.reviewedBy) {
+    const reviewer = await prisma.user.findUnique({
+      where: { id: app.reviewedBy },
+      select: { fullName: true, username: true },
+    })
+    reviewerName = reviewer?.fullName || reviewer?.username || null
+  }
+
+  const resolvedSites: Record<string, ResolvedSiteMeta> = {}
+  const covObj = app.coverage && typeof app.coverage === 'object' && !Array.isArray(app.coverage)
+    ? (app.coverage as Record<string, unknown>)
+    : {}
+  const routesObj = covObj.routes && typeof covObj.routes === 'object' && !Array.isArray(covObj.routes)
+    ? (covObj.routes as Record<string, unknown>)
+    : covObj
+  const siteKeys = Object.keys(routesObj).filter(k => k !== 'radius' && k !== 'carryInReceiveMethod')
+
+  if (siteKeys.length > 0) {
+    const sites = await prisma.site.findMany({
+      where: { OR: [{ code: { in: siteKeys } }, { nickname: { in: siteKeys } }] },
+      select: { code: true, nickname: true, name: true, province: true },
+    })
+    for (const s of sites) {
+      const meta: ResolvedSiteMeta = {
+        code: s.code,
+        nickname: s.nickname || s.name,
+        name: s.name,
+        province: s.province || '-',
+      }
+      if (s.code) resolvedSites[s.code] = meta
+      if (s.nickname) resolvedSites[s.nickname] = meta
+    }
+  }
+
+  return {
+    ...app,
+    reviewerName,
+    resolvedSites,
+  }
 }

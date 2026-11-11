@@ -7,10 +7,14 @@ import {
   upsertSingleVendor,
   deleteSingleVendor,
 } from '@/lib/services/vendor-admin.service'
+import { backfillAllApprovedApplications } from '@/lib/services/vendor-approval.service'
+
+export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
   try {
     await requireUser(['ADMIN'], req)
+    await backfillAllApprovedApplications({ onlyMissingData: true })
     const [vendors, sizes] = await Promise.all([
       prisma.vendorParent.findMany({
         where: { active: true },
